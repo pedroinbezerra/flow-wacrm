@@ -21,8 +21,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "wacrm",
-    template: "%s — wacrm",
+    default: "Flow Hub",
+    template: "%s — Flow Hub",
   },
   description: "Template CRM auto-hospedável para WhatsApp",
   robots: {

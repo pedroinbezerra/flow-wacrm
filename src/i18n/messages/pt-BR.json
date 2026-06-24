@@ -62,7 +62,7 @@
   },
 
   "metadata": {
-    "appTitle": "wacrm",
+    "appTitle": "Flow Hub",
     "appDescription": "Template CRM auto-hospedável para WhatsApp"
   },
 
@@ -1096,7 +1096,7 @@
       "couldNotReachServer": "Não foi possível alcançar o servidor. Tentar novamente?",
       "linkCopied": "Link do convite copiado",
       "clipboardBlocked": "Área de transferência bloqueada — copie o link manualmente",
-      "accountFallback": "nossa conta wacrm",
+      "accountFallback": "nossa conta Flow Hub",
       "whatsappMessage": "Entre na {accountName} usando este link (válido por {days} dias): {url}",
       "createdTitle": "Convite criado",
       "createdDescriptionPrefix": "Compartilhe este link com o novo colega. Ele poderá criar a conta (ou entrar) e se juntar à conta como",
@@ -1203,7 +1203,7 @@
       "notConnected": "Não conectado",
       "credentialsValidDescription": "Seu access token autentica com a Meta. Veja o status de registro abaixo para saber se os webhooks realmente estão conectados.",
       "notConnectedDescription": "Configure suas credenciais da Meta abaixo para conectar sua conta do WhatsApp Business.",
-      "registeredTitle": "Registrado - a Meta entregará eventos para o wacrm",
+      "registeredTitle": "Registrado - a Meta entregará eventos para o Flow Hub",
       "notRegisteredTitle": "Não registrado - a Meta não entregará eventos",
       "verifyWithMeta": "Verificar com a Meta",
       "subscribedSince": "Inscrito desde",
@@ -1229,7 +1229,7 @@
       "twoStepPin": "PIN de verificação em duas etapas",
       "optional": "(opcional)",
       "pinPlaceholder": "PIN de 6 dígitos do Meta WhatsApp Manager",
-      "pinHelp": "Necessário apenas para habilitar mensagens de entrada em um número de produção. Configure-o no Meta Business Manager → WhatsApp Accounts → Phone Numbers → Two-step verification e cole aqui para que o wacrm possa assinar o número. Os números de teste da Meta não têm PIN e já vêm pré-registrados. Deixar em branco também preserva um registro existente.",
+      "pinHelp": "Necessário apenas para habilitar mensagens de entrada em um número de produção. Configure-o no Meta Business Manager → WhatsApp Accounts → Phone Numbers → Two-step verification e cole aqui para que o Flow Hub possa assinar o número. Os números de teste da Meta não têm PIN e já vêm pré-registrados. Deixar em branco também preserva um registro existente.",
       "webhookTitle": "Configuração do webhook",
       "webhookDescription": "Use esta URL como callback do webhook no Meta App Dashboard.",
       "webhookUrlLabel": "URL de callback do webhook",
