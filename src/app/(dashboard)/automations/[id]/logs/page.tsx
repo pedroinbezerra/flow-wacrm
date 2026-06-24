@@ -132,11 +132,11 @@ export default function AutomationLogsPage({
                       {log.contact?.name ?? log.contact?.phone ?? "Unknown contact"}
                     </div>
                     <div className="truncate text-xs text-muted-foreground">
-                      {log.trigger_event} · {log.steps_executed?.length ?? 0} {t("automations.step", { count: log.steps_executed?.length ?? 0 })}
+                      {log.trigger_event} · {log.steps_executed?.length ?? 0} {log.steps_executed?.length === 1 ? t("automations.stepSingular") : t("automations.stepPlural")}
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {formatRelative(log.created_at)}
+                    {formatRelative(log.created_at, t)}
                   </div>
                 </button>
                 {isOpen && (
@@ -166,6 +166,7 @@ export default function AutomationLogsPage({
 }
 
 function StatusBadge({ status }: { status: AutomationLog["status"] }) {
+  const { t } = useTranslation()
   const classes =
     status === "success"
       ? "border-primary/30 bg-primary/10 text-primary"
@@ -179,7 +180,11 @@ function StatusBadge({ status }: { status: AutomationLog["status"] }) {
         classes,
       )}
     >
-      {status}
+      {status === "success"
+        ? t("automations.statusSuccess")
+        : status === "partial"
+        ? t("automations.statusPartial")
+        : t("automations.statusFailed")}
     </span>
   )
 }
@@ -190,7 +195,7 @@ function StepRow({ result }: { result: AutomationLogStepResult }) {
     <li className="flex items-start gap-2 text-xs">
       <span
         className={cn(
-          "mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full",
+          "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full",
           ok ? "bg-primary/20 text-primary" : "bg-red-500/20 text-red-400",
         )}
         aria-hidden

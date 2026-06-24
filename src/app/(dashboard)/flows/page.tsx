@@ -55,12 +55,6 @@ interface FlowRow {
   updated_at: string;
 }
 
-const STATUS_LABELS: Record<FlowRow["status"], string> = {
-  draft: "Draft",
-  active: "Active",
-  archived: "Archived",
-};
-
 const STATUS_COLORS: Record<FlowRow["status"], string> = {
   draft: "border-border bg-muted text-muted-foreground",
   active: "border-emerald-600/40 bg-emerald-500/10 text-emerald-300",
@@ -237,6 +231,7 @@ export default function FlowsPage() {
             <FlowCard
               key={flow.id}
               flow={flow}
+              t={t}
               onEdit={() => router.push(`/flows/${flow.id}`)}
               onDelete={() => handleDelete(flow)}
             />
@@ -351,7 +346,7 @@ function EmptyState({
         className="mt-5"
       >
         <Plus className="h-4 w-4" />
-        Create your first flow
+        {t("flows.createFirstFlow")}
       </GatedButton>
     </div>
   );
@@ -359,14 +354,21 @@ function EmptyState({
 
 function FlowCard({
   flow,
+  t,
   onEdit,
   onDelete,
 }: {
   flow: FlowRow;
+  t: (key: string, params?: Record<string, string | number>, defaultValue?: string) => string;
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const triggerSummary = describeTrigger(flow);
+  const triggerSummary = describeTrigger(flow, t);
+  const statusLabels: Record<FlowRow["status"], string> = {
+    draft: t("flows.statusDraft"),
+    active: t("flows.statusActive"),
+    archived: t("flows.statusArchived"),
+  };
   const StatusIcon =
     flow.status === "active"
       ? PlayCircle
@@ -390,7 +392,7 @@ function FlowCard({
           )}
         >
           <StatusIcon className="h-3 w-3" />
-          {STATUS_LABELS[flow.status]}
+          {statusLabels[flow.status]}
         </Badge>
       </div>
 
@@ -401,14 +403,16 @@ function FlowCard({
       <div className="mt-4 flex items-center gap-3 text-[11px] text-muted-foreground">
         <span className="inline-flex items-center gap-1">
           <MessageSquare className="h-3 w-3" />
-          {flow.execution_count} {flow.execution_count === 1 ? "run" : "runs"}
+          {flow.execution_count === 1
+            ? t("flows.runSingular", { count: flow.execution_count })
+            : t("flows.runPlural", { count: flow.execution_count })}
         </span>
       </div>
 
       <div className="mt-4 flex items-center justify-end gap-2 border-t border-border pt-3">
         <Button variant="ghost" size="sm" onClick={onEdit}>
           <Pencil className="h-3.5 w-3.5" />
-          Edit
+          {t("common.edit")}
         </Button>
         <Button
           variant="ghost"
@@ -417,23 +421,26 @@ function FlowCard({
           className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
         >
           <Trash2 className="h-3.5 w-3.5" />
-          Delete
+          {t("common.delete")}
         </Button>
       </div>
     </div>
   );
 }
 
-function describeTrigger(flow: FlowRow): string {
+function describeTrigger(
+  flow: FlowRow,
+  t: (key: string, params?: Record<string, string | number>, defaultValue?: string) => string,
+): string {
   if (flow.trigger_type === "keyword") {
     const keywords = Array.isArray(flow.trigger_config.keywords)
       ? (flow.trigger_config.keywords as string[])
       : [];
-    if (keywords.length === 0) return "Triggers on keyword (none set)";
-    return `Triggers on: ${keywords.join(", ")}`;
+    if (keywords.length === 0) return t("flows.keywordTriggerNone");
+    return t("flows.keywordTriggerSummary", { keywords: keywords.join(", ") });
   }
   if (flow.trigger_type === "first_inbound_message") {
-    return "Triggers on a contact's first-ever inbound message";
+    return t("flows.firstInboundTrigger");
   }
-  return "Manual trigger";
+  return t("flows.manualTrigger");
 }

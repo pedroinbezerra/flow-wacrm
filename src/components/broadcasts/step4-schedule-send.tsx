@@ -171,7 +171,7 @@ export function Step4ScheduleSend({
           className="border-border text-muted-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back
+          {t('broadcasts.back')}
         </Button>
 
         <div className="flex items-center gap-2">
@@ -183,7 +183,7 @@ export function Step4ScheduleSend({
               className="border-border text-muted-foreground hover:bg-muted disabled:opacity-50"
             >
               <Save className="h-4 w-4" />
-              Save as Draft
+              {t('broadcasts.saveDraft')}
             </Button>
           )}
 
@@ -197,17 +197,17 @@ export function Step4ScheduleSend({
             }
           >
             <Send className="h-4 w-4" />
-            Send Broadcast
+            {t('broadcasts.sendBroadcast')}
           </DialogTrigger>
           <DialogContent className="border-border bg-popover sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-popover-foreground">Confirm Broadcast</DialogTitle>
+              <DialogTitle className="text-popover-foreground">{t('broadcasts.confirmBroadcast')}</DialogTitle>
               <DialogDescription className="text-muted-foreground">
-                You are about to send this broadcast to{' '}
+                {t('broadcasts.confirmBroadcastPrefix')}{' '}
                 <span className="font-medium text-popover-foreground">{estimatedReach.toLocaleString()}</span>{' '}
-                contacts using the{' '}
+                {t('broadcasts.confirmBroadcastMiddle')}{' '}
                 <span className="font-medium text-popover-foreground">{template.name}</span> template.
-                This action cannot be undone.
+                {t('broadcasts.confirmBroadcastSuffix')}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -216,7 +216,7 @@ export function Step4ScheduleSend({
                 onClick={() => setShowConfirm(false)}
                 className="border-border text-muted-foreground"
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 onClick={() => {
@@ -226,7 +226,7 @@ export function Step4ScheduleSend({
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 <Send className="h-4 w-4" />
-                Confirm & Send
+                {t('broadcasts.confirmAndSend')}
               </Button>
             </DialogFooter>
           </DialogContent>

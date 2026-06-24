@@ -40,7 +40,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { AUTOMATION_TEMPLATES, type TemplateSlug } from "@/lib/automations/templates"
+import { getTemplateDisplay, type TemplateSlug } from "@/lib/automations/templates"
 import { triggerMeta, formatRelative } from "@/lib/automations/trigger-meta"
 import { cn } from "@/lib/utils"
 
@@ -101,7 +101,7 @@ export default function AutomationsPage() {
         prev?.map((x) => (x.id === a.id ? { ...x, is_active: !next } : x)) ?? prev,
       )
       const body = await res.json().catch(() => ({}))
-      toast.error(body?.error ?? "Failed to update")
+      toast.error(body?.error ?? "Falha ao atualizar")
       return
     }
       toast.success(next ? t("automations.activated") : t("automations.paused"))
@@ -111,7 +111,7 @@ export default function AutomationsPage() {
     const res = await fetch(`/api/automations/${a.id}/duplicate`, { method: "POST" })
     if (!res.ok) {
       const body = await res.json().catch(() => ({}))
-      toast.error(body?.error ?? "Failed to duplicate")
+      toast.error(body?.error ?? "Falha ao duplicar")
       return
     }
     toast.success(t("automations.duplicated"))
@@ -125,7 +125,7 @@ export default function AutomationsPage() {
     setDeleting(false)
     if (!res.ok) {
       const body = await res.json().catch(() => ({}))
-      toast.error(body?.error ?? "Failed to delete")
+      toast.error(body?.error ?? "Falha ao deletar")
       return
     }
     toast.success(t("automations.deleted"))
@@ -142,7 +142,7 @@ export default function AutomationsPage() {
       <div className="flex h-64 flex-col items-center justify-center gap-2">
         <p className="text-sm text-red-400">{error}</p>
         <Button variant="outline" onClick={() => window.location.reload()}>
-          Retry
+          Tentar novamente
         </Button>
       </div>
     )
@@ -183,7 +183,7 @@ export default function AutomationsPage() {
           <h2 className="mb-3 text-sm font-semibold text-muted-foreground">{t("automations.quickStart")}</h2>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
             {TEMPLATE_ORDER.map((slug) => {
-              const t = AUTOMATION_TEMPLATES[slug]
+              const display = getTemplateDisplay(slug, t)
               const Icon = TEMPLATE_ICON[slug]
               return (
                 <button
@@ -194,8 +194,8 @@ export default function AutomationsPage() {
                   <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary/15">
                     <Icon className="h-5 w-5" />
                   </div>
-                  <div className="text-sm font-semibold text-foreground">{t.name}</div>
-                  <p className="mt-1 text-xs text-muted-foreground">{t.description}</p>
+                  <div className="text-sm font-semibold text-foreground">{display.name}</div>
+                  <p className="mt-1 text-xs text-muted-foreground">{display.description}</p>
                 </button>
               )
             })}
@@ -278,12 +278,12 @@ function AutomationCard({
   onDelete: () => void
   t: (key: string, params?: Record<string, any>) => string
 }) {
-  const meta = triggerMeta(automation.trigger_type)
+  const meta = triggerMeta(automation.trigger_type, t)
   return (
     <li className="rounded-xl border border-border bg-card transition-colors hover:border-border">
       <div className="flex items-center gap-4 p-4">
         <div
-          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10"
+          className="flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-primary/10"
           aria-hidden
         >
           <Zap className="h-5 w-5 text-primary" />
@@ -318,10 +318,10 @@ function AutomationCard({
               {meta.label}
             </span>
             <span className="tabular-nums">
-              {automation.execution_count} {t("automations.run", { count: automation.execution_count })}
+              {automation.execution_count} {automation.execution_count === 1 ? t("automations.runSingular") : t("automations.runPlural")}
             </span>
             <span aria-hidden>·</span>
-            <span>{t("automations.lastRun", { time: formatRelative(automation.last_executed_at) })}</span>
+            <span>{t("automations.lastRun", { time: formatRelative(automation.last_executed_at, t) })}</span>
           </div>
         </button>
 
@@ -335,7 +335,7 @@ function AutomationCard({
           <DropdownMenu>
             <DropdownMenuTrigger
               aria-label={t("common.openMenu")}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground data-[popup-open]:bg-muted"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <MoreVertical className="h-4 w-4" />
             </DropdownMenuTrigger>

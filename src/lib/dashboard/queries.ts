@@ -26,6 +26,7 @@ import type {
 // ------------------------------------------------------------
 
 type DB = SupabaseClient
+type Translator = (key: string, params?: Record<string, string | number>) => string
 
 // --- 1. Metric cards ---------------------------------------------------
 
@@ -265,7 +266,7 @@ export async function loadResponseTime(db: DB): Promise<ResponseTimeSummary> {
 
 // --- 5. Activity feed --------------------------------------------------
 
-export async function loadActivity(db: DB, limit = 20): Promise<ActivityItem[]> {
+export async function loadActivity(db: DB, t: Translator, limit = 20): Promise<ActivityItem[]> {
   // Pull ~10 from each source (plenty of headroom after merge-sort),
   // then interleave by timestamp. The individual per-table limits
   // keep the payload small; the final limit is enforced after sort.
@@ -318,7 +319,7 @@ export async function loadActivity(db: DB, limit = 20): Promise<ActivityItem[]> 
     items.push({
       id: `msg-${m.id}`,
       kind: 'message',
-      text: `New message from ${who}`,
+      text: t('dashboard.activity.newMessage', { name: who }),
       at: m.created_at,
       href: `/inbox?c=${m.conversation_id}`,
     })
@@ -328,7 +329,7 @@ export async function loadActivity(db: DB, limit = 20): Promise<ActivityItem[]> 
     items.push({
       id: `contact-${c.id}`,
       kind: 'contact',
-      text: `New contact: ${c.name || c.phone}`,
+      text: t('dashboard.activity.newContact', { name: c.name || c.phone }),
       at: c.created_at,
       href: '/contacts',
     })
@@ -345,8 +346,8 @@ export async function loadActivity(db: DB, limit = 20): Promise<ActivityItem[]> 
       id: `deal-${d.id}`,
       kind: 'deal',
       text: stage?.name
-        ? `Deal "${d.title}" in ${stage.name}`
-        : `Deal "${d.title}" updated`,
+        ? t('dashboard.activity.dealInStage', { title: d.title, stage: stage.name })
+        : t('dashboard.activity.dealUpdated', { title: d.title }),
       at: d.updated_at,
       href: '/pipelines',
     })
@@ -361,12 +362,12 @@ export async function loadActivity(db: DB, limit = 20): Promise<ActivityItem[]> 
   }>) {
     const label =
       b.status === 'sent'
-        ? `sent to ${b.total_recipients} contacts`
-        : `${b.status} (${b.total_recipients} recipients)`
+        ? t('dashboard.activity.broadcastSent', { count: b.total_recipients })
+        : t('dashboard.activity.broadcastStatus', { status: b.status, count: b.total_recipients })
     items.push({
       id: `broadcast-${b.id}`,
       kind: 'broadcast',
-      text: `Broadcast "${b.name}" ${label}`,
+      text: t('dashboard.activity.broadcastItem', { name: b.name, label }),
       at: b.created_at,
       href: '/broadcasts',
     })
@@ -382,12 +383,20 @@ export async function loadActivity(db: DB, limit = 20): Promise<ActivityItem[]> 
   }>) {
     const automation = Array.isArray(l.automation) ? l.automation[0] : l.automation
     const contact = Array.isArray(l.contact) ? l.contact[0] : l.contact
-    const who = contact?.name || contact?.phone || 'a contact'
-    const autoName = automation?.name || 'Automation'
+    const who = contact?.name || contact?.phone || 'um contato'
+    const autoName = automation?.name || 'Automação'
+    const action =
+      l.status === 'failed'
+        ? t('dashboard.activity.automationFailed')
+        : t('dashboard.activity.automationTriggered')
     items.push({
       id: `auto-${l.id}`,
       kind: 'automation',
-      text: `Automation "${autoName}" ${l.status === 'failed' ? 'failed for' : 'triggered for'} ${who}`,
+      text: t('dashboard.activity.automationItem', {
+        name: autoName,
+        action,
+        who,
+      }),
       at: l.created_at,
     })
   }

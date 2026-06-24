@@ -15,7 +15,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { MessageSquare, UsersRound } from "lucide-react";
+import { UsersRound } from "lucide-react";
+import { FlowLogo } from "@/components/layout/flow-logo";
 
 // `useSearchParams` opts the component out of static prerendering
 // unless it sits under a Suspense boundary. We split the form into
@@ -45,6 +46,14 @@ function LoginPageInner() {
   const router = useRouter();
   const supabase = createClient();
 
+  const getLoginErrorMessage = (message: string) => {
+    if (message.toLowerCase().includes("invalid login credentials")) {
+      return t("auth.login.invalidCredentials");
+    }
+
+    return t("auth.login.error");
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -56,7 +65,7 @@ function LoginPageInner() {
     });
 
     if (error) {
-      setError(error.message);
+      setError(getLoginErrorMessage(error.message));
       setLoading(false);
       return;
     }
@@ -71,12 +80,14 @@ function LoginPageInner() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md border-border bg-card">
-        <CardHeader className="items-center text-center">
-          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+        <CardHeader className="items-center pb-4 pt-6 text-center">
+          <div className="mb-2 flex justify-center">
             {inviteToken ? (
-              <UsersRound className="h-6 w-6 text-primary" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                <UsersRound className="h-6 w-6 text-primary" />
+              </div>
             ) : (
-              <MessageSquare className="h-6 w-6 text-primary" />
+              <FlowLogo height={80} />
             )}
           </div>
           <CardTitle className="text-xl text-foreground">
