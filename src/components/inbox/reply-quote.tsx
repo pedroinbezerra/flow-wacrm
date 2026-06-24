@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import type { Message } from "@/types";
 
@@ -60,17 +61,24 @@ export function ReplyQuote({
         </div>
       </div>
       {onDismiss && (
+        <CancelReplyButton onDismiss={onDismiss} />
+      )}
+    </div>
+  );
+}
+
+function CancelReplyButton({ onDismiss }: { onDismiss: () => void }) {
+  const { t } = useTranslation();
+  return (
         <button
           type="button"
           onClick={onDismiss}
-          aria-label="Cancel reply"
+          aria-label={t("inbox.cancelReply")}
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <X className="h-3.5 w-3.5" />
         </button>
-      )}
-    </div>
-  );
+      );
 }
 
 /** Build the one-line preview text shown inside a reply quote. */

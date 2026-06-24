@@ -59,6 +59,7 @@ import "@xyflow/react/dist/style.css";
 import { Plus, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/use-translation";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -75,6 +76,7 @@ import {
 } from "@/lib/flows/edges";
 import { autoLayout, shouldAutoLayout } from "@/lib/flows/layout";
 import {
+  getNodeMeta,
   NODE_META,
   summarizeNode,
   type BuilderNode,
@@ -546,6 +548,7 @@ function NodeEditSheet({
   onDelete: () => void;
   onSetEntry: () => void;
 }) {
+  const { t } = useTranslation();
   // Sheet is controlled — opens when a node is selected, closes via
   // Esc / overlay / close button (all delegated to onClose).
   const open = node !== null;
@@ -556,7 +559,7 @@ function NodeEditSheet({
       </Sheet>
     );
   }
-  const meta = NODE_META[node.node_type];
+  const meta = getNodeMeta(t, node.node_type);
   const Icon = meta.icon;
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -570,7 +573,7 @@ function NodeEditSheet({
             <span>{meta.label}</span>
             {isEntry && (
               <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
-                Entry
+                {t("flows.entry")}
               </span>
             )}
           </SheetTitle>
@@ -591,7 +594,7 @@ function NodeEditSheet({
         <SheetFooter className="border-t border-border px-5 py-3 sm:flex-row sm:justify-between">
           {!isEntry ? (
             <Button variant="ghost" size="sm" onClick={onSetEntry}>
-              Set as entry
+              {t("flows.setAsEntry")}
             </Button>
           ) : (
             <span />
@@ -603,7 +606,7 @@ function NodeEditSheet({
             className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
           >
             <Trash2 className="h-3.5 w-3.5" />
-            Delete node
+            {t("flows.deleteNode")}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -632,6 +635,7 @@ const ADD_NODE_TYPES: NodeType[] = [
 ];
 
 function CanvasAddNodeButton() {
+  const { t } = useTranslation();
   const reactFlow = useReactFlow();
   const { addNode, updateNodePosition } = useFlowEditor();
 
@@ -659,17 +663,17 @@ function CanvasAddNodeButton() {
     <DropdownMenu>
       <DropdownMenuTrigger
         className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-lg transition-colors hover:bg-muted"
-        aria-label="Add node"
+        aria-label={t("flows.addNode")}
       >
         <Plus className="h-3.5 w-3.5" />
-        Add node
+        {t("flows.addNode")}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="border-border bg-popover">
-        {ADD_NODE_TYPES.map((t) => {
-          const meta = NODE_META[t];
+        {ADD_NODE_TYPES.map((nodeType) => {
+          const meta = getNodeMeta(t, nodeType);
           const Icon = meta.icon;
           return (
-            <DropdownMenuItem key={t} onClick={() => handleAdd(t)}>
+            <DropdownMenuItem key={nodeType} onClick={() => handleAdd(nodeType)}>
               <Icon className={cn("h-3.5 w-3.5", meta.color)} />
               {meta.label}
             </DropdownMenuItem>

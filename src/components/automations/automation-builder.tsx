@@ -53,6 +53,7 @@ import type {
 } from "@/types"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "@/hooks/use-translation"
 
 // ------------------------------------------------------------
 // Types (builder-local — mirror the flattened rows we POST)
@@ -78,7 +79,8 @@ export interface BuilderInitial {
 
 // ------------------------------------------------------------
 // Step metadata — one source of truth for icon + label + border color
-// ------------------------------------------------------------
+// Labels are loaded from i18n context; getStepMeta(t, type) must be called
+// at render time to access the translation function.
 
 interface StepMeta {
   label: string
@@ -87,18 +89,21 @@ interface StepMeta {
   border: string
 }
 
-const STEP_META: Record<AutomationStepType, StepMeta> = {
-  send_message: { label: "Send Message", icon: MessageSquare, border: "border-l-primary" },
-  send_template: { label: "Send Template", icon: FileText, border: "border-l-primary" },
-  add_tag: { label: "Add Tag", icon: Tag, border: "border-l-primary" },
-  remove_tag: { label: "Remove Tag", icon: TagIcon, border: "border-l-primary" },
-  assign_conversation: { label: "Assign Conversation", icon: UserCheck, border: "border-l-primary" },
-  update_contact_field: { label: "Update Contact Field", icon: PencilLine, border: "border-l-primary" },
-  create_deal: { label: "Create Deal", icon: Briefcase, border: "border-l-primary" },
-  wait: { label: "Wait", icon: Hourglass, border: "border-l-border" },
-  condition: { label: "Condition (If/Else)", icon: GitBranch, border: "border-l-amber-500" },
-  send_webhook: { label: "Send Webhook", icon: Webhook, border: "border-l-primary" },
-  close_conversation: { label: "Close Conversation", icon: CircleSlash, border: "border-l-primary" },
+function getStepMeta(t: (key: string) => string, type: AutomationStepType): StepMeta {
+  const stepMetaMap: Record<AutomationStepType, StepMeta> = {
+    send_message: { label: t("automations.sendMessage"), icon: MessageSquare, border: "border-l-primary" },
+    send_template: { label: t("automations.sendTemplate"), icon: FileText, border: "border-l-primary" },
+    add_tag: { label: t("automations.addTag"), icon: Tag, border: "border-l-primary" },
+    remove_tag: { label: t("automations.removeTag"), icon: TagIcon, border: "border-l-primary" },
+    assign_conversation: { label: t("automations.assignConversation"), icon: UserCheck, border: "border-l-primary" },
+    update_contact_field: { label: t("automations.updateContactField"), icon: PencilLine, border: "border-l-primary" },
+    create_deal: { label: t("automations.createDeal"), icon: Briefcase, border: "border-l-primary" },
+    wait: { label: t("automations.wait"), icon: Hourglass, border: "border-l-border" },
+    condition: { label: t("automations.condition"), icon: GitBranch, border: "border-l-amber-500" },
+    send_webhook: { label: t("automations.sendWebhook"), icon: Webhook, border: "border-l-primary" },
+    close_conversation: { label: t("automations.closeConversation"), icon: CircleSlash, border: "border-l-primary" },
+  }
+  return stepMetaMap[type]
 }
 
 const ADDABLE_STEPS: AutomationStepType[] = [
@@ -115,19 +120,21 @@ const ADDABLE_STEPS: AutomationStepType[] = [
   "close_conversation",
 ]
 
-const TRIGGER_OPTIONS: { value: AutomationTriggerType; label: string; hint: string }[] = [
-  { value: "new_message_received", label: "New Message Received", hint: "Any incoming message" },
-  {
-    value: "first_inbound_message",
-    label: "First Message from Contact",
-    hint: "First time this contact ever messages you (works for manually-added contacts too)",
-  },
-  { value: "keyword_match", label: "Keyword Match", hint: "Message contains specific keyword(s)" },
-  { value: "new_contact_created", label: "New Contact Created", hint: "When a contact is auto-created from an incoming message" },
-  { value: "conversation_assigned", label: "Conversation Assigned", hint: "When assigned to an agent" },
-  { value: "tag_added", label: "Tag Added", hint: "When a tag is added to a contact" },
-  { value: "time_based", label: "Time-Based", hint: "On a recurring schedule" },
-]
+function getTriggerOptions(t: (key: string) => string): { value: AutomationTriggerType; label: string; hint: string }[] {
+  return [
+    { value: "new_message_received", label: t("automations.newMessageReceived"), hint: t("automations.newMessageReceivedHint") },
+    {
+      value: "first_inbound_message",
+      label: t("automations.firstMessage"),
+      hint: t("automations.firstMessageHint"),
+    },
+    { value: "keyword_match", label: t("automations.keywordMatch"), hint: t("automations.keywordMatchHint") },
+    { value: "new_contact_created", label: t("automations.newContactCreated"), hint: t("automations.newContactCreatedHint") },
+    { value: "conversation_assigned", label: t("automations.conversationAssigned"), hint: t("automations.conversationAssignedHint") },
+    { value: "tag_added", label: t("automations.tagAdded"), hint: t("automations.tagAddedHint") },
+    { value: "time_based", label: t("automations.timeBased"), hint: t("automations.timeBasedHint") },
+  ]
+}
 
 function cid(): string {
   return (
@@ -258,22 +265,24 @@ const SELECT_CLASS =
 function TagSelect({
   value,
   onChange,
+  t,
 }: {
   value: string
   onChange: (v: string) => void
+  t: (key: string) => string
 }) {
   const { tags } = useResources()
   if (tags.length === 0) {
     return (
       <Input
-        placeholder="Tag id"
+        placeholder={t("automations.tagIdPlaceholder")}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="bg-muted text-foreground"
       />
     )
   }
-  const selected = tags.find((t) => t.id === value)
+  const selected = tags.find((tag) => tag.id === value)
   return (
     <div className="flex items-center gap-2">
       <span
@@ -286,10 +295,10 @@ function TagSelect({
         onChange={(e) => onChange(e.target.value)}
         className={SELECT_CLASS}
       >
-        <option value="">Select a tag…</option>
-        {tags.map((t) => (
-          <option key={t.id} value={t.id}>
-            {t.name}
+        <option value="">{t("automations.selectTag")}</option>
+        {tags.map((tag) => (
+          <option key={tag.id} value={tag.id}>
+            {tag.name}
           </option>
         ))}
         {/* Preserve a saved tag that's since been deleted so editing an
@@ -309,9 +318,11 @@ function TagSelect({
 function ContactFieldSelect({
   value,
   onChange,
+  t,
 }: {
   value: string
   onChange: (v: string) => void
+  t: (key: string) => string
 }) {
   const { customFields } = useResources()
   const customValue = value.startsWith("custom:") ? value : ""
@@ -323,11 +334,11 @@ function ContactFieldSelect({
       onChange={(e) => onChange(e.target.value)}
       className={SELECT_CLASS}
     >
-      <option value="name">Name</option>
-      <option value="email">Email</option>
-      <option value="company">Company</option>
+      <option value="name">{t("automations.name")}</option>
+      <option value="email">{t("automations.email")}</option>
+      <option value="company">{t("automations.company")}</option>
       {customFields.length > 0 && (
-        <optgroup label="Custom fields">
+        <optgroup label={t("automations.customFields")}>
           {customFields.map((f) => (
             <option key={f.id} value={`custom:${f.id}`}>
               {f.field_name}
@@ -347,15 +358,17 @@ function ContactFieldSelect({
 function AgentSelect({
   value,
   onChange,
+  t,
 }: {
   value: string
   onChange: (v: string) => void
+  t: (key: string) => string
 }) {
   const { members } = useResources()
   if (members.length === 0) {
     return (
       <Input
-        placeholder="Agent id"
+        placeholder={t("automations.agentIdPlaceholder")}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="bg-muted text-foreground"
@@ -369,7 +382,7 @@ function AgentSelect({
       onChange={(e) => onChange(e.target.value)}
       className={SELECT_CLASS}
     >
-      <option value="">Select an agent…</option>
+      <option value="">{t("automations.selectAgent")}</option>
       {members.map((m) => (
         <option key={m.user_id} value={m.user_id}>
           {m.full_name || m.email || m.user_id}
@@ -389,17 +402,19 @@ function SendTemplateFields({
   templateName,
   language,
   onChange,
+  t,
 }: {
   templateName: string
   language: string
   onChange: (patch: { template_name: string; language: string }) => void
+  t: (key: string) => string
 }) {
   const { templates } = useResources()
 
   if (templates.length === 0) {
     return (
       <>
-        <FieldBlock label="Template name">
+        <FieldBlock label={t("automations.templateName")}>
           <Input
             value={templateName}
             onChange={(e) =>
@@ -408,7 +423,7 @@ function SendTemplateFields({
             className="bg-muted text-foreground"
           />
         </FieldBlock>
-        <FieldBlock label="Language">
+        <FieldBlock label={t("automations.language")}>
           <Input
             value={language}
             onChange={(e) =>
@@ -430,7 +445,7 @@ function SendTemplateFields({
   )
 
   return (
-    <FieldBlock label="Template">
+    <FieldBlock label={t("automations.template")}>
       <select
         value={current}
         onChange={(e) => {
@@ -439,12 +454,12 @@ function SendTemplateFields({
         }}
         className={SELECT_CLASS}
       >
-        <option value="">Select a template…</option>
-        {templates.map((t) => {
-          const lang = t.language ?? "en_US"
+        <option value="">{t("automations.selectTemplate")}</option>
+        {templates.map((template) => {
+          const lang = template.language ?? "en_US"
           return (
-            <option key={t.id} value={toValue(t.name, lang)}>
-              {t.name} ({lang})
+            <option key={template.id} value={toValue(template.name, lang)}>
+              {template.name} ({lang})
             </option>
           )
         })}
@@ -464,6 +479,7 @@ function SendTemplateFields({
 
 export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
   const router = useRouter()
+  const { t } = useTranslation()
   const isEditing = !!initial.id
   const [state, setState] = useState<BuilderInitial>(initial)
   const [saving, setSaving] = useState(false)
@@ -534,11 +550,11 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
             description: firstIssue.path ? `at ${firstIssue.path}` : undefined,
           })
         } else {
-          toast.error(body?.error ?? "Save failed")
+          toast.error(body?.error ?? t("automations.failedSave"))
         }
         return
       }
-      toast.success(isEditing ? "Automation saved" : "Automation created")
+      toast.success(isEditing ? t("automations.successSave") : t("automations.successCreate"))
       if (!isEditing && body?.automation?.id) {
         router.replace(`/automations/${body.automation.id}/edit`)
       }
@@ -557,22 +573,22 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
           type="button"
           onClick={() => router.push("/automations")}
           className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          aria-label="Back to automations"
+          aria-label={t("automations.backToAutomations")}
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
         <input
           value={state.name}
           onChange={(e) => patchTop("name", e.target.value)}
-          placeholder="Untitled automation"
+          placeholder={t("automations.untitledAutomation")}
           className="min-w-0 flex-1 rounded-md bg-transparent px-2 py-1 text-sm font-semibold text-foreground placeholder:text-muted-foreground focus:bg-muted focus:outline-none sm:text-base"
         />
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="hidden sm:inline">Active</span>
+          <span className="hidden sm:inline">{t("automations.active")}</span>
           <Switch
             checked={state.is_active}
             onCheckedChange={(v) => patchTop("is_active", !!v)}
-            aria-label="Active"
+            aria-label={t("automations.active")}
           />
         </div>
         <Button
@@ -581,7 +597,7 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
           className="bg-primary text-primary-foreground hover:bg-primary/90"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          {isEditing ? "Save" : "Save Draft"}
+          {isEditing ? t("common.save") : t("automations.saveDraft")}
         </Button>
       </header>
 
@@ -628,7 +644,9 @@ function TriggerCard({
   onTypeChange: (t: AutomationTriggerType) => void
   onConfigChange: (c: Record<string, unknown>) => void
 }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
+  const triggerOptions = getTriggerOptions(t)
   return (
     // Card width: full on mobile, fixed 320px on sm+. The canvas wrapper
     // (max-w-2xl + px-4) keeps this tidy on tablet/desktop.
@@ -643,9 +661,9 @@ function TriggerCard({
             <Zap className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] uppercase tracking-wide text-blue-300">Trigger</div>
+            <div className="text-[11px] uppercase tracking-wide text-blue-300">{t("automations.trigger")}</div>
             <div className="truncate text-sm font-medium text-foreground">
-              {TRIGGER_OPTIONS.find((o) => o.value === type)?.label ?? type}
+              {triggerOptions.find((o) => o.value === type)?.label ?? type}
             </div>
           </div>
           <ChevronDown
@@ -656,43 +674,45 @@ function TriggerCard({
           <div className="space-y-3 border-t border-border px-4 py-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                Trigger type
+                {t("automations.triggerType")}
               </label>
               <select
                 value={type}
                 onChange={(e) => onTypeChange(e.target.value as AutomationTriggerType)}
                 className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
               >
-                {TRIGGER_OPTIONS.map((o) => (
+                {triggerOptions.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
                   </option>
                 ))}
               </select>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                {TRIGGER_OPTIONS.find((o) => o.value === type)?.hint}
+                {triggerOptions.find((o) => o.value === type)?.hint}
               </p>
             </div>
             {type === "keyword_match" && (
               <KeywordMatchConfig
                 config={config as unknown as KeywordMatchTriggerConfig}
                 onChange={onConfigChange}
+                t={t}
               />
             )}
             {type === "tag_added" && (
               <div>
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Tag
+                  {t("automations.tag")}
                 </label>
                 <TagSelect
                   value={(config.tag_id as string) ?? ""}
                   onChange={(v) => onConfigChange({ ...config, tag_id: v })}
+                  t={t}
                 />
               </div>
             )}
             {type === "time_based" && (
               <Input
-                placeholder="Cron expression or HH:mm"
+                placeholder={t("automations.cronExpressionPlaceholder")}
                 value={(config.schedule as string) ?? ""}
                 onChange={(e) =>
                   onConfigChange({ ...config, schedule: e.target.value })
@@ -710,9 +730,11 @@ function TriggerCard({
 function KeywordMatchConfig({
   config,
   onChange,
+  t,
 }: {
   config: KeywordMatchTriggerConfig
   onChange: (c: Record<string, unknown>) => void
+  t: (key: string) => string
 }) {
   const keywords = config?.keywords ?? []
   // Keep a local draft string so the comma and trailing space aren't
@@ -748,7 +770,7 @@ function KeywordMatchConfig({
     <div className="space-y-2">
       <div>
         <label className="mb-1 block text-xs font-medium text-muted-foreground">
-          Keywords (comma-separated)
+          {t("automations.keywordsSeparated")}
         </label>
         <Input
           value={draft}
@@ -760,21 +782,21 @@ function KeywordMatchConfig({
               commit()
             }
           }}
-          placeholder="e.g. pricing, demo request, talk to sales"
+          placeholder={t("automations.keywordsPlaceholder")}
           className="bg-muted text-foreground"
         />
       </div>
       <div>
         <label className="mb-1 block text-xs font-medium text-muted-foreground">
-          Match type
+          {t("automations.matchType")}
         </label>
         <select
           value={config?.match_type ?? "contains"}
           onChange={(e) => onChange({ ...config, match_type: e.target.value as "exact" | "contains" })}
           className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground focus:outline-none"
         >
-          <option value="contains">Contains</option>
-          <option value="exact">Exact</option>
+          <option value="contains">{t("automations.contains")}</option>
+          <option value="exact">{t("automations.exact")}</option>
         </select>
       </div>
     </div>
@@ -848,13 +870,14 @@ function StepRenderer({
   parentScope: ParentScope
   parentPath: StepPath
 } & Omit<StepListProps, "steps" | "parentPath">) {
+  const { t } = useTranslation()
   const path: StepPath = [
     ...parentPath,
     parentScope.kind === "root"
       ? { kind: "root", index }
       : { kind: "branch", parentCid: parentScope.parentCid, branch: parentScope.branch, index },
   ]
-  const meta = STEP_META[step.step_type]
+  const meta = getStepMeta(t, step.step_type)
   const Icon = meta.icon
   const expanded = props.expandedId === step.cid
   const isCondition = step.step_type === "condition"
@@ -885,10 +908,10 @@ function StepRenderer({
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                {isCondition ? "Condition" : step.step_type === "wait" ? "Wait" : "Action"}
+                {isCondition ? t("automations.condition") : step.step_type === "wait" ? t("automations.wait") : t("automations.action")}
               </div>
               <div className="truncate text-sm font-medium text-foreground">{meta.label}</div>
-              <div className="truncate text-[11px] text-muted-foreground">{previewFor(step)}</div>
+              <div className="truncate text-[11px] text-muted-foreground">{previewFor(step, t)}</div>
             </div>
             <ChevronDown
               className={cn("h-4 w-4 text-muted-foreground transition-transform", expanded && "rotate-180")}
@@ -906,7 +929,7 @@ function StepRenderer({
                     variant="ghost"
                     size="icon"
                     disabled={index === 0}
-                    aria-label="Move up"
+                    aria-label={t("automations.moveUp")}
                     onClick={() => props.moveStepAt(path, -1)}
                   >
                     <ArrowUp className="h-4 w-4" />
@@ -915,7 +938,7 @@ function StepRenderer({
                     variant="ghost"
                     size="icon"
                     disabled={index === total - 1}
-                    aria-label="Move down"
+                    aria-label={t("automations.moveDown")}
                     onClick={() => props.moveStepAt(path, 1)}
                   >
                     <ArrowDown className="h-4 w-4" />
@@ -927,7 +950,7 @@ function StepRenderer({
                   onClick={() => props.deleteStepAt(path)}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                  Delete
+                  {t("common.delete")}
                 </Button>
               </div>
             </div>
@@ -959,6 +982,7 @@ function ConditionBranches({
   step: BuilderStep
   parentPath: StepPath
 } & Omit<StepListProps, "steps" | "parentPath">) {
+  const { t } = useTranslation()
   const yes = step.branches?.yes ?? []
   const no = step.branches?.no ?? []
   // Build the child scope by appending a branch marker. The scope the
@@ -977,10 +1001,10 @@ function ConditionBranches({
     // cram each branch to ~170px which is too narrow for the nested
     // cards. Two-column grid returns on sm+.
     <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <BranchColumn label="Yes" color="text-primary">
+      <BranchColumn label={t("automations.yes")} color="text-primary">
         <StepList {...props} steps={yes} parentPath={yesPath} />
       </BranchColumn>
-      <BranchColumn label="No" color="text-rose-400">
+      <BranchColumn label={t("automations.no")} color="text-rose-400">
         <StepList {...props} steps={no} parentPath={noPath} />
       </BranchColumn>
     </div>
@@ -1005,13 +1029,14 @@ function BranchColumn({
 }
 
 function AddButton({ onPick }: { onPick: (t: AutomationStepType) => void }) {
+  const { t } = useTranslation()
   return (
     <div className="relative flex flex-col items-center">
       <div className="h-4 w-[2px] bg-border" aria-hidden />
       <DropdownMenu>
         <DropdownMenuTrigger
           className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-dashed border-border bg-background text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary data-[popup-open]:border-primary data-[popup-open]:bg-primary/20 data-[popup-open]:text-primary"
-          aria-label="Add step"
+          aria-label={t("automations.addStep")}
         >
           <Plus className="h-4 w-4" />
         </DropdownMenuTrigger>
@@ -1019,12 +1044,13 @@ function AddButton({ onPick }: { onPick: (t: AutomationStepType) => void }) {
           align="start"
           className="max-h-80 min-w-56 overflow-y-auto border-border bg-popover"
         >
-          {ADDABLE_STEPS.map((t) => {
-            const Icon = STEP_META[t].icon
+          {ADDABLE_STEPS.map((stepType) => {
+            const meta = getStepMeta(t, stepType)
+            const Icon = meta.icon
             return (
-              <DropdownMenuItem key={t} onClick={() => onPick(t)}>
+              <DropdownMenuItem key={stepType} onClick={() => onPick(stepType)}>
                 <Icon className="h-4 w-4" />
-                {STEP_META[t].label}
+                {meta.label}
               </DropdownMenuItem>
             )
           })}
@@ -1046,6 +1072,7 @@ function StepEditor({
   step: BuilderStep
   onChange: (s: BuilderStep) => void
 }) {
+  const { t } = useTranslation()
   const cfg = step.step_config
   const set = (patch: Record<string, unknown>) =>
     onChange({ ...step, step_config: { ...cfg, ...patch } })
@@ -1053,11 +1080,11 @@ function StepEditor({
   switch (step.step_type) {
     case "send_message":
       return (
-        <FieldBlock label="Message text">
+        <FieldBlock label={t("automations.messageText")}>
           <Textarea
             value={(cfg.text as string) ?? ""}
             onChange={(e) => set({ text: e.target.value })}
-            placeholder="Hi! Thanks for reaching out…"
+            placeholder={t("automations.messageTextPlaceholder")}
             className="min-h-24 bg-muted text-foreground"
           />
         </FieldBlock>
@@ -1068,36 +1095,39 @@ function StepEditor({
           templateName={(cfg.template_name as string) ?? ""}
           language={(cfg.language as string) ?? ""}
           onChange={(patch) => set(patch)}
+          t={t}
         />
       )
     case "add_tag":
     case "remove_tag":
       return (
-        <FieldBlock label="Tag">
+        <FieldBlock label={t("automations.tag")}>
           <TagSelect
             value={(cfg.tag_id as string) ?? ""}
             onChange={(v) => set({ tag_id: v })}
+            t={t}
           />
         </FieldBlock>
       )
     case "assign_conversation":
       return (
         <>
-          <FieldBlock label="Mode">
+          <FieldBlock label={t("automations.mode")}>
             <select
               value={(cfg.mode as string) ?? "round_robin"}
               onChange={(e) => set({ mode: e.target.value })}
               className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
             >
-              <option value="round_robin">Round-robin</option>
-              <option value="specific">Specific agent</option>
+              <option value="round_robin">{t("automations.roundRobin")}</option>
+              <option value="specific">{t("automations.specificAgent")}</option>
             </select>
           </FieldBlock>
           {cfg.mode === "specific" && (
-            <FieldBlock label="Agent">
+            <FieldBlock label={t("automations.agent")}>
               <AgentSelect
                 value={(cfg.agent_id as string) ?? ""}
                 onChange={(v) => set({ agent_id: v })}
+                t={t}
               />
             </FieldBlock>
           )}
@@ -1106,17 +1136,18 @@ function StepEditor({
     case "update_contact_field":
       return (
         <>
-          <FieldBlock label="Field">
+          <FieldBlock label={t("automations.field")}>
             <ContactFieldSelect
               value={(cfg.field as string) ?? "name"}
               onChange={(v) => set({ field: v })}
+              t={t}
             />
           </FieldBlock>
-          <FieldBlock label="Value">
+          <FieldBlock label={t("automations.value")}>
             <Input
               value={(cfg.value as string) ?? ""}
               onChange={(e) => set({ value: e.target.value })}
-              placeholder="Text or {{ vars.x }} / {{ message.text }}"
+              placeholder={t("automations.valueInterpolationExample")}
               className="bg-muted text-foreground"
             />
           </FieldBlock>
@@ -1125,28 +1156,28 @@ function StepEditor({
     case "create_deal":
       return (
         <>
-          <FieldBlock label="Pipeline id">
+          <FieldBlock label={t("automations.pipelineId")}>
             <Input
               value={(cfg.pipeline_id as string) ?? ""}
               onChange={(e) => set({ pipeline_id: e.target.value })}
               className="bg-muted text-foreground"
             />
           </FieldBlock>
-          <FieldBlock label="Stage id">
+          <FieldBlock label={t("automations.stageId")}>
             <Input
               value={(cfg.stage_id as string) ?? ""}
               onChange={(e) => set({ stage_id: e.target.value })}
               className="bg-muted text-foreground"
             />
           </FieldBlock>
-          <FieldBlock label="Title">
+          <FieldBlock label={t("automations.title")}>
             <Input
               value={(cfg.title as string) ?? ""}
               onChange={(e) => set({ title: e.target.value })}
               className="bg-muted text-foreground"
             />
           </FieldBlock>
-          <FieldBlock label="Value">
+          <FieldBlock label={t("automations.value")}>
             <Input
               type="number"
               value={(cfg.value as number) ?? 0}
@@ -1159,7 +1190,7 @@ function StepEditor({
     case "wait":
       return (
         <div className="grid grid-cols-2 gap-2">
-          <FieldBlock label="Amount">
+          <FieldBlock label={t("automations.amount")}>
             <Input
               type="number"
               min={1}
@@ -1168,15 +1199,15 @@ function StepEditor({
               className="bg-muted text-foreground"
             />
           </FieldBlock>
-          <FieldBlock label="Unit">
+          <FieldBlock label={t("automations.unit")}>
             <select
               value={(cfg.unit as string) ?? "hours"}
               onChange={(e) => set({ unit: e.target.value })}
               className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
             >
-              <option value="minutes">Minutes</option>
-              <option value="hours">Hours</option>
-              <option value="days">Days</option>
+              <option value="minutes">{t("automations.minutes")}</option>
+              <option value="hours">{t("automations.hours")}</option>
+              <option value="days">{t("automations.days")}</option>
             </select>
           </FieldBlock>
         </div>
@@ -1184,19 +1215,19 @@ function StepEditor({
     case "condition":
       return (
         <>
-          <FieldBlock label="Subject">
+          <FieldBlock label={t("automations.subject")}>
             <select
               value={(cfg.subject as string) ?? "tag_presence"}
               onChange={(e) => set({ subject: e.target.value })}
               className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
             >
-              <option value="tag_presence">Tag presence</option>
-              <option value="contact_field">Contact field</option>
-              <option value="message_content">Message content</option>
-              <option value="time_of_day">Time of day</option>
+              <option value="tag_presence">{t("automations.tagPresence")}</option>
+              <option value="contact_field">{t("automations.contactField")}</option>
+              <option value="message_content">{t("automations.messageContent")}</option>
+              <option value="time_of_day">{t("automations.timeOfDay")}</option>
             </select>
           </FieldBlock>
-          <FieldBlock label="Operand">
+          <FieldBlock label={t("automations.operand")}>
             <Input
               placeholder={
                 cfg.subject === "time_of_day"
@@ -1213,7 +1244,7 @@ function StepEditor({
             />
           </FieldBlock>
           {(cfg.subject === "contact_field" || cfg.subject === "message_content") && (
-            <FieldBlock label="Value">
+            <FieldBlock label={t("automations.value")}>
               <Input
                 value={(cfg.value as string) ?? ""}
                 onChange={(e) => set({ value: e.target.value })}
@@ -1226,14 +1257,14 @@ function StepEditor({
     case "send_webhook":
       return (
         <>
-          <FieldBlock label="URL">
+          <FieldBlock label={t("automations.url")}>
             <Input
               value={(cfg.url as string) ?? ""}
               onChange={(e) => set({ url: e.target.value })}
               className="bg-muted text-foreground"
             />
           </FieldBlock>
-          <FieldBlock label="Body template (JSON)">
+          <FieldBlock label={t("automations.bodyTemplate")}>
             <Textarea
               value={(cfg.body_template as string) ?? ""}
               onChange={(e) => set({ body_template: e.target.value })}
@@ -1245,7 +1276,7 @@ function StepEditor({
     case "close_conversation":
       return (
         <p className="text-xs text-muted-foreground">
-          Sets the conversation status to &quot;closed&quot;. No configuration needed.
+          {t("automations.closeConversationDescription")}
         </p>
       )
     default:
@@ -1268,18 +1299,18 @@ function FieldBlock({
   )
 }
 
-function previewFor(step: BuilderStep): string {
+function previewFor(step: BuilderStep, t: (key: string) => string): string {
   switch (step.step_type) {
     case "send_message":
-      return (step.step_config.text as string) || "no text yet"
+      return (step.step_config.text as string) || t("automations.noTextYet")
     case "send_template":
-      return (step.step_config.template_name as string) || "pick a template"
+      return (step.step_config.template_name as string) || t("automations.pickTemplate")
     case "wait":
       return `${step.step_config.amount ?? "?"} ${step.step_config.unit ?? ""}`
     case "condition":
       return `when ${step.step_config.subject ?? "?"}`
     case "send_webhook":
-      return (step.step_config.url as string) || "no url"
+      return (step.step_config.url as string) || t("automations.noUrl")
     default:
       return ""
   }

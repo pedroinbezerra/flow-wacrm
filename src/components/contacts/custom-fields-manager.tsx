@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
+import { useTranslation } from '@/hooks/use-translation';
 import { toast } from 'sonner';
 import type { CustomField } from '@/types';
 import {
@@ -31,15 +32,15 @@ export function CustomFieldsManager({
   open,
   onOpenChange,
 }: CustomFieldsManagerProps) {
+  const { t } = useTranslation();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="border-border bg-popover text-popover-foreground sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-popover-foreground">Custom fields</DialogTitle>
+          <DialogTitle className="text-popover-foreground">{t('contacts.customFields.title')}</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Define extra contact fields (e.g. ZIP code, lead source). They
-            appear on every contact and in the “Update Contact Field” automation
-            action.
+            {t('contacts.customFields.description')}
           </DialogDescription>
         </DialogHeader>
         <CustomFieldsPanel />
@@ -57,6 +58,7 @@ export function CustomFieldsManager({
 export function CustomFieldsPanel() {
   const supabase = createClient();
   const { user, accountId } = useAuth();
+  const { t } = useTranslation();
 
   const [fields, setFields] = useState<CustomField[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,11 +99,11 @@ export function CustomFieldsPanel() {
     const name = newName.trim();
     if (!name) return;
     if (!accountId || !user) {
-      toast.error('Your profile is not linked to an account.');
+      toast.error(t('common.profileNotLinked', undefined, 'Seu perfil não está vinculado a uma conta.'));
       return;
     }
     if (isDuplicate(name)) {
-      toast.error(`A field named "${name}" already exists.`);
+      toast.error(t('contacts.customFields.duplicateName', { name }));
       return;
     }
 
@@ -115,10 +117,10 @@ export function CustomFieldsPanel() {
     setCreating(false);
 
     if (error) {
-      toast.error('Could not create field. You may not have permission.');
+      toast.error(t('contacts.customFields.createFailed'));
       return;
     }
-    toast.success(`Created "${name}".`);
+    toast.success(t('contacts.customFields.created', { name }));
     setNewName('');
     await fetchFields();
   }
@@ -132,7 +134,7 @@ export function CustomFieldsPanel() {
     const name = nextName.trim();
     if (!name || name === field.field_name) return true;
     if (isDuplicate(name, field.id)) {
-      toast.error(`A field named "${name}" already exists.`);
+      toast.error(t('contacts.customFields.duplicateName', { name }));
       return false;
     }
     setBusyId(field.id);
@@ -142,7 +144,7 @@ export function CustomFieldsPanel() {
       .eq('id', field.id);
     setBusyId(null);
     if (error) {
-      toast.error('Could not rename field.');
+      toast.error(t('contacts.customFields.renameFailed'));
       return false;
     }
     await fetchFields();
@@ -152,7 +154,7 @@ export function CustomFieldsPanel() {
   async function handleDelete(field: CustomField) {
     if (
       !window.confirm(
-        `Delete "${field.field_name}"? This also removes its stored value on every contact. This cannot be undone.`
+        t('contacts.customFields.deleteConfirm', { name: field.field_name })
       )
     ) {
       return;
@@ -164,10 +166,10 @@ export function CustomFieldsPanel() {
       .eq('id', field.id);
     setBusyId(null);
     if (error) {
-      toast.error('Could not delete field.');
+      toast.error(t('contacts.customFields.deleteFailed'));
       return;
     }
-    toast.success(`Deleted "${field.field_name}".`);
+    toast.success(t('contacts.customFields.deleted', { name: field.field_name }));
     await fetchFields();
   }
 
@@ -184,7 +186,7 @@ export function CustomFieldsPanel() {
               void handleCreate();
             }
           }}
-          placeholder="New field name…"
+          placeholder={t("common.placeholders.newFieldName")}
           className="bg-muted text-foreground"
         />
         <Button
@@ -197,20 +199,20 @@ export function CustomFieldsPanel() {
           ) : (
             <Plus className="size-4" />
           )}
-          Add
+          {t('contacts.customFields.add')}
         </Button>
       </div>
 
       {/* List */}
       <div className="max-h-72 overflow-y-auto rounded-md border border-border">
         {loading ? (
-          <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" />
-            Loading…
+            <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              {t('common.loading', undefined, 'Carregando…')}
           </div>
         ) : fields.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            No custom fields yet.
+            {t('contacts.customFields.noFields')}
           </p>
         ) : (
           <ul className="divide-y divide-border">
@@ -244,6 +246,7 @@ function FieldRow({
   onDelete: (field: CustomField) => void;
 }) {
   const [name, setName] = useState(field.field_name);
+  const { t } = useTranslation();
 
   async function commit() {
     if (name.trim() === field.field_name) {
@@ -264,7 +267,7 @@ function FieldRow({
         onKeyDown={(e) => {
           if (e.key === 'Enter') e.currentTarget.blur();
         }}
-        aria-label={`Rename ${field.field_name}`}
+        aria-label={t('contacts.customFields.renameAria', { name: field.field_name })}
         className="focus:border-primary h-8 border-transparent bg-transparent text-foreground hover:border-border"
       />
       <Button
@@ -272,7 +275,7 @@ function FieldRow({
         size="icon-sm"
         disabled={busy}
         onClick={() => onDelete(field)}
-        title="Delete field"
+        title={t('contacts.customFields.deleteFieldTitle')}
         className="shrink-0 text-muted-foreground hover:text-red-400"
       >
         {busy ? (

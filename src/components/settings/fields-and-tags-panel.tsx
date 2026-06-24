@@ -1,6 +1,7 @@
 'use client';
 
 import { useCan } from '@/hooks/use-can';
+import { useTranslation } from '@/hooks/use-translation';
 
 import { CustomFieldsSettings } from './custom-fields-settings';
 import { SettingsPanelHead } from './settings-panel-head';

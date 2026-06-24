@@ -18,6 +18,9 @@ import {
  * landing. The URL query param stays `?tab=` (deep-linkable, and it
  * keeps the existing links in sidebar.tsx / header.tsx working) — we
  * just map the old values onto the new sections.
+ *
+ * IMPORTANT: Labels are now dynamic i18n keys. Use them with useTranslation
+ * in the SettingsRail component to render localized labels.
  */
 export const SETTINGS_SECTIONS = [
   'overview',
@@ -38,27 +41,27 @@ export const DEFAULT_SECTION: SettingsSection = 'overview';
 /** Rail grouping. `adminOnly` items are hidden for non-admins. */
 export interface SectionMeta {
   id: SettingsSection;
-  label: string;
+  labelKey: string; // i18n key instead of direct label
   icon: LucideIcon;
   group: 'top' | 'account' | 'workspace';
 }
 
 export const SECTION_META: Record<SettingsSection, SectionMeta> = {
-  overview: { id: 'overview', label: 'Overview', icon: LayoutGrid, group: 'top' },
-  profile: { id: 'profile', label: 'Your profile', icon: User, group: 'account' },
-  security: { id: 'security', label: 'Login & security', icon: Shield, group: 'account' },
-  appearance: { id: 'appearance', label: 'Appearance', icon: Palette, group: 'account' },
-  whatsapp: { id: 'whatsapp', label: 'WhatsApp', icon: PlugZap, group: 'workspace' },
-  templates: { id: 'templates', label: 'Templates', icon: FileText, group: 'workspace' },
-  fields: { id: 'fields', label: 'Fields & tags', icon: Tags, group: 'workspace' },
-  deals: { id: 'deals', label: 'Deals & currency', icon: Coins, group: 'workspace' },
-  members: { id: 'members', label: 'Team members', icon: UsersRound, group: 'workspace' },
+  overview: { id: 'overview', labelKey: 'settings.sections.overview', icon: LayoutGrid, group: 'top' },
+  profile: { id: 'profile', labelKey: 'settings.sections.yourProfile', icon: User, group: 'account' },
+  security: { id: 'security', labelKey: 'settings.sections.loginSecurity', icon: Shield, group: 'account' },
+  appearance: { id: 'appearance', labelKey: 'settings.sections.appearance', icon: Palette, group: 'account' },
+  whatsapp: { id: 'whatsapp', labelKey: 'settings.sections.whatsapp', icon: PlugZap, group: 'workspace' },
+  templates: { id: 'templates', labelKey: 'settings.sections.templates', icon: FileText, group: 'workspace' },
+  fields: { id: 'fields', labelKey: 'settings.sections.fieldsAndTags', icon: Tags, group: 'workspace' },
+  deals: { id: 'deals', labelKey: 'settings.sections.dealsAndCurrency', icon: Coins, group: 'workspace' },
+  members: { id: 'members', labelKey: 'settings.sections.teamMembers', icon: UsersRound, group: 'workspace' },
 };
 
-export const RAIL_GROUPS: { label: string | null; group: SectionMeta['group'] }[] = [
-  { label: null, group: 'top' },
-  { label: 'Account', group: 'account' },
-  { label: 'Workspace', group: 'workspace' },
+export const RAIL_GROUPS: { labelKey: string | null; group: SectionMeta['group'] }[] = [
+  { labelKey: null, group: 'top' },
+  { labelKey: 'settings.groups.account', group: 'account' },
+  { labelKey: 'settings.groups.workspace', group: 'workspace' },
 ];
 
 function isSection(value: string | null): value is SettingsSection {

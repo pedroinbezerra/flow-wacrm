@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Loader2, LogOut } from 'lucide-react';
 
 import { createClient } from '@/lib/supabase/client';
+import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -24,6 +25,7 @@ import {
 
 export function SessionsCard() {
   const supabase = createClient();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -53,11 +55,10 @@ export function SessionsCard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-foreground">
             <LogOut className="size-4 text-primary" />
-            Active sessions
+            {t('settings.sessions.title')}
           </CardTitle>
           <CardDescription className="text-muted-foreground">
-            Sign out of every device where you&apos;re logged in — including
-            this one. Useful if you lost a laptop or shared your password.
+            {t('settings.sessions.description')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -67,7 +68,7 @@ export function SessionsCard() {
             onClick={() => setOpen(true)}
           >
             <LogOut className="size-4" />
-            Sign out of all devices
+            {t('settings.sessions.signOutAll')}
           </Button>
         </CardContent>
       </Card>
@@ -75,7 +76,7 @@ export function SessionsCard() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Sign out everywhere?</DialogTitle>
+            <DialogTitle>{t('settings.sessions.confirmSignOut')}</DialogTitle>
             <DialogDescription>
               Every device logged into this account will be signed out and
               will need to log in again. You will be redirected to the login

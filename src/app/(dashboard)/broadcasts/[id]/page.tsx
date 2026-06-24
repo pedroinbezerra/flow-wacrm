@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Broadcast, BroadcastRecipient, RecipientStatus } from '@/types';
+import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -144,6 +145,7 @@ function downloadBlob(filename: string, content: string) {
 export default function BroadcastDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useTranslation();
   const broadcastId = params.id as string;
 
   const [broadcast, setBroadcast] = useState<Broadcast | null>(null);
@@ -179,7 +181,7 @@ export default function BroadcastDetailPage() {
         if (recsError) throw recsError;
         setRecipients(recs ?? []);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load broadcast');
+        setError(err instanceof Error ? err.message : t('broadcasts.failedLoad'));
       } finally {
         setLoading(false);
       }
@@ -199,14 +201,14 @@ export default function BroadcastDetailPage() {
   function handleExport() {
     if (!broadcast) return;
     const header = [
-      'Contact',
-      'Phone',
-      'Status',
-      'Sent At',
-      'Delivered At',
-      'Read At',
-      'Replied At',
-      'Error',
+      t('broadcasts.export.contact'),
+      t('broadcasts.export.phone'),
+      t('common.status'),
+      t('broadcasts.export.sentAt'),
+      t('broadcasts.export.deliveredAt'),
+      t('broadcasts.export.readAt'),
+      t('broadcasts.export.repliedAt'),
+      t('broadcasts.export.error'),
     ];
     const rows = recipients.map((r) => [
       r.contact?.name ?? '',
@@ -236,10 +238,10 @@ export default function BroadcastDetailPage() {
       .eq('id', broadcastId);
     setDeleting(false);
     if (delErr) {
-      toast.error(`Failed to delete: ${delErr.message}`);
+      toast.error(t('broadcasts.failedDelete'));
       return;
     }
-    toast.success('Broadcast deleted');
+    toast.success(t('broadcasts.successDelete'));
     router.push('/broadcasts');
   }
 
@@ -254,9 +256,9 @@ export default function BroadcastDetailPage() {
   if (error || !broadcast) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-2">
-        <p className="text-sm text-red-400">{error ?? 'Broadcast not found'}</p>
+        <p className="text-sm text-red-400">{error ?? t('broadcasts.notFound')}</p>
         <Button variant="outline" onClick={() => router.push('/broadcasts')}>
-          Back to Broadcasts
+          {t('broadcasts.backToBroadcasts')}
         </Button>
       </div>
     );
@@ -265,10 +267,10 @@ export default function BroadcastDetailPage() {
   const status = getBroadcastStatus(broadcast.status);
 
   const funnelSteps: FunnelStep[] = [
-    { label: 'Sent', value: broadcast.sent_count, color: 'bg-primary' },
-    { label: 'Delivered', value: broadcast.delivered_count, color: 'bg-teal-500' },
-    { label: 'Read', value: broadcast.read_count, color: 'bg-blue-500' },
-    { label: 'Replied', value: broadcast.replied_count, color: 'bg-indigo-500' },
+    { label: t('broadcasts.sent'), value: broadcast.sent_count, color: 'bg-primary' },
+    { label: t('broadcasts.delivered'), value: broadcast.delivered_count, color: 'bg-teal-500' },
+    { label: t('broadcasts.read'), value: broadcast.read_count, color: 'bg-blue-500' },
+    { label: t('broadcasts.replied'), value: broadcast.replied_count, color: 'bg-indigo-500' },
   ];
 
   return (
@@ -309,7 +311,7 @@ export default function BroadcastDetailPage() {
             funnel inconsistent. */}
         {confirmDelete ? (
           <div className="flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm">
-            <span className="text-red-300">Delete this broadcast?</span>
+            <span className="text-red-300">{t('broadcasts.deleteConfirm')}</span>
             <Button
               variant="outline"
               size="sm"
@@ -317,7 +319,7 @@ export default function BroadcastDetailPage() {
               disabled={deleting}
               className="h-7 border-border bg-transparent text-muted-foreground hover:bg-muted"
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               size="sm"
@@ -325,7 +327,7 @@ export default function BroadcastDetailPage() {
               disabled={deleting}
               className="h-7 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
             >
-              {deleting ? 'Deleting…' : 'Confirm'}
+              {deleting ? t('broadcasts.deleting') : t('common.confirm')}
             </Button>
           </div>
         ) : (
@@ -336,8 +338,8 @@ export default function BroadcastDetailPage() {
             onClick={() => setConfirmDelete(true)}
             title={
               broadcast.status === 'sending'
-                ? 'Cannot delete while a broadcast is actively sending'
-                : 'Delete this broadcast'
+                ? t('broadcasts.cantDeleteWhileSending')
+                : t('broadcasts.deleteTitle')
             }
             className="border-red-500/30 bg-transparent text-red-400 hover:bg-red-500/10 disabled:opacity-40"
           >

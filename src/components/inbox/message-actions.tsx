@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { CornerUpLeft, Copy, SmilePlus } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -47,17 +48,18 @@ export function MessageActions({
     setTouchOpen(true);
   };
 
+  const { t } = useTranslation();
   const handleCopy = async () => {
     const text = message.content_text ?? "";
     if (!text) {
-      toast.error("Nothing to copy");
+      toast.error(t("inbox.nothingToCopy"));
       return;
     }
     try {
       await navigator.clipboard.writeText(text);
-      toast.success("Copied");
+      toast.success(t("inbox.copied"));
     } catch {
-      toast.error("Copy failed");
+      toast.error(t("inbox.copyFailed"));
     }
     setTouchOpen(false);
   };

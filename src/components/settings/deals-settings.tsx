@@ -5,8 +5,7 @@ import { toast } from "sonner";
 import { Coins, Loader2 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { CURRENCIES } from "@/lib/currency";
+import { useAuth } from "@/hooks/use-auth";import { useTranslation } from '@/hooks/use-translation';import { CURRENCIES } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {

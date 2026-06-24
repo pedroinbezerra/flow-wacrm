@@ -2,6 +2,8 @@
 
 import { Shield, SlidersHorizontal } from 'lucide-react';
 
+import { useTranslation } from '@/hooks/use-translation';
+
 import {
   Card,
   CardContent,

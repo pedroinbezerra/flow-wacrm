@@ -17,6 +17,7 @@ import {
 import { format } from "date-fns";
 import { ReplyQuote } from "./reply-quote";
 import { MessageReactions } from "./message-reactions";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface MessageBubbleProps {
   message: Message;
@@ -45,10 +46,11 @@ function StatusIcon({ status }: { status: Message["status"] }) {
 }
 
 function MediaUnavailable({ label }: { label: string }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
       <ImageOff className="h-4 w-4 shrink-0 text-muted-foreground" />
-      <span>{label} unavailable</span>
+      <span>{label} {t("inbox.unavailable")}</span>
     </div>
   );
 }

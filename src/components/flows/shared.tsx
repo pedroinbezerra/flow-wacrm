@@ -65,6 +65,69 @@ export interface BuilderNode {
 // the user sees a node summary.
 // ============================================================
 
+export function getNodeMeta(
+  t: (key: string) => string,
+  type: NodeType,
+): { label: string; icon: typeof Workflow; color: string } {
+  const META: Record<
+    NodeType,
+    { label: string; icon: typeof Workflow; color: string }
+  > = {
+    start: {
+      label: t("flows.start"),
+      icon: PlayCircle,
+      color: "text-emerald-400",
+    },
+    send_message: {
+      label: t("flows.sendMessage"),
+      icon: MessageCircle,
+      color: "text-sky-400",
+    },
+    send_buttons: {
+      label: t("flows.sendButtons"),
+      icon: ListChecks,
+      color: "text-primary",
+    },
+    send_list: {
+      label: t("flows.sendList"),
+      icon: ListPlus,
+      color: "text-indigo-400",
+    },
+    send_media: {
+      label: t("flows.sendMedia"),
+      icon: Paperclip,
+      color: "text-cyan-400",
+    },
+    collect_input: {
+      label: t("flows.collectInput"),
+      icon: Inbox,
+      color: "text-teal-400",
+    },
+    condition: {
+      label: t("flows.ifElse"),
+      icon: GitFork,
+      color: "text-fuchsia-400",
+    },
+    set_tag: {
+      label: t("flows.tagContact"),
+      icon: Tag,
+      color: "text-pink-400",
+    },
+    handoff: {
+      label: t("flows.handoffToAgent"),
+      icon: UserPlus,
+      color: "text-amber-400",
+    },
+    end: {
+      label: t("flows.end"),
+      icon: Flag,
+      color: "text-muted-foreground",
+    },
+  };
+  return META[type];
+}
+
+// Legacy static export for backwards compatibility (if needed)
 export const NODE_META: Record<
   NodeType,
   { label: string; icon: typeof Workflow; color: string }
