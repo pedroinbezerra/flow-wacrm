@@ -7,6 +7,7 @@ import {
   verifyPhoneNumber,
 } from '@/lib/whatsapp/meta-api'
 import { encrypt, decrypt } from '@/lib/whatsapp/encryption'
+import { tApiError } from '@/lib/i18n/api-errors'
 
 /**
  * Resolve the caller's account_id from their profile. Inlined here
@@ -190,6 +191,17 @@ export async function POST(request: Request) {
     if (!access_token || !phone_number_id) {
       return NextResponse.json(
         { error: 'access_token and phone_number_id are required' },
+        { status: 400 }
+      )
+    }
+
+    // Common setup mistake: filling WABA ID with the Phone Number ID.
+    // The IDs can look similar, but are different resources in Meta.
+    if (waba_id && waba_id === phone_number_id) {
+      return NextResponse.json(
+        {
+          error: tApiError(request, 'whatsapp.wabaEqualsPhoneNumber'),
+        },
         { status: 400 }
       )
     }

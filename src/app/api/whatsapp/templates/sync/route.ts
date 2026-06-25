@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/whatsapp/encryption'
 import { normalizeStatus } from '@/lib/whatsapp/template-status-normalize'
+import { tApiError } from '@/lib/i18n/api-errors'
 import type { TemplateButton, TemplateSampleValues } from '@/types'
 
 /**
@@ -122,7 +123,7 @@ function extractSampleValues(
   return sv
 }
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const supabase = await createClient()
 
@@ -176,6 +177,15 @@ export async function POST() {
       )
     }
 
+    if (config.waba_id === config.phone_number_id) {
+      return NextResponse.json(
+        {
+          error: tApiError(request, 'whatsapp.invalidWabaConfig'),
+        },
+        { status: 400 },
+      )
+    }
+
     const accessToken = decrypt(config.access_token)
 
     const metaTemplates: MetaTemplate[] = []
@@ -193,12 +203,22 @@ export async function POST() {
 
       if (!metaRes.ok) {
         let metaErr = `Meta API error: ${metaRes.status}`
+        let metaCode: number | undefined
         try {
           const body = await metaRes.json()
+          metaCode = body?.error?.code
           if (body?.error?.message) metaErr = body.error.message
         } catch {
           // response wasn't JSON — keep the fallback
         }
+
+        if (
+          metaCode === 100 &&
+          /nonexisting field \(message_templates\)/i.test(metaErr)
+        ) {
+          metaErr = tApiError(request, 'whatsapp.metaNonexistingMessageTemplates')
+        }
+
         return NextResponse.json({ error: metaErr }, { status: 502 })
       }
 
