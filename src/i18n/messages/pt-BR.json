@@ -1247,6 +1247,7 @@
       "step2Title": "Adicionar o produto WhatsApp",
       "step2Item1": "No painel do seu app, clique em \"Add Product\"",
       "step2Item2": "Encontre \"WhatsApp\" e clique em \"Set Up\"",
+      "step2Item3": "Aguarde a configuração inicial e continue em WhatsApp > API Setup",
       "step3Title": "Obter credenciais da API",
       "step3Item1": "Vá para WhatsApp > API Setup",
       "step3Item2": "Copie seu Phone Number ID",
