@@ -318,6 +318,121 @@ export interface Deal {
 }
 
 export type BroadcastStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed';
+
+// ============================================================
+// Conversation board module (027_conversation_boards.sql)
+// ============================================================
+
+export type ConversationBoardLane =
+  | 'partners'
+  | 'franchisees'
+  | 'jobs'
+  | 'direct'
+  | 'other';
+
+export interface ConversationBoardLaneConfig {
+  id: string;
+  account_id: string;
+  board_id: string;
+  lane_key: string;
+  name: string;
+  color: string;
+  position: number;
+  created_by_user_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConversationBoardGroup {
+  id: string;
+  account_id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  created_by_user_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConversationBoard {
+  id: string;
+  account_id: string;
+  group_id?: string | null;
+  name: string;
+  slug: string;
+  description?: string | null;
+  is_default: boolean;
+  position: number;
+  created_by_user_id?: string | null;
+  created_at: string;
+  updated_at: string;
+  group?: ConversationBoardGroup | null;
+  lanes?: ConversationBoardLaneConfig[];
+}
+
+export interface ConversationBoardItem {
+  id: string;
+  account_id: string;
+  board_id: string;
+  conversation_id: string;
+  lane_id: string;
+  lane: ConversationBoardLane;
+  position: number;
+  priority_rank: number;
+  priority_reason?: string | null;
+  priority_set_at?: string | null;
+  priority_set_by_user_id?: string | null;
+  awaiting_return: boolean;
+  awaiting_return_reason?: string | null;
+  awaiting_return_set_at?: string | null;
+  awaiting_return_set_by_user_id?: string | null;
+  awaiting_return_cleared_at?: string | null;
+  awaiting_return_cleared_by_user_id?: string | null;
+  mention_active: boolean;
+  mention_set_at?: string | null;
+  mention_set_by_user_id?: string | null;
+  mention_cleared_at?: string | null;
+  mention_cleared_by_user_id?: string | null;
+  created_by_user_id?: string | null;
+  created_at: string;
+  updated_at: string;
+  conversation?: Conversation;
+  lane_config?: ConversationBoardLaneConfig;
+}
+
+export interface ConversationBoardLabel {
+  id: string;
+  account_id: string;
+  name: string;
+  slug: string;
+  color: string;
+  description?: string | null;
+  created_by_user_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConversationBoardItemLabel {
+  id: string;
+  account_id: string;
+  board_item_id: string;
+  label_id: string;
+  created_by_user_id?: string | null;
+  created_at: string;
+}
+
+export interface ConversationMention {
+  id: string;
+  account_id: string;
+  board_item_id: string;
+  conversation_id: string;
+  message_id: string;
+  mentioned_user_id: string;
+  mention_text?: string | null;
+  acknowledged_at?: string | null;
+  acknowledged_by_user_id?: string | null;
+  created_at: string;
+}
 export type RecipientStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'replied' | 'failed';
 
 export interface Broadcast {

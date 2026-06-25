@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 import type { Conversation, ConversationStatus } from "@/types";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, AtSign, Clock3, Pin } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,7 +14,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ConversationListProps {
@@ -31,17 +30,32 @@ interface ConversationListProps {
   resyncToken?: number;
 }
 
+interface ConversationListBoardFlags {
+  awaiting_return: boolean;
+  priority_rank: number;
+  mention_active: boolean;
+}
+
 const STATUS_COLORS: Record<ConversationStatus, string> = {
   open: "bg-primary",
   pending: "bg-amber-500",
   closed: "bg-muted-foreground",
 };
 
-type InboxFilter = ConversationStatus | "all" | "unread";
+type InboxFilter =
+  | ConversationStatus
+  | "all"
+  | "unread"
+  | "mentioned"
+  | "priority"
+  | "awaiting_return";
 
 const FILTER_OPTIONS: (t: ReturnType<typeof useTranslation>["t"]) => { label: string; value: InboxFilter }[] = (t) => [
   { label: t("inbox.filter.all"), value: "all" },
   { label: t("inbox.filter.unread"), value: "unread" },
+  { label: t("inbox.filter.mentioned"), value: "mentioned" },
+  { label: t("inbox.filter.priority"), value: "priority" },
+  { label: t("inbox.filter.awaitingReturn"), value: "awaiting_return" },
   { label: t("inbox.filter.open"), value: "open" },
   { label: t("inbox.filter.pending"), value: "pending" },
   { label: t("inbox.filter.closed"), value: "closed" },
@@ -59,6 +73,9 @@ export function ConversationList({
   const [filter, setFilter] = useState<InboxFilter>("all");
   const filterOptions = FILTER_OPTIONS(t);
   const [loading, setLoading] = useState(true);
+  const [boardFlagsByConversation, setBoardFlagsByConversation] = useState<
+    Record<string, ConversationListBoardFlags>
+  >({});
 
   // Keep the latest callback in a ref so the fetch effect below can
   // have a stable, empty-dep identity. Previously the fetch useCallback
@@ -113,11 +130,80 @@ export function ConversationList({
     // up on any events sent while the WS was disconnected or throttled.
   }, [resyncToken]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = createClient();
+
+    (async () => {
+      if (conversations.length === 0) {
+        if (!cancelled) setBoardFlagsByConversation({});
+        return;
+      }
+
+      const { data: defaultBoard, error: boardError } = await supabase
+        .from("conversation_boards")
+        .select("id")
+        .eq("is_default", true)
+        .maybeSingle();
+
+      if (cancelled) return;
+      if (boardError) {
+        console.error("Failed to load default board:", boardError);
+        setBoardFlagsByConversation({});
+        return;
+      }
+      if (!defaultBoard?.id) {
+        setBoardFlagsByConversation({});
+        return;
+      }
+
+      const conversationIds = conversations.map((c) => c.id);
+      const { data: items, error: itemsError } = await supabase
+        .from("conversation_board_items")
+        .select("conversation_id,awaiting_return,priority_rank,mention_active")
+        .eq("board_id", defaultBoard.id)
+        .in("conversation_id", conversationIds);
+
+      if (cancelled) return;
+      if (itemsError) {
+        console.error("Failed to load conversation board flags:", itemsError);
+        setBoardFlagsByConversation({});
+        return;
+      }
+
+      const next: Record<string, ConversationListBoardFlags> = {};
+      for (const row of items ?? []) {
+        next[row.conversation_id as string] = {
+          awaiting_return: row.awaiting_return as boolean,
+          priority_rank: Number(row.priority_rank ?? 0),
+          mention_active: row.mention_active as boolean,
+        };
+      }
+      setBoardFlagsByConversation(next);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [conversations, resyncToken]);
+
   const filtered = useMemo(() => {
     let result = conversations;
 
     if (filter === "unread") {
       result = result.filter((c) => c.unread_count > 0);
+    } else if (filter === "mentioned") {
+      result = result.filter(
+        (c) => boardFlagsByConversation[c.id]?.mention_active === true,
+      );
+    } else if (filter === "priority") {
+      result = result.filter(
+        (c) => (boardFlagsByConversation[c.id]?.priority_rank ?? 0) > 0,
+      );
+    } else if (filter === "awaiting_return") {
+      result = result.filter(
+        (c) => boardFlagsByConversation[c.id]?.awaiting_return === true,
+      );
     } else if (filter !== "all") {
       result = result.filter((c) => c.status === filter);
     }
@@ -133,7 +219,7 @@ export function ConversationList({
     }
 
     return result;
-  }, [conversations, filter, search]);
+  }, [conversations, filter, search, boardFlagsByConversation]);
 
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -218,6 +304,7 @@ export function ConversationList({
                 conversation={conv}
                 isActive={conv.id === activeConversationId}
                 onSelect={handleSelect}
+                boardFlags={boardFlagsByConversation[conv.id]}
               />
             ))}
           </div>
@@ -231,12 +318,14 @@ interface ConversationItemProps {
   conversation: Conversation;
   isActive: boolean;
   onSelect: (conversation: Conversation) => void;
+  boardFlags?: ConversationListBoardFlags;
 }
 
 function ConversationItem({
   conversation,
   isActive,
   onSelect,
+  boardFlags,
 }: ConversationItemProps) {
   const { t } = useTranslation();
   const contact = conversation.contact;
@@ -287,6 +376,21 @@ function ConversationItem({
             {conversation.last_message_text || t("inbox.noMessagesYet")}
           </p>
           <div className="flex shrink-0 items-center gap-1.5">
+            {boardFlags?.mention_active && (
+              <span title={t("boards.mentioned")}>
+                <AtSign className="h-3 w-3 text-rose-500" />
+              </span>
+            )}
+            {boardFlags?.awaiting_return && (
+              <span title={t("boards.awaitingReturn")}>
+                <Clock3 className="h-3 w-3 text-amber-500" />
+              </span>
+            )}
+            {(boardFlags?.priority_rank ?? 0) > 0 && (
+              <span title={t("boards.priority")}>
+                <Pin className="h-3 w-3 text-primary" />
+              </span>
+            )}
             {conversation.unread_count > 0 && (
               <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
                 {conversation.unread_count}

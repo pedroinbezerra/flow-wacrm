@@ -10,6 +10,9 @@ import { presenceLabel } from "@/lib/presence";
 import { cn } from "@/lib/utils";
 import type {
   Conversation,
+  ConversationBoard,
+  ConversationBoardItem,
+  ConversationBoardLaneConfig,
   Message,
   MessageReaction,
   Contact,
@@ -27,9 +30,21 @@ import {
   RefreshCw,
   PanelRightOpen,
   PanelRightClose,
+  Pin,
+  Clock3,
+  FolderKanban,
 } from "lucide-react";
 import { format, isToday, isYesterday, differenceInHours } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,7 +52,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MessageBubble } from "./message-bubble";
 import { MessageActions } from "./message-actions";
 import {
@@ -133,6 +150,14 @@ function groupMessagesByDate(messages: Message[]) {
   return groups;
 }
 
+function sortBoardLanes(lanes: ConversationBoardLaneConfig[] = []): ConversationBoardLaneConfig[] {
+  return [...lanes].sort(
+    (a, b) =>
+      a.position - b.position ||
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+  );
+}
+
 const STATUS_OPTIONS: (t: ReturnType<typeof useTranslation>["t"]) => { label: string; value: ConversationStatus; color: string }[] = (t) => [
   { label: t("inbox.status.open"), value: "open", color: "text-primary" },
   { label: t("inbox.status.pending"), value: "pending", color: "text-amber-400" },
@@ -198,6 +223,14 @@ export function MessageThread({
     }, 700);
   }, [isRefreshing, onRefresh]);
   const [replyTo, setReplyTo] = useState<ReplyDraft | null>(null);
+  const [defaultBoardItem, setDefaultBoardItem] = useState<ConversationBoardItem | null>(null);
+  const [updatingBoardFlags, setUpdatingBoardFlags] = useState(false);
+  const [linkBoardOpen, setLinkBoardOpen] = useState(false);
+  const [availableBoards, setAvailableBoards] = useState<ConversationBoard[]>([]);
+  const [loadingBoards, setLoadingBoards] = useState(false);
+  const [linkingBoard, setLinkingBoard] = useState(false);
+  const [linkBoardId, setLinkBoardId] = useState("");
+  const [linkLaneId, setLinkLaneId] = useState("");
 
   // Profiles are bounded by RLS to rows the current user is allowed to
   // see — today that's just the current user, but the dropdown keeps the
@@ -263,6 +296,61 @@ export function MessageThread({
 
   const conversationId = conversation?.id;
   const hasUnread = (conversation?.unread_count ?? 0) > 0;
+  const selectedLinkBoard = useMemo(
+    () => availableBoards.find((board) => board.id === linkBoardId) ?? null,
+    [availableBoards, linkBoardId],
+  );
+  const selectedLinkBoardName = useMemo(
+    () => selectedLinkBoard?.name ?? t("boards.selectBoard"),
+    [selectedLinkBoard, t],
+  );
+  const selectedLinkBoardLanes = useMemo(
+    () => sortBoardLanes(selectedLinkBoard?.lanes ?? []),
+    [selectedLinkBoard?.lanes],
+  );
+  const selectedLinkLaneName = useMemo(
+    () =>
+      selectedLinkBoardLanes.find((lane) => lane.id === linkLaneId)?.name ??
+      t("inbox.board.selectLane"),
+    [linkLaneId, selectedLinkBoardLanes, t],
+  );
+
+  useEffect(() => {
+    if (!conversationId) {
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/conversation-board-items/by-conversation?conversationId=${encodeURIComponent(conversationId)}`,
+        );
+        const payload = (await res.json().catch(() => null)) as
+          | { item?: ConversationBoardItem | null; error?: string }
+          | null;
+
+        if (cancelled) return;
+        if (!res.ok) {
+          console.error(
+            "[inbox] failed to fetch board item:",
+            payload?.error ?? `HTTP ${res.status}`,
+          );
+          setDefaultBoardItem(null);
+          return;
+        }
+        setDefaultBoardItem(payload?.item ?? null);
+      } catch (error) {
+        if (cancelled) return;
+        console.error("[inbox] failed to fetch board item:", error);
+        setDefaultBoardItem(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId, resyncToken]);
 
   // Fetch messages whenever the selected conversation changes. Kept
   // separate from the unread-reset effect so that incoming messages
@@ -819,6 +907,139 @@ export function MessageThread({
     [conversation, onAssignChange],
   );
 
+  const updateDefaultBoardItem = useCallback(
+    async (payload: {
+      awaitingReturn?: boolean;
+      awaitingReturnReason?: string | null;
+      priorityRank?: number;
+      priorityReason?: string | null;
+    }) => {
+      if (!conversation) return;
+
+      setUpdatingBoardFlags(true);
+      try {
+        const res = await fetch("/api/conversation-board-items/by-conversation", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            conversationId: conversation.id,
+            ...payload,
+          }),
+        });
+
+        const data = (await res.json().catch(() => null)) as
+          | { item?: ConversationBoardItem; error?: string }
+          | null;
+        if (!res.ok || !data?.item) {
+          throw new Error(data?.error || `HTTP ${res.status}`);
+        }
+        setDefaultBoardItem(data.item);
+        onRefresh?.();
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : t("inbox.board.syncError");
+        toast.error(reason);
+      } finally {
+        setUpdatingBoardFlags(false);
+      }
+    },
+    [conversation, onRefresh, t],
+  );
+
+  const handleToggleAwaitingReturn = useCallback(() => {
+    const next = !(defaultBoardItem?.awaiting_return ?? false);
+    void updateDefaultBoardItem({
+      awaitingReturn: next,
+      awaitingReturnReason: next ? t("boards.awaitingReturn") : null,
+    });
+  }, [defaultBoardItem?.awaiting_return, t, updateDefaultBoardItem]);
+
+  const handleTogglePriority = useCallback(() => {
+    const hasPriority = (defaultBoardItem?.priority_rank ?? 0) > 0;
+    void updateDefaultBoardItem({
+      priorityRank: hasPriority ? 0 : 3,
+      priorityReason: hasPriority ? null : t("boards.priority"),
+    });
+  }, [defaultBoardItem?.priority_rank, t, updateDefaultBoardItem]);
+
+  const loadBoardsForLink = async () => {
+    setLoadingBoards(true);
+    try {
+      const res = await fetch("/api/conversation-boards");
+      const payload = (await res.json().catch(() => null)) as
+        | { boards?: ConversationBoard[]; error?: string }
+        | null;
+      if (!res.ok) {
+        throw new Error(payload?.error || `HTTP ${res.status}`);
+      }
+
+      const boards = payload?.boards ?? [];
+      setAvailableBoards(boards);
+
+      const preferredBoardId =
+        defaultBoardItem?.board_id && boards.some((board) => board.id === defaultBoardItem.board_id)
+          ? defaultBoardItem.board_id
+          : boards[0]?.id ?? "";
+      setLinkBoardId(preferredBoardId);
+      const preferredBoard = boards.find((board) => board.id === preferredBoardId) ?? null;
+      const preferredLanes = sortBoardLanes(preferredBoard?.lanes ?? []);
+      setLinkLaneId(preferredLanes[0]?.id ?? "");
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : t("inbox.board.loadBoardsError");
+      toast.error(reason);
+    } finally {
+      setLoadingBoards(false);
+    }
+  };
+
+  const handleOpenLinkBoard = () => {
+    if (!conversationId) return;
+    setLinkBoardOpen(true);
+    void loadBoardsForLink();
+  };
+
+  const handleLinkBoardChange = (value: string | null) => {
+    const nextBoardId = value ?? "";
+    setLinkBoardId(nextBoardId);
+    const nextBoard = availableBoards.find((board) => board.id === nextBoardId) ?? null;
+    const nextLanes = sortBoardLanes(nextBoard?.lanes ?? []);
+    setLinkLaneId(nextLanes[0]?.id ?? "");
+  };
+
+  const handleLinkLaneChange = (value: string | null) => {
+    setLinkLaneId(value ?? "");
+  };
+
+  const handleLinkConversationToBoard = async () => {
+    if (!conversationId || !linkBoardId) return;
+    setLinkingBoard(true);
+    try {
+      const res = await fetch(`/api/conversation-boards/${linkBoardId}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversationId,
+          laneId: linkLaneId || undefined,
+        }),
+      });
+      const payload = (await res.json().catch(() => null)) as
+        | { item?: ConversationBoardItem; error?: string }
+        | null;
+      if (!res.ok || !payload?.item) {
+        throw new Error(payload?.error || `HTTP ${res.status}`);
+      }
+
+      setDefaultBoardItem(payload.item);
+      setLinkBoardOpen(false);
+      toast.success(t("inbox.board.linkSuccess"));
+      onRefresh?.();
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : t("inbox.board.linkError");
+      toast.error(reason);
+    } finally {
+      setLinkingBoard(false);
+    }
+  };
+
   // Empty state — same WhatsApp-style doodle background as the active
   // thread below, so swapping between empty/selected doesn't change the
   // pattern under the user's eye.
@@ -946,6 +1167,58 @@ export function MessageThread({
             </button>
           )}
 
+          <button
+            type="button"
+            onClick={handleOpenLinkBoard}
+            title={t("inbox.board.addToBoard")}
+            className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <FolderKanban className="h-3 w-3" />
+            <span className="hidden sm:inline">{t("inbox.board.addToBoard")}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleToggleAwaitingReturn}
+            disabled={updatingBoardFlags}
+            title={
+              defaultBoardItem?.awaiting_return
+                ? t("boards.clearAwaitingReturn")
+                : t("boards.markAwaitingReturn")
+            }
+            className={cn(
+              "inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs transition-colors",
+              defaultBoardItem?.awaiting_return
+                ? "bg-amber-500/15 text-amber-500 hover:bg-amber-500/20"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              updatingBoardFlags && "opacity-60",
+            )}
+          >
+            <Clock3 className="h-3 w-3" />
+            <span className="hidden sm:inline">{t("boards.awaitingReturn")}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleTogglePriority}
+            disabled={updatingBoardFlags}
+            title={
+              (defaultBoardItem?.priority_rank ?? 0) > 0
+                ? t("boards.clearPriority")
+                : t("boards.promotePriority")
+            }
+            className={cn(
+              "inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs transition-colors",
+              (defaultBoardItem?.priority_rank ?? 0) > 0
+                ? "bg-primary/15 text-primary hover:bg-primary/20"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              updatingBoardFlags && "opacity-60",
+            )}
+          >
+            <Pin className="h-3 w-3" />
+            <span className="hidden sm:inline">{t("boards.priority")}</span>
+          </button>
+
           {/* Status dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger className={cn(
@@ -1037,6 +1310,73 @@ export function MessageThread({
           </DropdownMenu>
         </div>
       </div>
+
+      <Dialog open={linkBoardOpen} onOpenChange={setLinkBoardOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("inbox.board.linkDialogTitle")}</DialogTitle>
+            <DialogDescription>{t("inbox.board.linkDialogDescription")}</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>{t("inbox.board.selectBoard")}</Label>
+              <Select
+                value={linkBoardId}
+                onValueChange={handleLinkBoardChange}
+                disabled={loadingBoards || linkingBoard}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t("boards.selectBoard")}>
+                    {selectedLinkBoardName}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {availableBoards.map((board) => (
+                    <SelectItem key={board.id} value={board.id}>
+                      {board.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>{t("inbox.board.selectLane")}</Label>
+              <Select
+                value={linkLaneId}
+                onValueChange={handleLinkLaneChange}
+                disabled={loadingBoards || linkingBoard || selectedLinkBoardLanes.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t("inbox.board.selectLane")}>
+                    {selectedLinkLaneName}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {selectedLinkBoardLanes.map((lane) => (
+                    <SelectItem key={lane.id} value={lane.id}>
+                      {lane.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {availableBoards.length === 0 && !loadingBoards ? (
+              <p className="text-sm text-muted-foreground">{t("inbox.board.noBoards")}</p>
+            ) : null}
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={handleLinkConversationToBoard}
+              disabled={!linkBoardId || !linkLaneId || loadingBoards || linkingBoard}
+            >
+              {t("inbox.board.linkAction")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Messages Area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">

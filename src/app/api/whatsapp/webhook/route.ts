@@ -538,6 +538,8 @@ async function processMessage(
   )
   if (!conversation) return
 
+  await ensureDefaultBoardItem(accountId, conversation.id, configOwnerUserId)
+
   // Reactions short-circuit here — they aren't messages. We never insert
   // into `messages`, never bump unread_count, never update last_message_text.
   // Done before parseMessageContent so the media-URL fetch is skipped.
@@ -985,4 +987,71 @@ async function findOrCreateConversation(
   }
 
   return newConv
+}
+
+/**
+ * Ensure the conversation exists in at least one board for this account.
+ * If the conversation was manually moved to another board, keep it there
+ * and avoid duplicating it back into the default board.
+ */
+async function ensureDefaultBoardItem(
+  accountId: string,
+  conversationId: string,
+  createdByUserId: string,
+) {
+  const { data: existingAnywhere, error: existingAnywhereError } = await supabaseAdmin()
+    .from('conversation_board_items')
+    .select('id')
+    .eq('account_id', accountId)
+    .eq('conversation_id', conversationId)
+    .limit(1)
+    .maybeSingle()
+
+  if (existingAnywhereError) {
+    console.error('[webhook] ensureDefaultBoardItem any-board lookup failed:', existingAnywhereError)
+    return
+  }
+  if (existingAnywhere) return
+
+  const { data: board, error: boardError } = await supabaseAdmin()
+    .from('conversation_boards')
+    .select('id')
+    .eq('account_id', accountId)
+    .eq('is_default', true)
+    .maybeSingle()
+
+  if (boardError) {
+    console.error('[webhook] ensureDefaultBoardItem board lookup failed:', boardError)
+    return
+  }
+  if (!board) return
+
+  const { data: firstLane, error: laneError } = await supabaseAdmin()
+    .from('conversation_board_lanes')
+    .select('id')
+    .eq('board_id', board.id)
+    .order('position', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+
+  if (laneError) {
+    console.error('[webhook] ensureDefaultBoardItem lane lookup failed:', laneError)
+    return
+  }
+  if (!firstLane?.id) return
+
+  const { error: insertError } = await supabaseAdmin()
+    .from('conversation_board_items')
+    .insert({
+      account_id: accountId,
+      board_id: board.id,
+      conversation_id: conversationId,
+      lane_id: firstLane.id,
+      position: 0,
+      created_by_user_id: createdByUserId,
+    })
+
+  if (insertError) {
+    console.error('[webhook] ensureDefaultBoardItem insert failed:', insertError)
+  }
 }
