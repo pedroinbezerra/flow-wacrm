@@ -303,6 +303,44 @@ export function MessageThread({
     // was disconnected or throttled are otherwise lost.
   }, [conversationId, resyncToken]);
 
+  // Fallback pull while a thread is open. Realtime is still the primary
+  // path, but background-tab throttling or transient WS drops can miss
+  // events without a hard reconnect; this keeps the visible thread fresh.
+  useEffect(() => {
+    if (!conversationId) return;
+
+    const supabase = createClient();
+    let cancelled = false;
+
+    const poll = async () => {
+      if (document.visibilityState !== "visible") return;
+
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error("Polling messages failed:", error);
+        return;
+      }
+
+      onMessagesLoadedRef.current((data ?? []) as Message[]);
+    };
+
+    const timerId = window.setInterval(() => {
+      void poll();
+    }, 10000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timerId);
+    };
+  }, [conversationId]);
+
   // Reactions fetch — pulls the current state from the DB. Kept separate
   // from the channel subscription below so a `resyncToken` bump just
   // refetches the rows without also tearing down and rebuilding the

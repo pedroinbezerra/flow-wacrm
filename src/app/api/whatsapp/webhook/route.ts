@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { decrypt, encrypt, isLegacyFormat } from '@/lib/whatsapp/encryption'
 import { getMediaUrl, downloadMedia } from '@/lib/whatsapp/meta-api'
@@ -182,9 +182,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  // Process asynchronously so we can ack Meta within their timeout.
-  processWebhook(body).catch((error) => {
-    console.error('Error processing webhook:', error)
+  // Schedule processing with Next's post-response lifecycle hook.
+  // This keeps the fast 200 ACK for Meta while making background work
+  // less fragile on serverless runtimes than bare fire-and-forget.
+  after(async () => {
+    try {
+      await processWebhook(body)
+    } catch (error) {
+      console.error('Error processing webhook:', error)
+    }
   })
 
   return NextResponse.json({ status: 'received' }, { status: 200 })
@@ -935,16 +941,30 @@ async function findOrCreateConversation(
   configOwnerUserId: string,
   contactId: string,
 ) {
-  // Look for existing conversation in this account
-  const { data: existing, error: findError } = await supabaseAdmin()
+  // Look for existing conversation in this account. We intentionally
+  // avoid `.single()` because historical duplicate rows would surface as
+  // an error and the old path would create yet another duplicate.
+  const { data: existingRows, error: findError } = await supabaseAdmin()
     .from('conversations')
     .select('*')
     .eq('account_id', accountId)
     .eq('contact_id', contactId)
-    .single()
+    .order('updated_at', { ascending: false })
+    .limit(2)
 
-  if (!findError && existing) {
-    return existing
+  if (findError) {
+    console.error('Error finding conversation:', findError)
+    return null
+  }
+
+  if (existingRows && existingRows.length > 0) {
+    if (existingRows.length > 1) {
+      console.warn(
+        '[webhook] duplicate conversations detected for account/contact; reusing newest row',
+        { accountId, contactId }
+      )
+    }
+    return existingRows[0]
   }
 
   // Create new conversation. Same tenancy + audit split as
