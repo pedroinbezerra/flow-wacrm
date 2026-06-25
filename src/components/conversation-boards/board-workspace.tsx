@@ -902,9 +902,6 @@ export function BoardWorkspace() {
               <DialogTitle className="text-sm font-semibold">
                 {activeContact?.name || activeContact?.phone || t("boards.openConversation", {}, "Conversa")}
               </DialogTitle>
-              <Button variant="outline" size="sm" onClick={handleCloseConversationModal}>
-                {t("common.close", {}, "Fechar")}
-              </Button>
             </div>
             <div className="flex min-h-0 flex-1">
               <MessageThread
