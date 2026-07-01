@@ -277,7 +277,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'Template not found.' }, { status: 404 })
     }
 
-    if (existing.meta_template_id && !isDryRun()) {
+    // --- Meta deletion --------------------------------------------
+    const hasMetaId = typeof existing.meta_template_id === 'string' && existing.meta_template_id.trim() !== ''
+    const isValidMetaId = hasMetaId && existing.meta_template_id.startsWith('m_')
+
+    if (isValidMetaId && !isDryRun()) {
       const { data: config, error: configError } = await supabase
         .from('whatsapp_config')
         .select('*')
@@ -298,9 +302,13 @@ export async function DELETE(
           metaTemplateId: existing.meta_template_id,
         })
       } catch (e) {
-        const message = e instanceof Error ? e.message : 'Meta delete failed.'
-        return NextResponse.json({ error: message }, { status: 502 })
+        const errMsg = e instanceof Error ? e.message : String(e)
+        console.error('Meta delete error:', errMsg)
+        return NextResponse.json({ error: `Meta API error: ${errMsg}` }, { status: 502 })
       }
+    } else if (hasMetaId && !isValidMetaId) {
+      // Skip Meta call – the stored id looks like a local UUID
+      console.warn(`Skipping Meta delete for template ${existing.id}: invalid meta_template_id '${existing.meta_template_id}'`)
     }
 
     const { error: delErr } = await supabase
