@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { CustomField, Tag } from '@/types';
 import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
+import { parseContactCsv, type ParsedContactRow } from '@/lib/contacts/parse-contact-csv';
 import {
   Users,
   Tags,
@@ -88,6 +89,9 @@ export function Step2SelectAudience({
   const [loadingFields, setLoadingFields] = useState(false);
   const [estimatedCount, setEstimatedCount] = useState<number | null>(null);
   const [loadingCount, setLoadingCount] = useState(false);
+  const [csvFileName, setCsvFileName] = useState<string | null>(null);
+  const [csvError, setCsvError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Tags are used both by the primary "Filter by Tags" audience type
   // AND by the exclude-list below — so always load once on mount.
@@ -236,6 +240,45 @@ export function Step2SelectAudience({
       value: '',
     };
     onUpdate({ ...audience, customField: { ...prev, ...patch } });
+  }
+
+  async function handleCsvFileChange(file?: File) {
+    if (!file) return;
+
+    setCsvError(null);
+    setCsvFileName(file.name);
+
+    try {
+      const text = await file.text();
+      const parsed = parseContactCsv(text);
+
+      if (parsed.rows.length === 0) {
+        setCsvError(t('broadcasts.csvUploadInvalid'));
+        onUpdate({ ...audience, csvContacts: [] });
+        return;
+      }
+
+      onUpdate({
+        ...audience,
+        type: 'csv',
+        csvContacts: parsed.rows.map((row: ParsedContactRow) => ({
+          phone: row.phone,
+          name: row.name,
+        })),
+        tagIds: undefined,
+        customField: undefined,
+      });
+    } catch {
+      setCsvError(t('broadcasts.csvUploadFailed'));
+      onUpdate({ ...audience, csvContacts: [] });
+    }
+  }
+
+  function clearCsvFile() {
+    setCsvFileName(null);
+    setCsvError(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    onUpdate({ ...audience, csvContacts: [] });
   }
 
   const isValid =
@@ -387,6 +430,105 @@ export function Step2SelectAudience({
                 className="h-9 rounded-lg border border-border bg-muted px-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
+          )}
+        </div>
+      )}
+
+      {audience.type === 'csv' && (
+        <div className="space-y-4 rounded-xl border border-border bg-card/50 p-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">{t('broadcasts.csvUploadTitle')}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t('broadcasts.csvUploadDescription')}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-dashed border-border bg-muted/30 p-4">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(e) => {
+                const selected = e.target.files?.[0];
+                void handleCsvFileChange(selected);
+              }}
+            />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {csvFileName ?? t('broadcasts.csvUploadPlaceholder')}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('broadcasts.csvUploadHint')}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {csvFileName && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={clearCsvFile}
+                    className="border-border text-muted-foreground"
+                  >
+                    {t('common.clear')}
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  <Upload className="h-4 w-4" />
+                  {t('broadcasts.csvUploadAction')}
+                </Button>
+              </div>
+            </div>
+
+            {csvError && (
+              <p className="mt-3 text-xs text-red-400">{csvError}</p>
+            )}
+          </div>
+
+          {audience.csvContacts && audience.csvContacts.length > 0 ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-foreground">
+                  {t('broadcasts.csvPreviewTitle')}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t('broadcasts.csvPreviewCount', {
+                    count: audience.csvContacts.length,
+                  })}
+                </p>
+              </div>
+              <div className="max-h-64 overflow-auto rounded-lg border border-border bg-background">
+                <table className="w-full text-left text-xs">
+                  <thead className="sticky top-0 bg-background/95 text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2 font-medium">{t('contacts.phoneLabel')}</th>
+                      <th className="px-3 py-2 font-medium">{t('contacts.nameLabel')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {audience.csvContacts.slice(0, 10).map((row, index) => (
+                      <tr key={`${row.phone}-${index}`} className="border-t border-border/70">
+                        <td className="px-3 py-2 font-mono text-[11px] text-foreground">
+                          {row.phone}
+                        </td>
+                        <td className="px-3 py-2 text-foreground">
+                          {row.name ?? '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              {t('broadcasts.csvUploadEmpty')}
+            </p>
           )}
         </div>
       )}

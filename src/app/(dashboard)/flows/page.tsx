@@ -120,7 +120,7 @@ export default function FlowsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   async function handleCreate() {
     if (!newName.trim()) return;

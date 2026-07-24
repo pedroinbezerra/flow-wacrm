@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import type { Message, MessageReaction } from "@/types";
 import {
@@ -60,37 +60,46 @@ function MediaImage({ url, alt }: { url: string; alt: string }) {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const loadImage = useCallback(async () => {
-    if (!url) return;
-
-    // Proxy URLs need auth fetch to create blob URL
-    if (url.startsWith("/api/whatsapp/media/")) {
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Failed to load media");
-        const blob = await res.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        setSrc(blobUrl);
-      } catch {
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      setSrc(url);
-      setLoading(false);
-    }
-  }, [url]);
-
   useEffect(() => {
-    loadImage();
+    let cancelled = false;
+
+    async function loadImage() {
+      if (!url) return;
+
+      // Proxy URLs need auth fetch to create blob URL
+      if (url.startsWith("/api/whatsapp/media/")) {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error("Failed to load media");
+          const blob = await res.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          if (!cancelled) {
+            setSrc(blobUrl);
+          } else {
+            URL.revokeObjectURL(blobUrl);
+          }
+        } catch {
+          if (!cancelled) setError(true);
+        } finally {
+          if (!cancelled) setLoading(false);
+        }
+      } else {
+        if (!cancelled) {
+          setSrc(url);
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadImage();
     return () => {
+      cancelled = true;
       if (src?.startsWith("blob:")) {
         URL.revokeObjectURL(src);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadImage]);
+  }, [url]);
 
   if (error) {
     return (
@@ -119,6 +128,8 @@ function MediaImage({ url, alt }: { url: string; alt: string }) {
 }
 
 function MessageContent({ message }: { message: Message }) {
+  const { t } = useTranslation();
+
   switch (message.content_type) {
     case "text":
       return (
@@ -250,7 +261,6 @@ export function MessageBubble({
   currentUserId,
   onToggleReaction,
 }: MessageBubbleProps) {
-  const { t } = useTranslation();
   const isAgent = message.sender_type === "agent" || message.sender_type === "bot";
   const time = format(new Date(message.created_at), "HH:mm");
 
