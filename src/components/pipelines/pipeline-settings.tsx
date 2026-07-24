@@ -297,7 +297,7 @@ export function PipelineSettings({
                             ? "var(--foreground)"
                             : "transparent",
                       }}
-                      aria-label={`Pick color ${color}`}
+                      aria-label={`${t("pipelines.pickColor")} ${color}`}
                     />
                   ))}
                 </div>
@@ -377,6 +377,7 @@ function SortableStageRow({
   onRemove: () => void;
   colors: string[];
 }) {
+  const { t } = useTranslation();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: stage.id });
 
@@ -397,7 +398,7 @@ function SortableStageRow({
         {...attributes}
         {...listeners}
         className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
-        aria-label="Drag to reorder"
+        aria-label={t("pipelines.dragToReorder")}
       >
         <GripVertical className="h-4 w-4" />
       </button>
@@ -428,6 +429,7 @@ function ColorSwatch({
   onChange: (v: string) => void;
   colors: string[];
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
@@ -436,7 +438,7 @@ function ColorSwatch({
         onClick={() => setOpen((v) => !v)}
         className="h-4 w-4 rounded-full border border-border"
         style={{ backgroundColor: value }}
-        aria-label="Change color"
+        aria-label={t("pipelines.changeColor")}
       />
       {open && (
         <>

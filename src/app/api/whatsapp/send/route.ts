@@ -19,6 +19,7 @@ import {
   rateLimitResponse,
   RATE_LIMITS,
 } from '@/lib/rate-limit'
+import { formatConversationPreview } from '@/lib/conversation-preview'
 import type { MessageTemplate } from '@/types'
 import { isMessageTemplate } from '@/lib/whatsapp/template-row-guard'
 
@@ -392,7 +393,7 @@ export async function POST(request: Request) {
     await supabase
       .from('conversations')
       .update({
-        last_message_text: content_text || `[${message_type}]`,
+        last_message_text: formatConversationPreview(content_text, message_type),
         last_message_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })

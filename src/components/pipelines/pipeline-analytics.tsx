@@ -158,7 +158,7 @@ function Metric({
             render={
               <button
                 type="button"
-                aria-label={`How ${label} is calculated`}
+                aria-label={`Como ${label} é calculado`}
                 className="ml-auto text-muted-foreground hover:text-foreground focus:outline-none"
               />
             }

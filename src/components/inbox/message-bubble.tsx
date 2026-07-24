@@ -122,7 +122,7 @@ function MessageContent({ message }: { message: Message }) {
   switch (message.content_type) {
     case "text":
       return (
-        <p className="whitespace-pre-wrap break-words text-sm">
+        <p className="whitespace-pre-wrap text-sm" style={{ overflowWrap: "anywhere" }}>
           {message.content_text}
         </p>
       );
@@ -133,10 +133,10 @@ function MessageContent({ message }: { message: Message }) {
           {message.media_url ? (
             <MediaImage url={message.media_url} alt="Shared image" />
           ) : (
-            <MediaUnavailable label="Image" />
+            <MediaUnavailable label={t("inbox.messageTypes.image")} />
           )}
           {message.content_text && (
-            <p className="mt-1 whitespace-pre-wrap break-words text-sm">
+            <p className="mt-1 whitespace-pre-wrap text-sm" style={{ overflowWrap: "anywhere" }}>
               {message.content_text}
             </p>
           )}
@@ -153,10 +153,10 @@ function MessageContent({ message }: { message: Message }) {
               className="max-h-64 max-w-60 rounded-lg"
             />
           ) : (
-            <MediaUnavailable label="Video" />
+            <MediaUnavailable label={t("inbox.messageTypes.video")} />
           )}
           {message.content_text && (
-            <p className="mt-1 whitespace-pre-wrap break-words text-sm">
+            <p className="mt-1 whitespace-pre-wrap text-sm" style={{ overflowWrap: "anywhere" }}>
               {message.content_text}
             </p>
           )}
@@ -169,14 +169,14 @@ function MessageContent({ message }: { message: Message }) {
           {message.media_url ? (
             <audio src={message.media_url} controls className="max-w-60" />
           ) : (
-            <MediaUnavailable label="Audio" />
+            <MediaUnavailable label={t("inbox.messageTypes.audio")} />
           )}
         </div>
       );
 
     case "document":
       if (!message.media_url) {
-        return <MediaUnavailable label={message.content_text || "Document"} />;
+        return <MediaUnavailable label={message.content_text || t("inbox.messageTypes.document")} />;
       }
       return (
         <a
@@ -187,7 +187,7 @@ function MessageContent({ message }: { message: Message }) {
         >
           <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
           <span className="truncate">
-            {message.content_text || "Document"}
+            {message.content_text || t("inbox.messageTypes.document")}
           </span>
         </a>
       );
@@ -197,10 +197,10 @@ function MessageContent({ message }: { message: Message }) {
         <div>
           <span className="mb-1 inline-flex items-center gap-1 rounded bg-primary/20 px-1.5 py-0.5 text-[10px] font-medium text-primary">
             <LayoutTemplate className="h-3 w-3" />
-            Template
+            {t("inbox.messageTypes.template")}
           </span>
           {message.content_text && (
-            <p className="mt-1 whitespace-pre-wrap break-words text-sm">
+            <p className="mt-1 whitespace-pre-wrap text-sm" style={{ overflowWrap: "anywhere" }}>
               {message.content_text}
             </p>
           )}
@@ -211,7 +211,7 @@ function MessageContent({ message }: { message: Message }) {
       return (
         <div className="flex items-center gap-2 text-sm">
           <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span>{message.content_text || "Location shared"}</span>
+          <span>{message.content_text || t("inbox.messageTypes.location")}</span>
         </div>
       );
 
@@ -225,10 +225,10 @@ function MessageContent({ message }: { message: Message }) {
         <div className="flex flex-col gap-0.5">
           <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
             <CornerDownLeft className="h-3 w-3" />
-            Button reply
+            {t("inbox.messageTypes.interactive")}
           </span>
-          <p className="whitespace-pre-wrap break-words text-sm">
-            {message.content_text || "[Interactive reply]"}
+          <p className="whitespace-pre-wrap text-sm" style={{ overflowWrap: "anywhere" }}>
+            {message.content_text || t("inbox.messageTypes.interactiveReply")}
           </p>
         </div>
       );
@@ -236,8 +236,8 @@ function MessageContent({ message }: { message: Message }) {
 
     default:
       return (
-        <p className="whitespace-pre-wrap break-words text-sm">
-          {message.content_text || "[Unsupported message type]"}
+        <p className="whitespace-pre-wrap text-sm" style={{ overflowWrap: "anywhere" }}>
+          {message.content_text || t("inbox.messageTypes.unsupported")}
         </p>
       );
   }
@@ -250,6 +250,7 @@ export function MessageBubble({
   currentUserId,
   onToggleReaction,
 }: MessageBubbleProps) {
+  const { t } = useTranslation();
   const isAgent = message.sender_type === "agent" || message.sender_type === "bot";
   const time = format(new Date(message.created_at), "HH:mm");
 

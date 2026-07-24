@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import {
+  normalizeConversationPreview,
+} from "@/lib/conversation-preview";
 import { useTranslation } from "@/hooks/use-translation";
 import type { Conversation, ConversationStatus } from "@/types";
 import { Search, ChevronDown, AtSign, Clock3, Pin } from "lucide-react";
@@ -213,7 +216,8 @@ export function ConversationList({
       result = result.filter((c) => {
         const name = c.contact?.name?.toLowerCase() ?? "";
         const phone = c.contact?.phone?.toLowerCase() ?? "";
-        const lastMsg = c.last_message_text?.toLowerCase() ?? "";
+        const lastMsg = normalizeConversationPreview(c.last_message_text)
+          .toLowerCase();
         return name.includes(q) || phone.includes(q) || lastMsg.includes(q);
       });
     }
@@ -373,7 +377,7 @@ function ConversationItem({
         </div>
         <div className="mt-0.5 flex items-center justify-between gap-2">
           <p className="truncate text-xs text-muted-foreground">
-            {conversation.last_message_text || t("inbox.noMessagesYet")}
+            {normalizeConversationPreview(conversation.last_message_text) || t("inbox.noMessagesYet")}
           </p>
           <div className="flex shrink-0 items-center gap-1.5">
             {boardFlags?.mention_active && (

@@ -50,6 +50,22 @@ interface UrlButtonSlot {
   url: string;
 }
 
+const categoryColors: Record<string, string> = {
+  Marketing: "bg-purple-600/20 text-purple-400 border-purple-600/30",
+  Utility: "bg-blue-600/20 text-blue-400 border-blue-600/30",
+  Authentication: "bg-amber-600/20 text-amber-400 border-amber-600/30",
+};
+
+function categoryLabel(category: MessageTemplate["category"], t: ReturnType<typeof useTranslation>["t"]): string {
+  if (category === "Marketing") {
+    return t("settings.templates.dialog.categories.marketing");
+  }
+  if (category === "Utility") {
+    return t("settings.templates.dialog.categories.utility");
+  }
+  return t("settings.templates.dialog.categories.authentication");
+}
+
 /**
  * Templates may need values for: body variables, a text-header
  * variable, and per-URL-button suffixes. Collect them all so the
@@ -212,33 +228,35 @@ export function TemplatePicker({
                 </p>
               </div>
             ) : (
-              templates.map((t) => (
+              templates.map((template) => (
                 <button
-                  key={t.id}
+                  key={template.id}
                   type="button"
-                  onClick={() => pickTemplate(t)}
+                  onClick={() => pickTemplate(template)}
                   className="w-full rounded-md border border-border bg-background/50 p-3 text-left transition-colors hover:border-primary/40 hover:bg-popover"
                 >
                   <div className="flex items-start gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="truncate text-sm font-medium text-popover-foreground">
-                          {t.name}
+                          {template.name}
                         </p>
-                        <Badge className="border border-primary/30 bg-primary/20 text-[10px] text-primary">
-                          {t.category}
+                        <Badge
+                          className={`text-xs border ${categoryColors[template.category] || ""}`}
+                        >
+                          {categoryLabel(template.category, t)}
                         </Badge>
-                        {t.language && (
+                        {template.language && (
                           <span className="text-[10px] uppercase text-muted-foreground">
-                            {t.language}
+                            {template.language}
                           </span>
                         )}
                       </div>
                       <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                        {t.body_text}
+                        {template.body_text}
                       </p>
                     </div>
-                    <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                   </div>
                 </button>
               ))

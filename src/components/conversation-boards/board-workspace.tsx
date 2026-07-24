@@ -17,6 +17,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
 import { useCan } from "@/hooks/use-can";
 import { useTranslation } from "@/hooks/use-translation";
+import { normalizeConversationPreview } from "@/lib/conversation-preview";
 import { useRealtime } from "@/hooks/use-realtime";
 import { listConversationBoards, listConversationBoardGroups, listConversationBoardItems } from "@/lib/conversation-boards/queries";
 import type {
@@ -135,7 +136,10 @@ function displayNameForItem(item: ConversationBoardItem): string {
 }
 
 function previewForItem(item: ConversationBoardItem): string {
-  return item.conversation?.last_message_text || "Nenhuma mensagem ainda";
+  return (
+    normalizeConversationPreview(item.conversation?.last_message_text) ||
+    "Nenhuma mensagem ainda"
+  );
 }
 
 export function BoardWorkspace() {

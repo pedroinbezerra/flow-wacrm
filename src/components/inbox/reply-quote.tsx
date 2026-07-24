@@ -56,7 +56,7 @@ export function ReplyQuote({
          *  layout wider, shoving the contact sidebar off-screen.
          *  `break-words` also wraps long URLs that have no whitespace
          *  to break on. Issue #165. */}
-        <div className="whitespace-pre-wrap break-words text-xs text-foreground/80">
+        <div className="whitespace-pre-wrap text-xs text-foreground/80" style={{ overflowWrap: "anywhere" }}>
           {preview}
         </div>
       </div>
@@ -82,22 +82,25 @@ function CancelReplyButton({ onDismiss }: { onDismiss: () => void }) {
 }
 
 /** Build the one-line preview text shown inside a reply quote. */
-export function buildReplyPreview(message: Message): string {
+export function buildReplyPreview(
+  message: Message,
+  t: ReturnType<typeof useTranslation>["t"],
+): string {
   if (message.content_text) return message.content_text;
   switch (message.content_type) {
     case "image":
-      return "[Image]";
+      return t("inbox.messageTypes.image");
     case "video":
-      return "[Video]";
+      return t("inbox.messageTypes.video");
     case "audio":
-      return "[Audio]";
+      return t("inbox.messageTypes.audio");
     case "document":
-      return "[Document]";
+      return t("inbox.messageTypes.document");
     case "location":
-      return "[Location]";
+      return t("inbox.messageTypes.location");
     case "template":
-      return "[Template]";
+      return t("inbox.messageTypes.template");
     default:
-      return "[Message]";
+      return t("inbox.messageTypes.message");
   }
 }

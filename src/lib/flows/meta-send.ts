@@ -14,6 +14,7 @@ import {
   phoneVariants,
   isRecipientNotAllowedError,
 } from '@/lib/whatsapp/phone-utils'
+import { formatConversationPreview } from '@/lib/conversation-preview'
 import { supabaseAdmin } from './admin-client'
 
 // ------------------------------------------------------------
@@ -236,7 +237,7 @@ export async function engineSendMedia(
   // messages_content_type_check constraint (migration 001 + 010).
   // content_text carries the caption (or empty) so the conversation
   // list preview shows something meaningful when the user glances at it.
-  const preview = args.caption?.trim() || `[${args.kind}]`
+  const preview = formatConversationPreview(args.caption, args.kind)
   const { error: msgErr } = await db.from('messages').insert({
     conversation_id: args.conversationId,
     sender_type: 'bot',
