@@ -92,6 +92,7 @@ interface MessageThreadProps {
     conversationId: string,
     assignedAgentId: string | null,
   ) => void;
+  onBoardItemChange?: (item: ConversationBoardItem) => void;
   /**
    * On mobile, the thread is shown full-screen with the conversation list
    * hidden. This callback lets the page deselect the active conversation
@@ -159,8 +160,8 @@ function sortBoardLanes(lanes: ConversationBoardLaneConfig[] = []): Conversation
 }
 
 const STATUS_OPTIONS: (t: ReturnType<typeof useTranslation>["t"]) => { label: string; value: ConversationStatus; color: string }[] = (t) => [
-  { label: t("inbox.status.open"), value: "open", color: "text-primary" },
-  { label: t("inbox.status.pending"), value: "pending", color: "text-amber-400" },
+  { label: t("inbox.status.open"), value: "open", color: "text-emerald-400" },
+  { label: t("inbox.status.pending"), value: "pending", color: "text-red-400" },
   { label: t("inbox.status.closed"), value: "closed", color: "text-muted-foreground" },
 ];
 
@@ -185,6 +186,7 @@ export function MessageThread({
   onUpdateMessage,
   onStatusChange,
   onAssignChange,
+  onBoardItemChange,
   onBack,
   resyncToken = 0,
   onRefresh,
@@ -698,15 +700,21 @@ export function MessageThread({
     async (status: ConversationStatus) => {
       if (!conversation) return;
 
+      const previousStatus = conversation.status;
+      onStatusChange(conversation.id, status);
       const supabase = createClient();
-      await supabase
+      const { error } = await supabase
         .from("conversations")
         .update({ status })
         .eq("id", conversation.id);
 
-      onStatusChange(conversation.id, status);
+      if (error) {
+        console.error("Failed to update conversation status:", error);
+        onStatusChange(conversation.id, previousStatus);
+        toast.error(t("inbox.statusUpdateFailed", {}, "Falha ao atualizar status"));
+      }
     },
-    [conversation, onStatusChange]
+    [conversation, onStatusChange, t]
   );
 
   const handleOpenTemplates = useCallback(() => {
@@ -920,6 +928,35 @@ export function MessageThread({
     }) => {
       if (!conversation) return;
 
+      const currentItem = defaultBoardItem;
+      const optimisticItem = currentItem
+        ? {
+            ...currentItem,
+            ...(typeof payload.awaitingReturn === "boolean"
+              ? {
+                  awaiting_return: payload.awaitingReturn,
+                  awaiting_return_reason: payload.awaitingReturn
+                    ? payload.awaitingReturnReason ?? currentItem.awaiting_return_reason ?? null
+                    : null,
+                }
+              : {}),
+            ...(typeof payload.priorityRank === "number"
+              ? {
+                  priority_rank: payload.priorityRank,
+                  priority_reason:
+                    payload.priorityRank > 0
+                      ? payload.priorityReason ?? currentItem.priority_reason ?? null
+                      : null,
+                }
+              : {}),
+          }
+        : null;
+
+      if (optimisticItem) {
+        setDefaultBoardItem(optimisticItem);
+        onBoardItemChange?.(optimisticItem);
+      }
+
       setUpdatingBoardFlags(true);
       try {
         const res = await fetch("/api/conversation-board-items/by-conversation", {
@@ -938,15 +975,19 @@ export function MessageThread({
           throw new Error(data?.error || `HTTP ${res.status}`);
         }
         setDefaultBoardItem(data.item);
-        onRefresh?.();
+        onBoardItemChange?.(data.item);
       } catch (error) {
         const reason = error instanceof Error ? error.message : t("inbox.board.syncError");
+        if (currentItem) {
+          setDefaultBoardItem(currentItem);
+          onBoardItemChange?.(currentItem);
+        }
         toast.error(reason);
       } finally {
         setUpdatingBoardFlags(false);
       }
     },
-    [conversation, onRefresh, t],
+    [conversation, defaultBoardItem, onBoardItemChange, t],
   );
 
   const handleToggleAwaitingReturn = useCallback(() => {
@@ -1214,12 +1255,12 @@ export function MessageThread({
             className={cn(
               "inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs transition-colors",
               (defaultBoardItem?.priority_rank ?? 0) > 0
-                ? "bg-primary/15 text-primary hover:bg-primary/20"
+                ? "bg-red-500/15 text-red-400 hover:bg-red-500/20"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
               updatingBoardFlags && "opacity-60",
             )}
           >
-            <Pin className="h-3 w-3" />
+            <Pin className={cn("h-3 w-3", (defaultBoardItem?.priority_rank ?? 0) > 0 && "fill-current")} />
             <span className="hidden sm:inline">{t("boards.priority")}</span>
           </button>
 

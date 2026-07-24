@@ -378,6 +378,41 @@ export function BoardWorkspace() {
 
   const updateItem = useCallback(
     async (itemId: string, payload: Record<string, unknown>) => {
+      let previousItem: ConversationBoardItem | null = null;
+      setItems((prev) => {
+        const current = prev.find((item) => item.id === itemId) ?? null;
+        previousItem = current;
+        if (!current) return prev;
+        return prev.map((item) => {
+          if (item.id !== itemId) return item;
+          return {
+            ...item,
+            ...(typeof payload.laneId === "string" ? { lane_id: payload.laneId } : {}),
+            ...(typeof payload.priorityRank === "number"
+              ? {
+                  priority_rank: payload.priorityRank,
+                  priority_reason:
+                    payload.priorityRank > 0
+                      ? typeof payload.priorityReason === "string"
+                        ? payload.priorityReason
+                        : item.priority_reason
+                      : null,
+                }
+              : {}),
+            ...(typeof payload.awaitingReturn === "boolean"
+              ? {
+                  awaiting_return: payload.awaitingReturn,
+                  awaiting_return_reason: payload.awaitingReturn
+                    ? typeof payload.awaitingReturnReason === "string"
+                      ? payload.awaitingReturnReason
+                      : item.awaiting_return_reason
+                    : null,
+                }
+              : {}),
+          };
+        });
+      });
+
       const response = await fetch(`/api/conversation-board-items/${itemId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -388,6 +423,11 @@ export function BoardWorkspace() {
         | null;
 
       if (!response.ok) {
+        if (previousItem) {
+          setItems((prev) =>
+            prev.map((item) => (item.id === itemId ? previousItem! : item)),
+          );
+        }
         throw new Error(data?.error || "Failed to update board item");
       }
       if (data?.item) {
@@ -427,10 +467,10 @@ export function BoardWorkspace() {
         }
       } catch (error) {
         console.error("[boards] failed to move item:", error);
-          toast.error(t("boards.errors.moveItem", {}, "Falha ao mover conversa"));
+        toast.error(t("boards.errors.moveItem", {}, "Falha ao mover conversa"));
       }
     },
-    [boardLanes, items, updateItem, t],
+    [boardLanes, items, t, updateItem],
   );
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveDragItemId(String(event.active.id));
@@ -780,10 +820,18 @@ export function BoardWorkspace() {
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>{boards.length}</span>
-            <span>{t("boards.boardsCount", {}, "boards")}</span>
+            <span>
+              {boards.length === 1
+                ? t("boards.boardCount", {}, "quadro")
+                : t("boards.boardsCount", {}, "quadros")}
+            </span>
             <span>•</span>
             <span>{groups.length}</span>
-            <span>{t("boards.groupsCount", {}, "groups")}</span>
+            <span>
+              {groups.length === 1
+                ? t("boards.groupCount", {}, "grupo")
+                : t("boards.groupsCount", {}, "grupos")}
+            </span>
           </div>
         </div>
       </div>
@@ -900,7 +948,7 @@ export function BoardWorkspace() {
           if (!open) handleCloseConversationModal();
         }}
       >
-        <DialogContent className="h-[100dvh] w-screen max-w-none overflow-hidden rounded-none border-0 p-0 sm:h-[88vh] sm:w-[calc(100vw-2rem)] sm:max-w-[1200px] sm:rounded-xl sm:border">
+        <DialogContent className="h-dvh w-screen max-w-none overflow-hidden rounded-none border-0 p-0 sm:h-[88vh] sm:w-[calc(100vw-2rem)] sm:max-w-300 sm:rounded-xl sm:border">
           <div className="flex h-full min-h-0 flex-col">
             <div className="flex items-center justify-between border-b border-border px-3 py-2.5 sm:px-4 sm:py-3">
               <DialogTitle className="text-sm font-semibold">
@@ -917,6 +965,13 @@ export function BoardWorkspace() {
                 onUpdateMessage={handleModalUpdateMessage}
                 onStatusChange={handleModalStatusChange}
                 onAssignChange={handleModalAssignChange}
+                onBoardItemChange={(updatedItem) => {
+                  setItems((prev) =>
+                    prev.map((item) =>
+                      item.id === updatedItem.id ? updatedItem : item,
+                    ),
+                  );
+                }}
                 resyncToken={modalResyncToken}
                 onRefresh={handleModalManualRefresh}
               />
@@ -1334,7 +1389,7 @@ const BoardColumnShell = forwardRef<
     <div
       ref={ref}
       className={cn(
-        "flex w-[86vw] min-w-[300px] max-w-[360px] shrink-0 flex-col rounded-xl border border-border p-3 lg:w-[360px]",
+        "flex w-[86vw] min-w-75 max-w-90 shrink-0 flex-col rounded-xl border border-border p-3 lg:w-90",
         className,
       )}
     >
@@ -1349,7 +1404,7 @@ const BoardColumnShell = forwardRef<
         <Badge variant="outline">{count}</Badge>
       </div>
 
-      <ScrollArea className="mt-3 h-[calc(100vh-280px)] min-h-[360px] pr-2">
+      <ScrollArea className="mt-3 h-[calc(100vh-280px)] min-h-90 pr-2">
         <div className="space-y-2 pb-2">{children}</div>
       </ScrollArea>
     </div>
@@ -1412,7 +1467,7 @@ function BoardCard({
       className={cn(
         "relative cursor-pointer rounded-xl border border-border bg-background p-3 shadow-sm transition hover:border-primary/40 hover:bg-muted/30",
         isDragging && "opacity-50",
-        isOverlay && "z-[1001]",
+        isOverlay && "z-1001",
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -1484,14 +1539,14 @@ function BoardCard({
           </Badge>
         )}
         {item.awaiting_return && (
-          <Badge variant="secondary">
+          <Badge variant="outline" className="border-amber-500/40 text-amber-500">
             <Clock3 className="mr-1 h-3 w-3" />
             {t("boards.awaitingReturn", {}, "Aguardando retorno")}
           </Badge>
         )}
         {item.priority_rank > 0 && (
-          <Badge variant="outline">
-            <Pin className="mr-1 h-3 w-3" />
+          <Badge variant="outline" className="border-red-500/40 text-red-400">
+            <Pin className="mr-1 h-3 w-3 fill-current" />
             {t("boards.priority", {}, "Prioridade")}
           </Badge>
         )}
