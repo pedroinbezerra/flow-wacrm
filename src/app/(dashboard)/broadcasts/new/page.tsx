@@ -65,7 +65,7 @@ export default function NewBroadcastPage() {
     } catch (err) {
       // Previously swallowed with console.error — the wizard would
       // just no-op, leaving the user confused. Surface the reason.
-      const message = err instanceof Error ? err.message : 'Broadcast failed';
+      const message = err instanceof Error ? err.message : t('broadcasts.sendFailed');
       console.error('Broadcast failed:', err);
       toast.error(message);
     }
@@ -178,7 +178,7 @@ export default function NewBroadcastPage() {
       </div>
 
       {/* Step Content */}
-      <div className="relative min-h-[400px]">
+      <div className="relative min-h-100">
         <div
           className="transition-all duration-300 ease-in-out"
           style={{

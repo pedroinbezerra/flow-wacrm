@@ -32,12 +32,14 @@ import { Button } from '@/components/ui/button';
 import {
   Upload,
   FileText,
+  Download,
   Loader2,
   CheckCircle,
   XCircle,
   AlertTriangle,
   Tag,
 } from 'lucide-react';
+import { buttonVariants } from '@/components/ui/button';
 
 const DEFAULT_TAG_COLOR = '#3b82f6';
 const PREVIEW_LIMIT = 5;
@@ -86,7 +88,7 @@ function ImportPreviewTags({
   }
 
   return (
-    <div className="flex min-w-[4.5rem] flex-wrap gap-1">
+    <div className="flex min-w-18 flex-wrap gap-1">
       {tagNames.map((name) => {
         const color =
           tagColorByKey.get(name.trim().toLowerCase()) ?? DEFAULT_TAG_COLOR;
@@ -402,10 +404,17 @@ export function ImportModal({
     return { unique: names.size, rowsWithTags };
   }, [parsedRows]);
 
+  const importButtonLabel =
+    parsedRows.length === 0
+      ? t('contacts.importModal.importButton')
+      : parsedRows.length === 1
+        ? t('contacts.importModal.importOne')
+        : t('contacts.importModal.importMany', { count: parsedRows.length });
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="flex max-h-[min(90vh,720px)] flex-col gap-0 overflow-hidden border-border/80 bg-popover p-0 text-popover-foreground sm:max-w-2xl">
-        <div className="shrink-0 space-y-4 border-b border-border/80 px-6 pt-6 pb-5">
+        <div className="shrink-0 space-y-4 border-b border-border/80 px-5 pt-5 pb-4 sm:px-6 sm:pt-6 sm:pb-5">
           <DialogHeader className="gap-1.5">
             <DialogTitle className="text-lg text-popover-foreground">
               {t('contacts.importModal.title')}
@@ -426,7 +435,7 @@ export function ImportModal({
             className={cn(
               'group flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-5 transition-all',
               file
-                ? 'border-primary/35 bg-primary/[0.04]'
+                ? 'border-primary/35 bg-primary/4'
                 : 'hover:border-primary/40 border-border/80 bg-background/40 hover:bg-background/70'
             )}
           >
@@ -467,9 +476,23 @@ export function ImportModal({
             onChange={handleFileChange}
             className="hidden"
           />
+
+          <div className="flex justify-center">
+            <a
+              href="/examples/contacts-import-example.csv"
+              download
+              className={cn(
+                buttonVariants({ variant: 'outline', size: 'sm' }),
+                'border-border text-muted-foreground hover:bg-muted',
+              )}
+            >
+              <Download className="size-3.5" />
+              {t('contacts.importModal.downloadExample')}
+            </a>
+          </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 sm:px-6">
           {preview.length > 0 && !result && (
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -488,7 +511,7 @@ export function ImportModal({
 
               <div className="overflow-hidden rounded-xl border border-border ring-1 ring-border/50">
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[32rem] text-xs">
+                  <table className="w-full min-w-lg text-xs">
                     <thead>
                       <tr className="border-b border-border bg-background/60">
                         <th className="px-3 py-2 text-left font-medium whitespace-nowrap text-muted-foreground">
@@ -601,7 +624,7 @@ export function ImportModal({
           )}
         </div>
 
-        <DialogFooter className="mt-0 shrink-0 gap-2 border-t border-border/80 bg-background/50 px-6 py-4 sm:justify-end">
+        <DialogFooter className="mt-0 shrink-0 gap-2 border-t border-border/80 bg-background/50 px-5 pt-4 pb-5 sm:px-6 sm:pt-5 sm:pb-6 sm:justify-end">
           <Button
             type="button"
             variant="outline"
@@ -618,7 +641,7 @@ export function ImportModal({
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {importing && <Loader2 className="size-4 animate-spin" />}
-              {importing ? t('contacts.importModal.importing') : t('contacts.importModal.import', { count: parsedRows.length })}
+              {importing ? t('contacts.importModal.importing') : importButtonLabel}
             </Button>
           )}
         </DialogFooter>

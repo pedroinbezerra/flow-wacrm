@@ -40,42 +40,37 @@ interface Step2Props {
   onBack: () => void;
 }
 
-const audienceOptions: {
-  type: AudienceType;
-  label: string;
-  description: string;
-  icon: typeof Users;
-}[] = [
+const getAudienceOptions = (t: ReturnType<typeof useTranslation>['t']) => [
   {
-    type: 'all',
-    label: 'All Contacts',
-    description: 'Send to every contact in your database',
+    type: 'all' as const,
+    label: t('broadcasts.audienceAll'),
+    description: t('broadcasts.audienceAllDesc'),
     icon: Users,
   },
   {
-    type: 'tags',
-    label: 'Filter by Tags',
-    description: 'Target contacts with specific tags',
+    type: 'tags' as const,
+    label: t('broadcasts.audienceTags'),
+    description: t('broadcasts.audienceTagsDesc'),
     icon: Tags,
   },
   {
-    type: 'custom_field',
-    label: 'Custom Field',
-    description: 'Filter by a custom field value',
+    type: 'custom_field' as const,
+    label: t('broadcasts.audienceCustomField'),
+    description: t('broadcasts.audienceCustomFieldDesc'),
     icon: Filter,
   },
   {
-    type: 'csv',
-    label: 'Upload CSV',
-    description: 'Upload a list of phone numbers',
+    type: 'csv' as const,
+    label: t('broadcasts.audienceCsv'),
+    description: t('broadcasts.audienceCsvDesc'),
     icon: Upload,
   },
 ];
 
-const OPERATOR_OPTIONS: { value: CustomFieldOperator; label: string }[] = [
-  { value: 'is', label: 'is' },
-  { value: 'is_not', label: 'is not' },
-  { value: 'contains', label: 'contains' },
+const getOperatorOptions = (t: ReturnType<typeof useTranslation>['t']) => [
+  { value: 'is' as const, label: t('broadcasts.operatorIs') },
+  { value: 'is_not' as const, label: t('broadcasts.operatorIsNot') },
+  { value: 'contains' as const, label: t('broadcasts.operatorContains') },
 ];
 
 export function Step2SelectAudience({
@@ -85,6 +80,8 @@ export function Step2SelectAudience({
   onBack,
 }: Step2Props) {
   const { t } = useTranslation();
+  const audienceOptions = getAudienceOptions(t);
+  const operatorOptions = getOperatorOptions(t);
   const [tags, setTags] = useState<Tag[]>([]);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [loadingTags, setLoadingTags] = useState(false);
@@ -210,7 +207,10 @@ export function Step2SelectAudience({
   ]);
 
   useEffect(() => {
-    fetchEstimatedCount();
+    // The estimate is derived state pulled from the backend; running it
+    // in an effect is intentional here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchEstimatedCount();
   }, [fetchEstimatedCount]);
 
   function toggleTag(tagId: string) {
@@ -251,9 +251,9 @@ export function Step2SelectAudience({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-foreground">Select Audience</h2>
+        <h2 className="text-lg font-semibold text-foreground">{t('broadcasts.selectAudience')}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Choose who will receive this broadcast.
+          {t('broadcasts.selectAudienceDescription')}
         </p>
       </div>
 
@@ -373,7 +373,7 @@ export function Step2SelectAudience({
                 }
                 className="h-9 rounded-lg border border-border bg-muted px-2.5 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               >
-                {OPERATOR_OPTIONS.map((op) => (
+                {operatorOptions.map((op) => (
                   <option key={op.value} value={op.value}>
                     {op.label}
                   </option>
@@ -383,7 +383,7 @@ export function Step2SelectAudience({
                 type="text"
                 value={audience.customField?.value ?? ''}
                 onChange={(e) => updateCustomField({ value: e.target.value })}
-                placeholder="Value"
+                placeholder={t('broadcasts.valuePlaceholder')}
                 className="h-9 rounded-lg border border-border bg-muted px-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
@@ -396,12 +396,12 @@ export function Step2SelectAudience({
         <div className="mb-3 flex items-center gap-2">
           <X className="h-4 w-4 text-red-400" />
           <p className="text-sm font-medium text-foreground">
-            Exclude contacts with these tags
+            {t('broadcasts.excludeTagsTitle')}
           </p>
-          <span className="text-xs text-muted-foreground">(optional)</span>
+          <span className="text-xs text-muted-foreground">({t('common.optional')})</span>
         </div>
         {tags.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No tags available.</p>
+          <p className="text-xs text-muted-foreground">{t('broadcasts.noTagsAvailable')}</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => {
@@ -430,11 +430,11 @@ export function Step2SelectAudience({
 
       {/* Audience Summary */}
       <div className="rounded-xl border border-border bg-card/50 p-4">
-        <p className="mb-2 text-sm font-medium text-foreground">Audience Summary</p>
+        <p className="mb-2 text-sm font-medium text-foreground">{t('broadcasts.audienceSummary')}</p>
         {loadingCount ? (
           <div className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <span className="text-xs text-muted-foreground">Calculating…</span>
+            <span className="text-xs text-muted-foreground">{t('broadcasts.calculating')}</span>
           </div>
         ) : estimatedCount !== null ? (
           <div className="flex items-center gap-2">
@@ -442,11 +442,11 @@ export function Step2SelectAudience({
             <span className="text-sm text-foreground">
               {estimatedCount.toLocaleString()}
             </span>
-            <span className="text-xs text-muted-foreground">estimated recipients</span>
+            <span className="text-xs text-muted-foreground">{t('broadcasts.estimatedRecipients')}</span>
           </div>
         ) : (
           <p className="text-xs text-muted-foreground">
-            Select an audience type to see the estimate.
+            {t('broadcasts.selectAudienceToEstimate')}
           </p>
         )}
       </div>
@@ -458,14 +458,14 @@ export function Step2SelectAudience({
           className="border-border text-muted-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back
+          {t('broadcasts.back')}
         </Button>
         <Button
           onClick={onNext}
           disabled={!isValid}
           className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
-          Next
+          {t('common.next')}
           <ArrowRight className="h-4 w-4" />
         </Button>
       </div>

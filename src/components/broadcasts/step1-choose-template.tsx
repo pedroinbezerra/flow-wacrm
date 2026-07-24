@@ -13,6 +13,12 @@ const categoryColors: Record<string, string> = {
   Authentication: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
 };
 
+const categoryLabels: Record<string, string> = {
+  Marketing: 'broadcasts.categoryMarketing',
+  Utility: 'broadcasts.categoryUtility',
+  Authentication: 'broadcasts.categoryAuthentication',
+};
+
 interface Step1Props {
   selectedTemplate: MessageTemplate | null;
   onSelect: (template: MessageTemplate) => void;
@@ -49,7 +55,7 @@ export function Step1ChooseTemplate({ selectedTemplate, onSelect, onNext, onBack
     }
 
     fetchTemplates();
-  }, []);
+  }, [t]);
 
   if (loading) {
     return (
@@ -105,7 +111,7 @@ export function Step1ChooseTemplate({ selectedTemplate, onSelect, onNext, onBack
                   <span
                     className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-medium whitespace-nowrap ${catColor}`}
                   >
-                    {template.category}
+                    {t(categoryLabels[template.category] ?? 'broadcasts.categoryUtility')}
                   </span>
                 </div>
                 <p className="line-clamp-3 text-xs text-muted-foreground">{template.body_text}</p>
