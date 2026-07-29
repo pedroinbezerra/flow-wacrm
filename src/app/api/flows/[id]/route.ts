@@ -5,10 +5,8 @@ import { supabaseAdmin } from '@/lib/flows/admin-client'
 /**
  * GET   /api/flows/[id]  — fetch one flow with its nodes.
  * PUT   /api/flows/[id]  — replace name/trigger/entry/fallback + the
- *                          full node graph (delete-then-insert under
- *                          the hood; not atomic, but the runner is
- *                          resilient to mid-edit reads — node_not_found
- *                          gracefully ends the run).
+ *                          full node graph. Uses one SQL RPC so the
+ *                          flow row + nodes replacement are atomic.
  * DELETE /api/flows/[id] — hard delete (RLS+CASCADE clean up nodes,
  *                          runs, events).
  *
@@ -107,56 +105,24 @@ export async function PUT(
 
   const admin = supabaseAdmin()
 
-  // Update the flow row first — the body may not include `nodes` (a
-  // header-only save for editing the trigger config without touching
-  // the graph). Skip node replacement in that case.
-  const flowPatch: Record<string, unknown> = {
-    updated_at: new Date().toISOString(),
-  }
+  // Atomic replace via SQL function. `nodes` is optional so the
+  // editor can do header-only saves without touching graph rows.
+  const flowPatch: Record<string, unknown> = {}
   if (body.name !== undefined) flowPatch.name = body.name.trim()
-  if (body.description !== undefined)
-    flowPatch.description = body.description
+  if (body.description !== undefined) flowPatch.description = body.description
   if (body.trigger_type !== undefined) flowPatch.trigger_type = body.trigger_type
-  if (body.trigger_config !== undefined)
-    flowPatch.trigger_config = body.trigger_config
-  if (body.entry_node_id !== undefined)
-    flowPatch.entry_node_id = body.entry_node_id
-  if (body.fallback_policy !== undefined)
-    flowPatch.fallback_policy = body.fallback_policy
+  if (body.trigger_config !== undefined) flowPatch.trigger_config = body.trigger_config
+  if (body.entry_node_id !== undefined) flowPatch.entry_node_id = body.entry_node_id
+  if (body.fallback_policy !== undefined) flowPatch.fallback_policy = body.fallback_policy
 
-  const { error: updErr } = await admin
-    .from('flows')
-    .update(flowPatch)
-    .eq('id', id)
-  if (updErr) {
-    return NextResponse.json({ error: updErr.message }, { status: 500 })
-  }
-
-  if (body.nodes !== undefined) {
-    // Delete-then-insert. Not transactional but the runner handles
-    // mid-edit reads safely (a node_not_found ends the run cleanly).
-    const { error: delErr } = await admin
-      .from('flow_nodes')
-      .delete()
-      .eq('flow_id', id)
-    if (delErr) {
-      return NextResponse.json({ error: delErr.message }, { status: 500 })
-    }
-    if (body.nodes.length > 0) {
-      const { error: insErr } = await admin.from('flow_nodes').insert(
-        body.nodes.map((n) => ({
-          flow_id: id,
-          node_key: n.node_key,
-          node_type: n.node_type,
-          config: n.config,
-          position_x: n.position_x ?? 0,
-          position_y: n.position_y ?? 0,
-        })),
-      )
-      if (insErr) {
-        return NextResponse.json({ error: insErr.message }, { status: 500 })
-      }
-    }
+  const replaceNodes = Object.prototype.hasOwnProperty.call(body, 'nodes')
+  const { error: rpcErr } = await admin.rpc('replace_flow_definition', {
+    p_flow_id: id,
+    p_patch: flowPatch,
+    p_nodes: replaceNodes ? (body.nodes ?? []) : null,
+  })
+  if (rpcErr) {
+    return NextResponse.json({ error: rpcErr.message }, { status: 500 })
   }
 
   // Re-fetch and return the new state — the editor uses the response

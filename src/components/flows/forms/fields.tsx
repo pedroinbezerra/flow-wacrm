@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/use-translation";
 import { NODE_META, type BuilderNode } from "../shared";
 
 export function TextRow({
@@ -75,6 +76,7 @@ export function NextNodeRow({
   onChange: (v: string) => void;
   label: string;
 }) {
+  const { t } = useTranslation();
   return (
     <div>
       <label className="mb-1 block text-xs text-muted-foreground">{label}</label>
@@ -83,7 +85,7 @@ export function NextNodeRow({
         nodes={allNodes}
         excludeKey={currentKey}
         onChange={(v) => onChange(v ?? "")}
-        placeholder="Pick a next node…"
+        placeholder={t("flows.pickNextNode")}
       />
     </div>
   );
@@ -104,17 +106,18 @@ export function NodeKeySelect({
   placeholder?: string;
   className?: string;
 }) {
+  const { t } = useTranslation();
   const options = nodes.filter((n) => n.node_key !== excludeKey);
   return (
     <Select
       value={value ?? "__none__"}
       onValueChange={(v) => onChange(v === "__none__" ? null : v)}
     >
-      <SelectTrigger className={cn("bg-muted", className)}>
+      <SelectTrigger className={cn("w-full bg-muted", className)}>
         <SelectValue placeholder={placeholder ?? "—"} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="__none__">— Nenhum —</SelectItem>
+        <SelectItem value="__none__">{t("flows.noneOption")}</SelectItem>
         {options.map((n) => {
           const Icon = NODE_META[n.node_type].icon;
           return (

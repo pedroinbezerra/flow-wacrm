@@ -244,7 +244,7 @@ function SendButtonsForm({
         ...buttons,
         {
           reply_id: `btn_${buttons.length + 1}`,
-          title: "Option",
+          title: t("flows.optionLabel", { index: buttons.length + 1 }),
           next_node_key: "",
         },
       ],
@@ -369,6 +369,7 @@ function SendListForm({
 }) {
   const sections = cfg.sections ?? [];
   const totalRows = sections.reduce((sum, s) => sum + s.rows.length, 0);
+  const { t } = useTranslation();
 
   const updateSection = (
     sIdx: number,
@@ -389,7 +390,7 @@ function SendListForm({
           rows: [
             {
               reply_id: `row_${totalRows + 1}`,
-              title: `Option ${totalRows + 1}`,
+              title: t("flows.optionLabel", { index: totalRows + 1 }),
               next_node_key: "",
             },
           ],
@@ -426,7 +427,7 @@ function SendListForm({
                 ...s.rows,
                 {
                   reply_id: `row_${totalRows + 1}`,
-                  title: `Option ${totalRows + 1}`,
+                  title: t("flows.optionLabel", { index: totalRows + 1 }),
                   next_node_key: "",
                 },
               ],
@@ -444,19 +445,19 @@ function SendListForm({
   return (
     <>
       <TextRow
-        label="Body text"
+        label={t("flows.bodyText")}
         value={cfg.text ?? ""}
         onChange={(v) => onUpdateConfig({ text: v })}
         rows={3}
       />
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <TextRow
-          label="Tap-to-expand button label (≤20 chars)"
+          label={t("flows.tapExpandButtonLabel")}
           value={cfg.button_label ?? ""}
           onChange={(v) => onUpdateConfig({ button_label: v })}
         />
         <TextRow
-          label="Footer (optional, 60 chars)"
+          label={t("flows.footerOptional")}
           value={cfg.footer_text ?? ""}
           onChange={(v) => onUpdateConfig({ footer_text: v })}
         />
@@ -464,7 +465,7 @@ function SendListForm({
 
       <div className="mt-2">
         <label className="mb-2 block text-xs text-muted-foreground">
-          Rows (1–10 total across all sections)
+          {t("flows.rowsAcrossSections")}
         </label>
         {sections.map((section, sIdx) => (
           <div
@@ -477,7 +478,7 @@ function SendListForm({
                 onChange={(e) =>
                   updateSection(sIdx, { title: e.target.value })
                 }
-                placeholder={`Section ${sIdx + 1} title (optional)`}
+                placeholder={t("flows.sectionTitleOptional", { index: sIdx + 1 })}
                 className="bg-muted text-xs"
               />
               {sections.length > 1 && (
@@ -486,7 +487,7 @@ function SendListForm({
                   size="sm"
                   onClick={() => removeSection(sIdx)}
                   className="shrink-0 text-red-400 hover:bg-red-500/10 hover:text-red-300"
-                  aria-label="Remove section"
+                  aria-label={t("flows.removeSection")}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
@@ -513,7 +514,7 @@ function SendListForm({
                         ),
                       })
                     }
-                    placeholder="reply_id"
+                    placeholder={t("flows.replyIdPlaceholder")}
                     className="bg-muted font-mono text-xs"
                   />
                 )}
@@ -522,7 +523,7 @@ function SendListForm({
                   onChange={(e) =>
                     updateRow(sIdx, rIdx, { title: e.target.value })
                   }
-                  placeholder="Row title (≤24)"
+                  placeholder={t("flows.rowTitlePlaceholder")}
                   className="bg-muted"
                   maxLength={24}
                 />
@@ -533,7 +534,7 @@ function SendListForm({
                   onChange={(v) =>
                     updateRow(sIdx, rIdx, { next_node_key: v ?? "" })
                   }
-                  placeholder="Next node…"
+                  placeholder={t("flows.nextNodePlaceholder")}
                 />
                 <Button
                   variant="ghost"
@@ -553,7 +554,7 @@ function SendListForm({
                 className="mt-1"
               >
                 <Plus className="h-3.5 w-3.5" />
-                Add row
+                {t("flows.addRow")}
               </Button>
             )}
           </div>
@@ -564,7 +565,7 @@ function SendListForm({
         {sections.length < 10 && (
           <Button variant="outline" size="sm" onClick={addSection}>
             <Plus className="h-3.5 w-3.5" />
-            Add section
+            {t("flows.addSection")}
           </Button>
         )}
       </div>
@@ -602,6 +603,7 @@ function ConditionForm({
   currentKey: string;
   onUpdateConfig: (patch: Record<string, unknown>) => void;
 }) {
+  const { t } = useTranslation();
   const tags = useUserTags();
 
   const subject = cfg.subject ?? "var";
@@ -612,38 +614,38 @@ function ConditionForm({
     <>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <div>
-          <label className="mb-1 block text-xs text-muted-foreground">If</label>
+          <label className="mb-1 block text-xs text-muted-foreground">{t("flows.if")}</label>
           <Select
             value={subject}
             onValueChange={(v) =>
               onUpdateConfig({ subject: v as ConditionCfg["subject"] })
             }
           >
-            <SelectTrigger className="bg-muted">
+            <SelectTrigger className="w-full bg-muted">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="var">Captured variable</SelectItem>
-              <SelectItem value="tag">Contact has tag</SelectItem>
-              <SelectItem value="contact_field">Contact field</SelectItem>
+              <SelectItem value="var">{t("flows.capturedVariable")}</SelectItem>
+              <SelectItem value="tag">{t("flows.contactHasTag")}</SelectItem>
+              <SelectItem value="contact_field">{t("flows.contactField")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="md:col-span-2">
           <label className="mb-1 block text-xs text-muted-foreground">
             {subject === "var"
-              ? "var name"
+              ? t("flows.varName")
               : subject === "tag"
-                ? "Tag"
-                : "Field"}
+                ? t("flows.tag")
+                : t("flows.field")}
           </label>
           {subject === "tag" && tags.length > 0 ? (
             <Select
               value={cfg.subject_key ?? ""}
               onValueChange={(v) => onUpdateConfig({ subject_key: v })}
             >
-              <SelectTrigger className="bg-muted">
-                <SelectValue placeholder="Pick a tag…" />
+              <SelectTrigger className="w-full bg-muted">
+                <SelectValue placeholder={t("flows.pickTag")} />
               </SelectTrigger>
               <SelectContent>
                 {tags.map((t) => (
@@ -658,14 +660,14 @@ function ConditionForm({
               value={cfg.subject_key ?? ""}
               onValueChange={(v) => onUpdateConfig({ subject_key: v })}
             >
-              <SelectTrigger className="bg-muted">
-                <SelectValue placeholder="Pick a field…" />
+              <SelectTrigger className="w-full bg-muted">
+                <SelectValue placeholder={t("flows.pickField")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="name">name</SelectItem>
-                <SelectItem value="email">email</SelectItem>
-                <SelectItem value="phone">phone</SelectItem>
-                <SelectItem value="company">company</SelectItem>
+                <SelectItem value="name">{t("common.name")}</SelectItem>
+                <SelectItem value="email">{t("common.email")}</SelectItem>
+                <SelectItem value="phone">{t("common.phone")}</SelectItem>
+                <SelectItem value="company">{t("flows.company")}</SelectItem>
               </SelectContent>
             </Select>
           ) : (
@@ -674,7 +676,11 @@ function ConditionForm({
               onChange={(e) =>
                 onUpdateConfig({ subject_key: e.target.value })
               }
-              placeholder={subject === "var" ? "e.g. email" : "tag UUID"}
+              placeholder={
+                subject === "var"
+                  ? t("flows.varExample")
+                  : t("flows.tagUuidPlaceholder")
+              }
               className="bg-muted font-mono text-xs"
             />
           )}
@@ -688,27 +694,27 @@ function ConditionForm({
         )}
       >
         <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Operator</label>
+          <label className="mb-1 block text-xs text-muted-foreground">{t("flows.operator")}</label>
           <Select
             value={operator}
             onValueChange={(v) =>
               onUpdateConfig({ operator: v as ConditionCfg["operator"] })
             }
           >
-            <SelectTrigger className="bg-muted">
+            <SelectTrigger className="w-full bg-muted">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="present">is present</SelectItem>
-              <SelectItem value="absent">is absent</SelectItem>
-              <SelectItem value="equals">equals</SelectItem>
-              <SelectItem value="contains">contains</SelectItem>
+              <SelectItem value="present">{t("flows.isPresent")}</SelectItem>
+              <SelectItem value="absent">{t("flows.isAbsent")}</SelectItem>
+              <SelectItem value="equals">{t("flows.equals")}</SelectItem>
+              <SelectItem value="contains">{t("flows.contains")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         {showValue && (
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Value</label>
+            <label className="mb-1 block text-xs text-muted-foreground">{t("flows.value")}</label>
             <Input
               value={cfg.value ?? ""}
               onChange={(e) => onUpdateConfig({ value: e.target.value })}
@@ -724,14 +730,14 @@ function ConditionForm({
           allNodes={allNodes}
           currentKey={currentKey}
           onChange={(v) => onUpdateConfig({ true_next: v })}
-          label="If true → advance to"
+          label={t("flows.ifTrueAdvanceTo")}
         />
         <NextNodeRow
           value={cfg.false_next ?? ""}
           allNodes={allNodes}
           currentKey={currentKey}
           onChange={(v) => onUpdateConfig({ false_next: v })}
-          label="If false → advance to"
+          label={t("flows.ifFalseAdvanceTo")}
         />
       </div>
     </>
@@ -759,37 +765,38 @@ function SetTagForm({
   currentKey: string;
   onUpdateConfig: (patch: Record<string, unknown>) => void;
 }) {
+  const { t } = useTranslation();
   const tags = useUserTags();
 
   return (
     <>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Action</label>
+          <label className="mb-1 block text-xs text-muted-foreground">{t("flows.action")}</label>
           <Select
             value={cfg.mode ?? "add"}
             onValueChange={(v) =>
               onUpdateConfig({ mode: v as SetTagCfg["mode"] })
             }
           >
-            <SelectTrigger className="bg-muted">
+            <SelectTrigger className="w-full bg-muted">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="add">Add tag</SelectItem>
-              <SelectItem value="remove">Remove tag</SelectItem>
+              <SelectItem value="add">{t("flows.addTag")}</SelectItem>
+              <SelectItem value="remove">{t("flows.removeTag")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Tag</label>
+          <label className="mb-1 block text-xs text-muted-foreground">{t("flows.tag")}</label>
           {tags.length > 0 ? (
             <Select
               value={cfg.tag_id ?? ""}
               onValueChange={(v) => onUpdateConfig({ tag_id: v })}
             >
-              <SelectTrigger className="bg-muted">
-                <SelectValue placeholder="Pick a tag…" />
+              <SelectTrigger className="w-full bg-muted">
+                <SelectValue placeholder={t("flows.pickTag")} />
               </SelectTrigger>
               <SelectContent>
                 {tags.map((t) => (
@@ -803,7 +810,7 @@ function SetTagForm({
             <Input
               value={cfg.tag_id ?? ""}
               onChange={(e) => onUpdateConfig({ tag_id: e.target.value })}
-              placeholder="Tag UUID"
+              placeholder={t("flows.tagUuidPlaceholder")}
               className="bg-muted font-mono text-xs"
             />
           )}
@@ -814,7 +821,7 @@ function SetTagForm({
         allNodes={allNodes}
         currentKey={currentKey}
         onChange={(v) => onUpdateConfig({ next_node_key: v })}
-        label="Then advance to"
+        label={t("flows.thenAdvanceTo")}
       />
     </>
   );
@@ -882,6 +889,7 @@ function SendMediaForm({
   currentKey: string;
   onUpdateConfig: (patch: Record<string, unknown>) => void;
 }) {
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -895,7 +903,10 @@ function SendMediaForm({
     async (file: File) => {
       if (file.size > MEDIA_MAX_BYTES) {
         toast.error(
-          `File is ${(file.size / 1024 / 1024).toFixed(1)} MB — limit is 16 MB.`,
+          t("flows.fileTooLarge", {
+            size: (file.size / 1024 / 1024).toFixed(1),
+            limit: "16",
+          }),
         );
         return;
       }
@@ -910,15 +921,15 @@ function SendMediaForm({
           media_url: publicUrl,
           filename: file.name,
         });
-        toast.success("File uploaded.");
+        toast.success(t("flows.fileUploaded"));
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Upload failed.";
+        const msg = err instanceof Error ? err.message : t("flows.uploadFailed");
         toast.error(msg);
       } finally {
         setUploading(false);
       }
     },
-    [onUpdateConfig],
+    [onUpdateConfig, t],
   );
 
   const handleClear = () => {
@@ -928,7 +939,7 @@ function SendMediaForm({
   return (
     <>
       <div>
-        <label className="mb-1 block text-xs text-muted-foreground">Media type</label>
+        <label className="mb-1 block text-xs text-muted-foreground">{t("flows.mediaType")}</label>
         <Select
           value={mediaType}
           onValueChange={(v) => {
@@ -942,21 +953,21 @@ function SendMediaForm({
             });
           }}
         >
-          <SelectTrigger className="bg-muted">
+          <SelectTrigger className="w-full bg-muted">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="image">Image (PNG, JPEG, WebP)</SelectItem>
-            <SelectItem value="video">Video (MP4, 3GP)</SelectItem>
+            <SelectItem value="image">{t("flows.mediaTypeImage")}</SelectItem>
+            <SelectItem value="video">{t("flows.mediaTypeVideo")}</SelectItem>
             <SelectItem value="document">
-              Document (PDF, Word, Excel, PowerPoint, TXT)
+              {t("flows.mediaTypeDocument")}
             </SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div>
-        <label className="mb-1 block text-xs text-muted-foreground">File</label>
+        <label className="mb-1 block text-xs text-muted-foreground">{t("flows.file")}</label>
         {cfg.media_url ? (
           <div className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 text-xs">
             <Paperclip className="h-3.5 w-3.5 shrink-0 text-cyan-400" />
@@ -973,7 +984,7 @@ function SendMediaForm({
               type="button"
               onClick={handleClear}
               className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-              aria-label="Remove file"
+              aria-label={t("flows.removeFile")}
               disabled={uploading}
             >
               <X className="h-3.5 w-3.5" />
@@ -989,12 +1000,12 @@ function SendMediaForm({
             {uploading ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Uploading…
+                {t("flows.uploading")}
               </>
             ) : (
               <>
                 <Upload className="h-3.5 w-3.5" />
-                Click to upload (max 16 MB)
+                {t("flows.clickToUpload")}
               </>
             )}
           </button>
@@ -1014,7 +1025,7 @@ function SendMediaForm({
       </div>
 
       <TextRow
-        label="Caption (optional, shown under the media)"
+        label={t("flows.captionOptional")}
         value={cfg.caption ?? ""}
         onChange={(v) => onUpdateConfig({ caption: v })}
         rows={2}
@@ -1023,12 +1034,12 @@ function SendMediaForm({
       {isDocument && (
         <div>
           <label className="mb-1 block text-xs text-muted-foreground">
-            Filename shown to the customer (documents only)
+            {t("flows.filenameShownToCustomer")}
           </label>
           <Input
             value={cfg.filename ?? ""}
             onChange={(e) => onUpdateConfig({ filename: e.target.value })}
-            placeholder="invoice.pdf"
+            placeholder={t("flows.filenamePlaceholder")}
             className="bg-muted text-xs"
           />
         </div>
@@ -1039,7 +1050,7 @@ function SendMediaForm({
         allNodes={allNodes}
         currentKey={currentKey}
         onChange={(v) => onUpdateConfig({ next_node_key: v })}
-        label="After sending, advance to"
+        label={t("flows.afterSendingAdvanceTo")}
       />
     </>
   );

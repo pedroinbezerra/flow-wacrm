@@ -47,7 +47,6 @@ import { useTranslation } from "@/hooks/use-translation";
 import { type ValidationIssue } from "@/lib/flows/validate";
 import {
   getNodeMeta,
-  NODE_META,
   slugify,
   summarizeNode,
   type BuilderNode,
@@ -165,16 +164,14 @@ export function FlowBuilder() {
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-foreground">
-            Nodes ({state.nodes.length})
+            {t("flows.nodesTitle", { count: state.nodes.length })}
           </h2>
           <AddNodeButton onAdd={addNode} />
         </div>
 
         {state.nodes.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border bg-card/50 p-8 text-center text-sm text-muted-foreground">
-            Add a <strong>Start</strong> node, then a <strong>Send buttons</strong>
-            {" "}node, then a <strong>Handoff</strong> — that&apos;s the welcome-menu
-            shape from the brief.
+            {t("flows.emptyNodesHint")}
           </div>
         ) : (
           state.nodes.map((node) => (
@@ -269,6 +266,13 @@ function TriggerPanel({
   triggerIssues: ValidationIssue[];
 }) {
   const { t } = useTranslation();
+  const selectedTriggerLabel =
+    state.trigger_type === "keyword"
+      ? t("flows.messageContainsKeyword")
+      : state.trigger_type === "first_inbound_message"
+        ? t("flows.firstEverInboundMessage")
+        : t("flows.manualOnly");
+
   return (
     <section className="rounded-lg border border-border bg-card p-4">
       <h2 className="mb-3 text-sm font-semibold text-foreground">{t("flows.trigger")}</h2>
@@ -286,8 +290,8 @@ function TriggerPanel({
               }))
             }
           >
-            <SelectTrigger className="bg-muted">
-              <SelectValue />
+            <SelectTrigger className="w-full bg-muted">
+              <SelectValue>{selectedTriggerLabel}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="keyword">

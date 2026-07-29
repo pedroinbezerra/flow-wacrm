@@ -17,7 +17,9 @@
  * concept). User can switch to List to address them.
  */
 
-import { CircleAlert, CircleCheck } from "lucide-react";
+import { CircleAlert } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import type { ValidationIssue } from "@/lib/flows/validate";
@@ -26,17 +28,20 @@ import { useFlowEditor } from "./flow-editor-state";
 export function ValidationPanel() {
   const { issues, requestFlash } = useFlowEditor();
   const { t } = useTranslation();
+  const previousIssueCountRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const previous = previousIssueCountRef.current;
+
+    if (previous !== null && previous > 0 && issues.length === 0) {
+      toast.success(t("flows.noIssuesReady"), { duration: 3500 });
+    }
+
+    previousIssueCountRef.current = issues.length;
+  }, [issues.length, t]);
 
   if (issues.length === 0) {
-    // Slate-950 base + emerald accents so the panel stays readable when
-    // sticky-positioned over scrolled-behind node cards (a translucent
-    // bg-emerald-500/10 would bleed through ugly).
-    return (
-      <div className="flex items-center gap-2 rounded-lg border border-emerald-600/50 bg-background p-3 text-sm font-medium text-emerald-300">
-        <CircleCheck className="h-4 w-4 shrink-0" />
-        {t("flows.noIssuesReady")}
-      </div>
-    );
+    return null;
   }
   const errors = issues.filter((i) => i.severity === "error");
   const warnings = issues.filter((i) => i.severity === "warning");

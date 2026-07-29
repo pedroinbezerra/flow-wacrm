@@ -119,6 +119,16 @@ export function validateFlowForActivation(
   // entry. Done after per-node validation so we don't double-report
   // when a node has bad config AND is unreachable.
   if (flow.entry_node_id && keys.has(flow.entry_node_id)) {
+    const cycle = findCycleFromEntry(flow.entry_node_id, nodes);
+    if (cycle) {
+      issues.push({
+        severity: "error",
+        scope: "flow",
+        field: "entry_node_id",
+        message: `Cycle detected in active path: ${cycle.join(" -> ")}. Flows must eventually reach handoff/end.`,
+      });
+    }
+
     const reached = reachableFromEntry(flow.entry_node_id, nodes);
     for (const n of nodes) {
       if (!reached.has(n.node_key)) {
@@ -154,7 +164,8 @@ function validateTrigger(
         severity: "error",
         scope: "trigger",
         field: "trigger_config.keywords",
-        message: "Keyword triggers need at least one keyword.",
+        // Tradução de mensagem de erro para pt-BR
+        message: "Triggers de palavra-chave precisam de pelo menos uma palavra-chave.",
       });
     } else {
       // Empty / whitespace-only keywords are silent no-ops at match
@@ -164,11 +175,13 @@ function validateTrigger(
         (k) => typeof k !== "string" || !k.trim(),
       ).length;
       if (blanks > 0) {
+        // Mensagem de aviso traduzida e com plural adequado
         issues.push({
           severity: "warning",
           scope: "trigger",
           field: "trigger_config.keywords",
-          message: `${blanks} keyword${blanks === 1 ? " is" : "s are"} blank — they won't match anything.`,
+          message:
+            `${blanks} palavra-chave${blanks === 1 ? "" : "s"} em branco — elas não corresponderão a nada.`,
         });
       }
     }
@@ -743,6 +756,45 @@ export function reachableFromEntry(
     }
   }
   return visited;
+}
+
+function findCycleFromEntry(
+  entryKey: string,
+  nodes: NodeInput[],
+): string[] | null {
+  const byKey = new Map<string, NodeInput>();
+  for (const n of nodes) byKey.set(n.node_key, n);
+
+  const visited = new Set<string>();
+  const inStack = new Set<string>();
+  const stack: string[] = [];
+
+  const dfs = (key: string): string[] | null => {
+    visited.add(key);
+    inStack.add(key);
+    stack.push(key);
+
+    const node = byKey.get(key);
+    if (node) {
+      for (const next of outgoingEdges(node)) {
+        if (!visited.has(next)) {
+          const hit = dfs(next);
+          if (hit) return hit;
+        } else if (inStack.has(next)) {
+          const start = stack.indexOf(next);
+          const path = stack.slice(start);
+          path.push(next);
+          return path;
+        }
+      }
+    }
+
+    stack.pop();
+    inStack.delete(key);
+    return null;
+  };
+
+  return dfs(entryKey);
 }
 
 function outgoingEdges(node: NodeInput): string[] {

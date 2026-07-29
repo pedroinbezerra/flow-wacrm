@@ -346,6 +346,28 @@ async function findEntryFlow(
   return null;
 }
 
+async function expireStaleRunIfNeeded(
+  db: AdminClient,
+  run: FlowRunRow,
+): Promise<boolean> {
+  const flow = await loadFlow(db, run.flow_id);
+  if (!flow) return false;
+
+  const policy = resolveFallbackPolicy(flow.fallback_policy);
+  const lastAdvanced = new Date(run.last_advanced_at);
+  const ageHours =
+    (Date.now() - lastAdvanced.getTime()) / (1000 * 60 * 60);
+  if (ageHours < policy.on_timeout_hours) return false;
+
+  await endRun(db, run.id, "timed_out", "stale_inbound_resume");
+  await logEvent(db, run.id, "timeout", run.current_node_key, {
+    age_hours: Math.round(ageHours * 10) / 10,
+    policy_hours: policy.on_timeout_hours,
+    source: "inbound_guard",
+  });
+  return true;
+}
+
 // ============================================================
 // Node executors — each handles ONE node type. send_buttons and
 // send_list also persist `last_prompt_message_id` so the inbox
@@ -831,11 +853,16 @@ export async function dispatchInboundToFlows(
 ): Promise<DispatchInboundResult> {
   const db = supabaseAdmin();
   try {
-    const activeRun = await loadActiveRunForContact(
+    let activeRun = await loadActiveRunForContact(
       db,
       input.accountId,
       input.contactId,
     );
+
+    if (activeRun) {
+      const expired = await expireStaleRunIfNeeded(db, activeRun);
+      if (expired) activeRun = null;
+    }
 
     // Idempotency — only matters if there's already a run for this
     // contact. For new runs, the partial unique index catches duplicate
@@ -879,6 +906,49 @@ export async function dispatchInboundToFlows(
     );
     return { consumed: false, outcome: "no_match" };
   }
+}
+
+export async function dispatchManualFlowStart(input: {
+  flowId: string;
+  accountId: string;
+  userId: string;
+  contactId: string;
+  conversationId: string;
+}): Promise<DispatchInboundResult> {
+  const db = supabaseAdmin();
+
+  const { data: flowRow, error } = await db
+    .from("flows")
+    .select("*")
+    .eq("id", input.flowId)
+    .eq("account_id", input.accountId)
+    .maybeSingle();
+  if (error || !flowRow) {
+    return { consumed: false, outcome: "no_match" };
+  }
+
+  const flow = flowRow as FlowRow;
+  if (!flow.entry_node_id) {
+    return { consumed: false, outcome: "no_match" };
+  }
+
+  const nodes = await loadAllNodes(db, flow.id);
+  return startNewRun(
+    db,
+    flow,
+    {
+      accountId: input.accountId,
+      userId: input.userId,
+      contactId: input.contactId,
+      conversationId: input.conversationId,
+      message: {
+        kind: "text",
+        text: "",
+        meta_message_id: `manual:${flow.id}:${Date.now()}`,
+      },
+    },
+    nodes,
+  );
 }
 
 async function handleReplyForActiveRun(

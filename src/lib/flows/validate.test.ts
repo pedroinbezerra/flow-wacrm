@@ -99,6 +99,28 @@ describe("validateFlowForActivation — flow-level", () => {
       ),
     ).toBe(true);
   });
+
+  it("flags reachable cycles from the entry node", () => {
+    const cyclicNodes = [
+      { node_key: "start", node_type: "start", config: { next_node_key: "a" } },
+      { node_key: "a", node_type: "send_message", config: { text: "A", next_node_key: "b" } },
+      { node_key: "b", node_type: "send_message", config: { text: "B", next_node_key: "a" } },
+    ];
+
+    const issues = validateFlowForActivation(
+      { ...validFlow, entry_node_id: "start" },
+      cyclicNodes,
+    );
+
+    expect(
+      issues.some(
+        (i) =>
+          i.scope === "flow" &&
+          i.severity === "error" &&
+          i.message.includes("Cycle detected"),
+      ),
+    ).toBe(true);
+  });
 });
 
 describe("validateFlowForActivation — trigger", () => {
