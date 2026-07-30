@@ -7,6 +7,7 @@ import { findExistingContact, isUniqueViolation } from '@/lib/contacts/dedupe'
 import { verifyMetaWebhookSignature } from '@/lib/whatsapp/webhook-signature'
 import { runAutomationsForTrigger } from '@/lib/automations/engine'
 import { dispatchInboundToFlows } from '@/lib/flows/engine'
+import { processInboundWithAIService } from '@/lib/ai-service/engine'
 import { formatConversationPreview } from '@/lib/conversation-preview'
 import {
   handleTemplateWebhookChange,
@@ -685,22 +686,45 @@ async function processMessage(
     isFirstInboundMessage,
   })
   const flowConsumed = flowResult.consumed
+  const inboundText = contentText ?? message.text?.body ?? ''
+
+  // ============================================================
+  // Smart AI Service Dispatch
+  //
+  // If the flow runner did NOT consume the message, check if Smart AI
+  // Service is enabled and active for this conversation. If AI handles
+  // the message, `aiResult.handled` will be true.
+  // ============================================================
+  let aiConsumed = false
+  if (!flowConsumed && inboundText) {
+    try {
+      const aiResult = await processInboundWithAIService({
+        accountId,
+        conversationId: conversation.id,
+        contactId: contactRecord.id,
+        senderPhone,
+        inboundMessageText: inboundText,
+        metaMessageId: message.id,
+      })
+      aiConsumed = aiResult.handled && (aiResult.responseSent || aiResult.handoffTriggered || false)
+    } catch (aiErr) {
+      console.error('[ai-service] Error processing inbound message:', aiErr)
+    }
+  }
 
   // Fire any automations that react to this webhook event. All dispatches
   // run here (not earlier) so the contact, conversation, and inbound
   // message all exist before any step — including send_message — runs.
   // Fire-and-forget: a slow or failing automation must not block the
   // webhook's 200 OK response to Meta.
-  const inboundText = contentText ?? message.text?.body ?? ''
   const automationTriggers: (
     | 'new_contact_created'
     | 'first_inbound_message'
     | 'new_message_received'
     | 'keyword_match'
   )[] = []
-  // Content-level triggers are suppressed when a flow consumed the
-  // message — see the comment block above.
-  if (!flowConsumed) {
+  // Content-level triggers are suppressed when a flow or AI service consumed the message
+  if (!flowConsumed && !aiConsumed) {
     automationTriggers.push('new_message_received', 'keyword_match')
   }
   // new_contact_created fires only when the webhook just auto-created the

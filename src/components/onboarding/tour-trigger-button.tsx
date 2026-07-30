@@ -254,6 +254,41 @@ export function TourTriggerButton() {
           },
         },
       ], "settings");
+    } else if (pathname.startsWith("/ai-assistant")) {
+      startTour([
+        {
+          element: "#tour-ai-header",
+          popover: {
+            title: t("onboarding.tour.ai_assistant.headerTitle"),
+            description: t("onboarding.tour.ai_assistant.headerDesc"),
+            side: "bottom",
+          },
+        },
+        {
+          element: "#tour-ai-tabs",
+          popover: {
+            title: t("onboarding.tour.ai_assistant.tabsTitle"),
+            description: t("onboarding.tour.ai_assistant.tabsDesc"),
+            side: "bottom",
+          },
+        },
+        {
+          element: "#tour-ai-config-persona",
+          popover: {
+            title: t("onboarding.tour.ai_assistant.personaTitle"),
+            description: t("onboarding.tour.ai_assistant.personaDesc"),
+            side: "bottom",
+          },
+        },
+        {
+          element: "#tour-ai-config-byok",
+          popover: {
+            title: t("onboarding.tour.ai_assistant.byokTitle"),
+            description: t("onboarding.tour.ai_assistant.byokDesc"),
+            side: "top",
+          },
+        },
+      ], "ai_assistant");
     } else {
       // Default: Dashboard Overview
       startTour([

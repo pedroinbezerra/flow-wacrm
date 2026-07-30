@@ -8,7 +8,7 @@ import {
 } from "@/lib/conversation-preview";
 import { useTranslation } from "@/hooks/use-translation";
 import type { Conversation, ConversationStatus } from "@/types";
-import { Search, ChevronDown, AtSign, Clock3, Pin } from "lucide-react";
+import { Search, ChevronDown, AtSign, Clock3, Pin, Bot, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Input } from "@/components/ui/input";
 import {
@@ -380,6 +380,15 @@ function ConversationItem({
             {normalizeConversationPreview(conversation.last_message_text) || t("inbox.noMessagesYet")}
           </p>
           <div className="flex shrink-0 items-center gap-1.5">
+            {conversation.ai_handler_status === "human" ? (
+              <span title="Atendimento Humano">
+                <User className="h-3 w-3 text-amber-400" />
+              </span>
+            ) : (
+              <span title="Atendimento IA Ativo">
+                <Bot className="h-3 w-3 text-emerald-400" />
+              </span>
+            )}
             {boardFlags?.mention_active && (
               <span title={t("boards.mentioned")}>
                 <AtSign className="h-3 w-3 text-rose-500" />

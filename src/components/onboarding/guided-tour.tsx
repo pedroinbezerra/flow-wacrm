@@ -233,11 +233,47 @@ export function GuidedTour() {
       tourKey = "automations";
       steps = [
         {
-          element: "#tour-automations-header",
+          element: "#tour-automations-actions",
           popover: {
-            title: t("onboarding.tour.automations.headerTitle"),
-            description: t("onboarding.tour.automations.headerDesc"),
+            title: t("onboarding.tour.automations.actionsTitle"),
+            description: t("onboarding.tour.automations.actionsDesc"),
+            side: "left",
+          },
+        },
+      ];
+    } else if (pathname.startsWith("/ai-assistant")) {
+      tourKey = "ai_assistant";
+      steps = [
+        {
+          element: "#tour-ai-header",
+          popover: {
+            title: t("onboarding.tour.ai_assistant.headerTitle"),
+            description: t("onboarding.tour.ai_assistant.headerDesc"),
             side: "bottom",
+          },
+        },
+        {
+          element: "#tour-ai-tabs",
+          popover: {
+            title: t("onboarding.tour.ai_assistant.tabsTitle"),
+            description: t("onboarding.tour.ai_assistant.tabsDesc"),
+            side: "bottom",
+          },
+        },
+        {
+          element: "#tour-ai-config-persona",
+          popover: {
+            title: t("onboarding.tour.ai_assistant.personaTitle"),
+            description: t("onboarding.tour.ai_assistant.personaDesc"),
+            side: "bottom",
+          },
+        },
+        {
+          element: "#tour-ai-config-byok",
+          popover: {
+            title: t("onboarding.tour.ai_assistant.byokTitle"),
+            description: t("onboarding.tour.ai_assistant.byokDesc"),
+            side: "top",
           },
         },
       ];

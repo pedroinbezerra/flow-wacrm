@@ -209,6 +209,7 @@
     "pipelines": "Pipelines",
     "flows": "Fluxos",
     "automations": "Automações",
+    "aiAssistant": "Atendimento IA",
     "inbox": "Caixa de entrada",
     "settings": "Configurações",
     "profile": "Perfil",
@@ -1841,6 +1842,22 @@
         "headerDesc": "Configure regras automáticas de distribuição, etiquetas e atalhos de atendimento.",
         "actionsTitle": "Criar Regra ⚡",
         "actionsDesc": "Crie novas automações com condições e ações personalizadas."
+      },
+      "ai_assistant": {
+        "headerTitle": "Atendimento Inteligente 🤖",
+        "headerDesc": "Ensine a IA a atender a sua empresa com base no seu conhecimento de negócio, sem criar árvores de decisão.",
+        "tabsTitle": "Navegação por Abas 🗂️",
+        "tabsDesc": "Alterne entre a Configuração do assistente, Base de Conhecimento, Mídias e Simulador.",
+        "personaTitle": "Perfil do Negócio 🏢",
+        "personaDesc": "Defina o nome da empresa, objetivo, tom de voz, regras de atendimento e limitações do assistente.",
+        "byokTitle": "Credenciais BYOK & Modelos 🔑",
+        "byokDesc": "Informe sua chave de API (BYOK), escolha o modelo de linguagem no menu suspenso ou busque modelos disponíveis.",
+        "knowledgeTitle": "Base de Conhecimento 📚",
+        "knowledgeDesc": "Cadastre tudo o que a IA precisa saber: produtos, horários, perguntas frequentes e políticas da empresa.",
+        "mediaTitle": "Biblioteca de Mídias 📁",
+        "mediaDesc": "Cadastre imagens, catálogos em PDF ou vídeos para que a IA os envie aos clientes automaticamente.",
+        "playgroundTitle": "Simulador Interativo 💬",
+        "playgroundDesc": "Teste o assistente em tempo real como se fosse um cliente antes de ativá-lo no WhatsApp oficial!"
       }
     },
     "analytics": {
@@ -1860,6 +1877,114 @@
       "chartSkipped": "Pulado",
       "loadingMetrics": "Carregando métricas da jornada...",
       "errorTitle": "Erro ao carregar inteligência de onboarding"
+    }
+  },
+
+  "aiAssistant": {
+    "title": "Atendimento Inteligente",
+    "subtitle": "Ensine a Inteligência Artificial a atender seus clientes sem criar fluxos ou árvores de decisão. Basta descrever o funcionamento do seu negócio!",
+    "activeInWhatsApp": "Ativo no WhatsApp",
+    "inactive": "Inativo",
+    "statusLabel": "Status do Assistente:",
+    "loading": "Carregando Atendimento Inteligente...",
+    "tabs": {
+      "config": "Configuração",
+      "knowledge": "Conhecimento",
+      "media": "Mídias",
+      "playground": "Simulador"
+    },
+    "persona": {
+      "title": "Perfil & Funcionamento do Negócio",
+      "description": "Explique para a IA como sua empresa funciona, da mesma forma que explicaria para um novo funcionário.",
+      "companyName": "Nome da Empresa",
+      "companyNamePlaceholder": "Ex: Confeitaria Doce Sabor",
+      "segment": "Segmento de Atuação",
+      "segmentPlaceholder": "Ex: Alimentação / Confeitaria",
+      "goal": "Objetivo do Atendimento",
+      "goalPlaceholder": "Ex: Tirar dúvidas, apresentar o cardápio e fechar pedidos",
+      "style": "Tom de Voz & Estilo de Comunicação",
+      "stylePlaceholder": "Ex: Amigável, acolhedor, objetivo e com emojis doces",
+      "rules": "Regras de Atendimento",
+      "rulesPlaceholder": "Ex: Cumprimente o cliente com entusiasmo, confirme o endereço de entrega antes de finalizar...",
+      "limitations": "Limitações e Restrições (O que NÃO fazer)",
+      "limitationsPlaceholder": "Ex: Não oferecer descontos maiores que 5%, não aceitar pagamentos em cheque...",
+      "handoff": "Orientações para Transferência Humana",
+      "handoffPlaceholder": "Ex: Transferir para atendente humano quando o cliente solicitar reclamações ou personalização de festas grandes."
+    },
+    "byok": {
+      "title": "Prove seu Próprio Provedor (Bring Your Own Key - BYOK)",
+      "description": "Conecte sua própria chave de API (OpenAI ou provedor compatível como Groq, OpenRouter ou DeepSeek).",
+      "apiUrl": "URL da API (Base URL)",
+      "model": "Modelo de Linguagem",
+      "modelSelectPlaceholder": "Selecione um modelo...",
+      "fetchModels": "Buscar Modelos",
+      "apiKey": "Chave de API (API Key)",
+      "keyConfigured": "Chave configurada: {key}",
+      "keyPlaceholder": "sk-...",
+      "testConnection": "Testar Conexão",
+      "keyNotice": "Sua chave é armazenada com criptografia AES-256-GCM e nunca é exposta publicamente.",
+      "save": "Salvar Alterações"
+    },
+    "knowledge": {
+      "searchPlaceholder": "Buscar na base de conhecimento...",
+      "add": "Adicionar Conhecimento",
+      "emptyTitle": "Nenhum conhecimento cadastrado",
+      "emptyDescription": "Adicione informações sobre seus produtos, serviços, horários, perguntas frequentes e políticas da empresa.",
+      "modalAddTitle": "Novo Conhecimento",
+      "modalEditTitle": "Editar Conhecimento",
+      "modalDescription": "Forneça informações claras e detalhadas para que o assistente responda corretamente aos clientes.",
+      "category": "Categoria",
+      "categoryPlaceholder": "Ex: Produtos, Serviços, Horários, FAQ, Políticas",
+      "itemTitle": "Título / Assunto",
+      "itemTitlePlaceholder": "Ex: Formas de Pagamento Aceitas",
+      "content": "Conteúdo Detalhado",
+      "contentPlaceholder": "Descreva detalhadamente todas as informações referentes a este assunto...",
+      "cancel": "Cancelar",
+      "save": "Salvar",
+      "confirmDelete": "Deseja realmente excluir este item de conhecimento?"
+    },
+    "media": {
+      "add": "Cadastrar Nova Mídia",
+      "emptyTitle": "Nenhuma mídia cadastrada",
+      "emptyDescription": "Cadastre imagens de produtos, catálogos em PDF ou vídeos explicativos para que a IA os envie aos clientes automaticamente durante o atendimento.",
+      "viewMedia": "Visualizar Mídia",
+      "whenToSend": "Instrução de Envio (Quando Enviar):",
+      "modalTitle": "Cadastrar Mídia para Atendimento",
+      "modalDescription": "Envie o arquivo e informe a instrução de quando a Inteligência Artificial deve encaminhá-lo ao cliente.",
+      "mediaTitle": "Título da Mídia",
+      "mediaTitlePlaceholder": "Ex: Catálogo de Bolos e Doces 2026",
+      "fileType": "Tipo de Arquivo",
+      "image": "Imagem",
+      "video": "Vídeo",
+      "document": "Documento (PDF)",
+      "upload": "Upload do Arquivo",
+      "urlPlaceholder": "Ou insira uma URL direta de mídia (https://...)",
+      "descLabel": "Quando a IA deve enviar este arquivo?",
+      "descPlaceholder": "Ex: Enviar quando o cliente solicitar a tabela de preços, o cardápio ou opções de festas.",
+      "cancel": "Cancelar",
+      "submit": "Cadastrar",
+      "confirmDelete": "Deseja excluir esta mídia?"
+    },
+    "playground": {
+      "title": "Simulador de Atendimento em Tempo Real",
+      "clear": "Limpar Chat",
+      "welcome": "Olá! Sou seu Assistente de IA em modo de teste. Digite uma mensagem como se fosse um cliente para testar minhas respostas!",
+      "restarted": "Simulador reiniciado! Digite sua mensagem abaixo.",
+      "handoffNotice": "Transferência para Atendente Humano acionada!",
+      "reason": "Motivo:",
+      "mediaAttached": "Mídias enviadas pela IA:",
+      "open": "Abrir",
+      "thinking": "Assistente pensando...",
+      "inputPlaceholder": "Simule uma dúvida ou mensagem de um cliente..."
+    },
+    "notifications": {
+      "configSaved": "Configurações do assistente salvas com sucesso!",
+      "knowledgeSaved": "Item salvo na Base de Conhecimento!",
+      "knowledgeDeleted": "Item excluído com sucesso.",
+      "mediaSaved": "Mídia cadastrada com sucesso na biblioteca da IA!",
+      "mediaDeleted": "Mídia excluída com sucesso.",
+      "connectionSuccess": "Conexão estabelecida com sucesso!",
+      "modelsLoaded": "{count} modelos carregados com sucesso!"
     }
   }
 }

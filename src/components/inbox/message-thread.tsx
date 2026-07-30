@@ -33,6 +33,10 @@ import {
   Pin,
   Clock3,
   FolderKanban,
+  Bot,
+  Sparkles,
+  UserCheck,
+  User,
 } from "lucide-react";
 import { format, isToday, isYesterday, differenceInHours } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -919,6 +923,34 @@ export function MessageThread({
     [conversation, onAssignChange],
   );
 
+  const [updatingHandlerStatus, setUpdatingHandlerStatus] = useState(false);
+  const handleToggleAIHandler = useCallback(async () => {
+    if (!conversation) return;
+    const nextStatus = conversation.ai_handler_status === "human" ? "ai" : "human";
+    setUpdatingHandlerStatus(true);
+    try {
+      const res = await fetch(`/api/ai-assistant/conversations/${conversation.id}/handler`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      if (res.ok) {
+        toast.success(
+          nextStatus === "human"
+            ? "Atendimento assumido! A IA foi pausada."
+            : "Conversa devolvida para o Atendimento Inteligente!"
+        );
+        onRefresh?.();
+      } else {
+        toast.error("Erro ao alterar controle de atendimento.");
+      }
+    } catch {
+      toast.error("Erro ao conectar ao servidor.");
+    } finally {
+      setUpdatingHandlerStatus(false);
+    }
+  }, [conversation, onRefresh]);
+
   const updateDefaultBoardItem = useCallback(
     async (payload: {
       awaitingReturn?: boolean;
@@ -1160,9 +1192,53 @@ export function MessageThread({
             <Clock className="h-3 w-3" />
             {sessionInfo.remaining}
           </Badge>
+          {/* AI Handler Status Badge */}
+          <Badge
+            variant="outline"
+            className={cn(
+              "ml-1 gap-1 text-[10px] sm:inline-flex border-border",
+              conversation.ai_handler_status === "human"
+                ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
+                : "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+            )}
+          >
+            {conversation.ai_handler_status === "human" ? (
+              <>
+                <User className="h-3 w-3" /> Humano
+              </>
+            ) : (
+              <>
+                <Bot className="h-3 w-3" /> IA Ativa
+              </>
+            )}
+          </Badge>
         </div>
 
         <div className="flex w-full flex-wrap items-center gap-1 sm:w-auto sm:justify-end sm:gap-2">
+          {/* AI Handoff Toggle Button */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleToggleAIHandler}
+            disabled={updatingHandlerStatus}
+            className={cn(
+              "h-8 text-xs font-medium gap-1",
+              conversation.ai_handler_status === "human"
+                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
+                : "border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20"
+            )}
+          >
+            {conversation.ai_handler_status === "human" ? (
+              <>
+                <Sparkles className="h-3.5 w-3.5" /> Devolver para IA
+              </>
+            ) : (
+              <>
+                <UserCheck className="h-3.5 w-3.5" /> Assumir Atendimento
+              </>
+            )}
+          </Button>
           {/* Contact-panel toggle — desktop only. The contact sidebar
               eats a chunk of horizontal width that crowds the thread on
               smaller laptops; this lets agents reclaim it when they just
