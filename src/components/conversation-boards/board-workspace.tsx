@@ -1313,6 +1313,8 @@ function PriorityColumn({
           canOperate={canOperate}
           onToggleAwaiting={onToggleAwaiting}
           onTogglePriority={onTogglePriority}
+          draggable={false}
+          dragIdPrefix="priority-"
         />
       ))}
       {items.length === 0 && (
@@ -1429,6 +1431,7 @@ function BoardCard({
   draggable = true,
   interactive = true,
   isOverlay = false,
+  dragIdPrefix = "",
 }: {
   item: ConversationBoardItem;
   onOpenInbox: (conversationId: string) => void;
@@ -1439,10 +1442,14 @@ function BoardCard({
   draggable?: boolean;
   interactive?: boolean;
   isOverlay?: boolean;
+  dragIdPrefix?: string;
 }) {
   const { t } = useTranslation();
+  // Prefixo diferencia o nó draggable na coluna de prioridades do
+  // nó na raia original, evitando que @dnd-kit aplique transform/
+  // isDragging no card espelhado quando o original é arrastado.
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: item.id,
+    id: `${dragIdPrefix}${item.id}`,
     disabled: !draggable,
   });
 

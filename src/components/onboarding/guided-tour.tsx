@@ -1,16 +1,47 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useGuidedTour } from "@/hooks/use-guided-tour";
 import { useTranslation } from "@/hooks/use-translation";
+import { useAuth } from "@/hooks/use-auth";
+import { createClient } from "@/lib/supabase/client";
+import { fetchCompletedTours } from "@/lib/onboarding/user-tours";
 
 export function GuidedTour() {
   const pathname = usePathname();
   const { startTour } = useGuidedTour();
   const { t } = useTranslation();
+  const { user, profileLoading } = useAuth();
+
+  const [completedTours, setCompletedTours] = useState<Set<string> | null>(null);
+
+  // Busca do Supabase os tours concluídos pelo usuário e sincroniza com o localStorage
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancel = false;
+    const supabase = createClient();
+
+    void fetchCompletedTours(supabase, user.id).then((set) => {
+      if (!cancel) {
+        setCompletedTours(set);
+        for (const key of set) {
+          try {
+            localStorage.setItem(`flow_tour_${key}_completed`, "true");
+          } catch (_e) {}
+        }
+      }
+    });
+
+    return () => {
+      cancel = true;
+    };
+  }, [user?.id]);
 
   useEffect(() => {
+    // Aguarda o carregamento do perfil/sessão antes de decidir exibir o tour
+    if (profileLoading || completedTours === null) return;
+
     let tourKey = "dashboard_overview";
     let steps: any[] = [];
 
@@ -310,17 +341,23 @@ export function GuidedTour() {
       return;
     }
 
-    // Verifica se já foi concluído para este módulo
-    const tourCompleted = localStorage.getItem(`flow_tour_${tourKey}_completed`);
+    // Verifica se já foi concluído no Supabase ou no localStorage
+    let isCompletedLocally = false;
+    try {
+      isCompletedLocally = localStorage.getItem(`flow_tour_${tourKey}_completed`) === "true";
+    } catch (_e) {}
 
-    if (!tourCompleted && steps.length > 0) {
+    const isCompletedInDb = completedTours.has(tourKey);
+
+    if (!isCompletedLocally && !isCompletedInDb && steps.length > 0) {
       const timer = setTimeout(() => {
         startTour(steps, tourKey);
       }, 1000);
 
       return () => clearTimeout(timer);
     }
-  }, [pathname, startTour, t]);
+  }, [pathname, startTour, t, profileLoading, completedTours]);
 
   return null;
 }
+
