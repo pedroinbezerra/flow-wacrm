@@ -45,7 +45,7 @@ export interface Profile {
 
 export type PlanStatus = 'active' | 'inactive';
 export type BillingPeriod = 'monthly' | 'yearly' | 'one_time' | 'none';
-export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'canceled';
+export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'canceled' | 'suspended';
 
 export interface PlanFeatures {
   max_users?: number;
@@ -74,6 +74,53 @@ export interface CommercialPlan {
   updated_at: string;
 }
 
+export interface Subscription {
+  id: string;
+  account_id: string;
+  plan_id: string;
+  status: SubscriptionStatus;
+  trial_ends_at?: string | null;
+  current_period_start?: string | null;
+  current_period_end?: string | null;
+  canceled_at?: string | null;
+  asaas_subscription_id?: string | null;
+  asaas_customer_id?: string | null;
+  metadata?: Record<string, unknown>;
+  plan?: CommercialPlan;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AccountAddon {
+  id: string;
+  account_id: string;
+  name: string;
+  feature_key: string;
+  quantity: number;
+  unit_price: number;
+  status: 'active' | 'canceled';
+  asaas_subscription_item_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Invoice {
+  id: string;
+  account_id: string;
+  subscription_id?: string | null;
+  asaas_payment_id?: string | null;
+  asaas_invoice_id?: string | null;
+  amount: number;
+  status: 'pending' | 'paid' | 'canceled' | 'refunded' | 'overdue';
+  billing_type?: string | null;
+  invoice_number?: string | null;
+  pdf_url?: string | null;
+  xml_url?: string | null;
+  bank_slip_url?: string | null;
+  paid_at?: string | null;
+  created_at: string;
+}
+
 // ============================================================
 // Account-sharing entities (017_account_sharing.sql)
 // ============================================================
@@ -87,6 +134,8 @@ export interface Account {
   subscription_status?: SubscriptionStatus;
   trial_ends_at?: string | null;
   plan?: CommercialPlan;
+  subscription?: Subscription;
+  addons?: AccountAddon[];
   created_at: string;
   updated_at: string;
 }

@@ -41,6 +41,56 @@ export async function getAccountPlan(
 }
 
 /**
+ * Consolidated Effective Features calculation for an Account.
+ * Combines Plan Features + Active Add-ons.
+ */
+export async function getEffectiveAccountConfig(
+  supabase: SupabaseClient,
+  accountId: string
+): Promise<{ plan: CommercialPlan | null; features: PlanFeatures }> {
+  const plan = await getAccountPlan(supabase, accountId);
+
+  // Attempt to call RPC get_effective_account_config
+  const { data: rpcFeatures, error: rpcErr } = await supabase
+    .rpc("get_effective_account_config", { p_account_id: accountId });
+
+  if (!rpcErr && rpcFeatures && typeof rpcFeatures === "object") {
+    return {
+      plan,
+      features: rpcFeatures as PlanFeatures,
+    };
+  }
+
+  // Fallback client-side calculation if RPC is not available yet
+  const baseFeatures: PlanFeatures = { ...(plan?.features || {}) };
+
+  const { data: addons } = await supabase
+    .from("account_addons")
+    .select("feature_key, quantity")
+    .eq("account_id", accountId)
+    .eq("status", "active");
+
+  if (addons && addons.length > 0) {
+    for (const addon of addons) {
+      const key = addon.feature_key as keyof PlanFeatures;
+      const currentVal = baseFeatures[key];
+      if (typeof currentVal === "number") {
+        baseFeatures[key] = currentVal + addon.quantity;
+      } else if (typeof currentVal === "boolean") {
+        if (addon.quantity > 0) baseFeatures[key] = true;
+      } else {
+        baseFeatures[key] = addon.quantity;
+      }
+    }
+  }
+
+  return {
+    plan,
+    features: baseFeatures,
+  };
+}
+
+/**
  * Check if an account satisfies a specific feature limit or permission flag.
  *
  * @param supabase - Supabase client
@@ -56,9 +106,9 @@ export async function checkAccountLimit(
   requestedIncrement = 1,
   currentOverride?: number
 ): Promise<LimitCheckResult> {
-  const plan = await getAccountPlan(supabase, accountId);
+  const { plan, features } = await getEffectiveAccountConfig(supabase, accountId);
 
-  if (!plan) {
+  if (!plan && Object.keys(features).length === 0) {
     return {
       allowed: true,
       feature,
@@ -66,8 +116,8 @@ export async function checkAccountLimit(
     };
   }
 
-  const features = plan.features || {};
   const featureVal = features[feature];
+  const planName = plan ? plan.name : "Configuração Personalizada";
 
   // If the feature is not configured in the plan, default to allowed
   if (featureVal === undefined || featureVal === null) {
@@ -84,7 +134,7 @@ export async function checkAccountLimit(
         allowed: false,
         feature,
         limit: false,
-        reason: `Recurso '${feature}' não está disponível no plano '${plan.name}'`,
+        reason: `Recurso '${feature}' não está disponível para a conta (${planName})`,
       };
     }
     return {
@@ -110,7 +160,7 @@ export async function checkAccountLimit(
         feature,
         current: currentCount,
         limit: featureVal,
-        reason: `Limite atingido para '${feature}' (${currentCount}/${featureVal}) no plano '${plan.name}'`,
+        reason: `Limite atingido para '${feature}' (${currentCount}/${featureVal}) na conta (${planName})`,
       };
     }
 

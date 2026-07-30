@@ -19,6 +19,7 @@ import {
   Radio,
   Settings,
   Shield,
+  TrendingUp,
   User,
   UserCog,
   Users,
@@ -255,20 +256,36 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
               );
             })}
             {isSuperAdmin && (
-              <li>
-                <Link
-                  href="/admin/plans"
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:py-2",
-                    pathname.startsWith("/admin/plans")
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  )}
-                >
-                  <CreditCard className="h-4 w-4" />
-                  {t("navigation.adminPlans")}
-                </Link>
-              </li>
+              <>
+                <li>
+                  <Link
+                    href="/admin/plans"
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:py-2",
+                      pathname.startsWith("/admin/plans")
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    {t("navigation.adminPlans")}
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/admin/analytics"
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:py-2",
+                      pathname.startsWith("/admin/analytics")
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    <TrendingUp className="h-4 w-4" />
+                    {t("navigation.adminAnalytics")}
+                  </Link>
+                </li>
+              </>
             )}
           </ul>
         </nav>
