@@ -1,8 +1,31 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/automations/admin-client";
 
+function isValidAccessToken(suppliedToken: string | null, expectedToken: string | undefined): boolean {
+  if (!expectedToken || !suppliedToken) return false;
+  const suppliedBuf = Buffer.from(suppliedToken);
+  const expectedBuf = Buffer.from(expectedToken);
+  if (suppliedBuf.length !== expectedBuf.length) return false;
+  return timingSafeEqual(suppliedBuf, expectedBuf);
+}
+
 export async function POST(req: Request) {
   try {
+    const expectedToken = process.env.ASAAS_WEBHOOK_ACCESS_TOKEN;
+    const suppliedToken = req.headers.get("asaas-access-token");
+
+    // Validação de segurança: se ASAAS_WEBHOOK_ACCESS_TOKEN estiver configurado no servidor,
+    // o header asaas-access-token é estritamente obrigatório e deve bater.
+    if (expectedToken) {
+      if (!isValidAccessToken(suppliedToken, expectedToken)) {
+        console.warn("[Asaas Webhook] Tentativa de chamada não autorizada ou token inválido.");
+        return NextResponse.json({ error: "Unauthorized webhook request" }, { status: 401 });
+      }
+    } else {
+      console.warn("[Asaas Webhook] ASAAS_WEBHOOK_ACCESS_TOKEN não está definido nas variáveis de ambiente!");
+    }
+
     const payload = await req.json();
 
     const { event, payment } = payload || {};
@@ -54,20 +77,39 @@ export async function POST(req: Request) {
           })
           .eq("id", sub.account_id);
 
-        // Insert or update Invoice & NF record
-        await supabase.from("invoices").insert({
-          account_id: sub.account_id,
-          subscription_id: sub.id,
-          asaas_payment_id: payment.id,
-          asaas_invoice_id: payment.invoiceId || null,
-          amount: Number(payment.value || payment.netValue || 0),
-          status: "paid",
-          billing_type: payment.billingType,
-          invoice_number: payment.invoiceNumber || null,
-          pdf_url: payment.invoiceUrl || payment.bankSlipUrl || null,
-          bank_slip_url: payment.bankSlipUrl || null,
-          paid_at: new Date().toISOString(),
-        });
+        // Insert or update Invoice & NF record idempotently
+        if (payment.id) {
+          const { data: existingInv } = await supabase
+            .from("invoices")
+            .select("id")
+            .eq("asaas_payment_id", payment.id)
+            .maybeSingle();
+
+          if (existingInv) {
+            await supabase
+              .from("invoices")
+              .update({
+                status: "paid",
+                paid_at: new Date().toISOString(),
+                pdf_url: payment.invoiceUrl || payment.bankSlipUrl || null,
+              })
+              .eq("id", existingInv.id);
+          } else {
+            await supabase.from("invoices").insert({
+              account_id: sub.account_id,
+              subscription_id: sub.id,
+              asaas_payment_id: payment.id,
+              asaas_invoice_id: payment.invoiceId || null,
+              amount: Number(payment.value || payment.netValue || 0),
+              status: "paid",
+              billing_type: payment.billingType,
+              invoice_number: payment.invoiceNumber || null,
+              pdf_url: payment.invoiceUrl || payment.bankSlipUrl || null,
+              bank_slip_url: payment.bankSlipUrl || null,
+              paid_at: new Date().toISOString(),
+            });
+          }
+        }
       }
     } else if (event === "PAYMENT_OVERDUE") {
       let query = supabase.from("subscriptions").select("id, account_id");
