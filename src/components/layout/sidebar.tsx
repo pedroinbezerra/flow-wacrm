@@ -9,6 +9,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { useTotalUnread } from "@/hooks/use-total-unread";
 import { FlowLogo } from "@/components/layout/flow-logo";
 import {
+  CreditCard,
   Crown,
   GitBranch,
   LayoutDashboard,
@@ -108,7 +109,7 @@ interface SidebarProps {
 export function Sidebar({ open = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { t } = useTranslation();
-  const { profile, profileLoading, account, accountRole, signOut } = useAuth();
+  const { profile, profileLoading, account, accountRole, isSuperAdmin, signOut } = useAuth();
   const totalUnread = useTotalUnread();
   // Only surface the account-name strip when it actually carries
   // information. A solo user's personal account is named after them
@@ -253,6 +254,22 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                 </li>
               );
             })}
+            {isSuperAdmin && (
+              <li>
+                <Link
+                  href="/admin/plans"
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:py-2",
+                    pathname.startsWith("/admin/plans")
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  <CreditCard className="h-4 w-4" />
+                  {t("navigation.adminPlans")}
+                </Link>
+              </li>
+            )}
           </ul>
         </nav>
 

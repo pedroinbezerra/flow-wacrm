@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/flows/admin-client'
 import { getFlowTemplate } from '@/lib/flows/templates'
+import { checkAccountLimit } from '@/lib/plans/limits'
 
 /**
  * GET /api/flows — list the caller's flows.
@@ -63,6 +64,14 @@ export async function POST(request: Request) {
   if (!accountId) {
     return NextResponse.json(
       { error: 'Your profile is not linked to an account.' },
+      { status: 403 },
+    )
+  }
+
+  const planCheck = await checkAccountLimit(supabase, accountId, 'max_flows')
+  if (!planCheck.allowed) {
+    return NextResponse.json(
+      { error: planCheck.reason || 'Limit reached for flows', code: 'PLAN_LIMIT_REACHED' },
       { status: 403 },
     )
   }

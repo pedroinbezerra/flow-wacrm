@@ -164,14 +164,24 @@ export async function GET() {
   }
 }
 
+import { checkAccountLimit } from "@/lib/plans/limits";
+
 export async function POST(request: Request) {
   try {
     const ctx = await requireRole("admin");
 
-    // 30/min per user. The Members tab is a clicks-only UI so any
-    // legitimate admin is far below this; the cap exists to keep
-    // a script run in a loop or a compromised admin session from
-    // flooding `account_invitations` with rows.
+    const planCheck = await checkAccountLimit(
+      ctx.supabase,
+      ctx.accountId,
+      "max_users"
+    );
+    if (!planCheck.allowed) {
+      return NextResponse.json(
+        { error: planCheck.reason || "Limit reached for users", code: "PLAN_LIMIT_REACHED" },
+        { status: 403 }
+      );
+    }
+
     const limit = checkRateLimit(
       `admin:inviteCreate:${ctx.userId}`,
       RATE_LIMITS.adminAction,

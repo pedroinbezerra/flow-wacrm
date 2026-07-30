@@ -35,7 +35,43 @@ export interface Profile {
    * `@/lib/auth/roles` rather than comparing this string directly.
    */
   account_role?: AccountRole;
+  is_super_admin?: boolean;
   created_at: string;
+}
+
+// ============================================================
+// Commercial plans entities (031_commercial_plans.sql)
+// ============================================================
+
+export type PlanStatus = 'active' | 'inactive';
+export type BillingPeriod = 'monthly' | 'yearly' | 'one_time' | 'none';
+export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'canceled';
+
+export interface PlanFeatures {
+  max_users?: number;
+  max_contacts?: number;
+  max_flows?: number;
+  max_nodes_per_flow?: number;
+  max_kanban_funnels?: number;
+  max_boards?: number;
+  max_broadcasts_per_campaign?: number;
+  allow_scheduling?: boolean;
+  allow_reports?: boolean;
+  allow_webhooks?: boolean;
+  [key: string]: unknown;
+}
+
+export interface CommercialPlan {
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  billing_period: BillingPeriod;
+  trial_days: number;
+  status: PlanStatus;
+  features: PlanFeatures;
+  created_at: string;
+  updated_at: string;
 }
 
 // ============================================================
@@ -47,6 +83,10 @@ export interface Account {
   name: string;
   /** auth.users.id of the immutable owner. */
   owner_user_id: string;
+  plan_id?: string | null;
+  subscription_status?: SubscriptionStatus;
+  trial_ends_at?: string | null;
+  plan?: CommercialPlan;
   created_at: string;
   updated_at: string;
 }
