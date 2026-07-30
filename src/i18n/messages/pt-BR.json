@@ -1847,7 +1847,7 @@
         "headerTitle": "Atendimento Inteligente 🤖",
         "headerDesc": "Ensine a IA a atender a sua empresa com base no seu conhecimento de negócio, sem criar árvores de decisão.",
         "tabsTitle": "Navegação por Abas 🗂️",
-        "tabsDesc": "Alterne entre a Configuração do assistente, Base de Conhecimento, Mídias e Simulador.",
+        "tabsDesc": "Alterne entre a Configuração do assistente, Base de Conhecimento, Mídias, Simulador e Auditoria.",
         "personaTitle": "Perfil do Negócio 🏢",
         "personaDesc": "Defina o nome da empresa, objetivo, tom de voz, regras de atendimento e limitações do assistente.",
         "byokTitle": "Credenciais BYOK & Modelos 🔑",
@@ -1857,7 +1857,9 @@
         "mediaTitle": "Biblioteca de Mídias 📁",
         "mediaDesc": "Cadastre imagens, catálogos em PDF ou vídeos para que a IA os envie aos clientes automaticamente.",
         "playgroundTitle": "Simulador Interativo 💬",
-        "playgroundDesc": "Teste o assistente em tempo real como se fosse um cliente antes de ativá-lo no WhatsApp oficial!"
+        "playgroundDesc": "Teste o assistente em tempo real como se fosse um cliente antes de ativá-lo no WhatsApp oficial!",
+        "auditTitle": "Auditoria & Governança 🛡️",
+        "auditDesc": "Monitore todas as chamadas da IA, métricas de tokens, latência, motivos de handoff e alertas de segurança."
       }
     },
     "analytics": {
@@ -1891,7 +1893,8 @@
       "config": "Configuração",
       "knowledge": "Conhecimento",
       "media": "Mídias",
-      "playground": "Simulador"
+      "playground": "Simulador",
+      "audit": "Auditoria & Logs"
     },
     "persona": {
       "title": "Perfil & Funcionamento do Negócio",
@@ -1985,6 +1988,28 @@
       "mediaDeleted": "Mídia excluída com sucesso.",
       "connectionSuccess": "Conexão estabelecida com sucesso!",
       "modelsLoaded": "{count} modelos carregados com sucesso!"
+    },
+    "audit": {
+      "title": "Auditoria & Governança de IA",
+      "description": "Rastreabilidade completa de todas as execuções da IA, consumo de tokens, tempo de resposta e alertas de segurança.",
+      "totalExecutions": "Total de Execuções",
+      "totalTokens": "Tokens Consumidos",
+      "avgLatency": "Tempo Médio (ms)",
+      "handoffRate": "Taxa de Handoff",
+      "logsTitle": "Histórico de Execuções Recentes",
+      "emptyLogs": "Nenhuma execução registrada até o momento.",
+      "securityEventsTitle": "Alertas de Segurança & Injeção de Prompt",
+      "emptySecurity": "Nenhum alerta de segurança registrado. Seu ambiente está seguro!",
+      "colTimestamp": "Data / Hora",
+      "colInbound": "Mensagem do Cliente",
+      "colOutbound": "Resposta da IA",
+      "colModel": "Modelo",
+      "colTokens": "Tokens",
+      "colLatency": "Latência",
+      "colHandoff": "Handoff Humano",
+      "colSeverity": "Severidade",
+      "colEvent": "Evento",
+      "colDetails": "Detalhes"
     }
   }
 }

@@ -23,6 +23,11 @@ import {
   Eye,
   ShieldCheck,
   Zap,
+  ShieldAlert,
+  Activity,
+  Cpu,
+  Clock,
+  AlertTriangle,
 } from 'lucide-react'
 import { useTranslation } from '@/hooks/use-translation'
 import { Button } from '@/components/ui/button'
@@ -87,6 +92,38 @@ interface SimMessage {
   attachedMedia?: MediaItem[]
 }
 
+interface ExecutionLog {
+  id: string
+  conversation_id: string
+  inbound_message_text: string
+  outbound_text: string
+  model_used: string
+  prompt_tokens: number
+  completion_tokens: number
+  total_tokens: number
+  execution_time_ms: number
+  handoff_triggered: boolean
+  handoff_reason?: string
+  created_at: string
+}
+
+interface SecurityEvent {
+  id: string
+  conversation_id?: string
+  event_type: string
+  severity: 'info' | 'warning' | 'critical'
+  details: string
+  created_at: string
+}
+
+interface AuditMetrics {
+  totalExecutions: number
+  totalTokens: number
+  avgLatencyMs: number
+  handoffCount: number
+  handoffRate: number
+}
+
 export default function AIAssistantPage() {
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('config')
@@ -142,6 +179,18 @@ export default function AIAssistantPage() {
   ])
   const [simInput, setSimInput] = useState('')
   const [simulating, setSimulating] = useState(false)
+
+  // Audit State
+  const [auditLogs, setAuditLogs] = useState<ExecutionLog[]>([])
+  const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([])
+  const [auditMetrics, setAuditMetrics] = useState<AuditMetrics>({
+    totalExecutions: 0,
+    totalTokens: 0,
+    avgLatencyMs: 0,
+    handoffCount: 0,
+    handoffRate: 0,
+  })
+  const [loadingAudit, setLoadingAudit] = useState(false)
 
   // Status notifications
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -220,10 +269,29 @@ export default function AIAssistantPage() {
     }
   }
 
+  // Load Audit Data
+  const fetchAudit = async () => {
+    try {
+      setLoadingAudit(true)
+      const res = await fetch('/api/ai-assistant/audit')
+      const data = await res.json()
+      if (res.ok) {
+        setAuditLogs(data.logs || [])
+        setSecurityEvents(data.securityEvents || [])
+        if (data.metrics) setAuditMetrics(data.metrics)
+      }
+    } catch {
+      // quiet
+    } finally {
+      setLoadingAudit(false)
+    }
+  }
+
   useEffect(() => {
     fetchConfig()
     fetchKnowledge()
     fetchMedia()
+    fetchAudit()
   }, [])
 
   useEffect(() => {
@@ -430,6 +498,7 @@ export default function AIAssistantPage() {
           attachedMedia: data.attachedMedia,
         }
         setSimMessages((prev) => [...prev, botMsg])
+        fetchAudit()
       } else {
         setSimMessages((prev) => [
           ...prev,
@@ -530,7 +599,7 @@ export default function AIAssistantPage() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList id="tour-ai-tabs" className="grid w-full grid-cols-4 lg:w-[600px]">
+        <TabsList id="tour-ai-tabs" className="grid w-full grid-cols-5 lg:w-[780px]">
           <TabsTrigger value="config" className="flex items-center gap-2">
             <Bot className="h-4 w-4" />
             <span>{t('aiAssistant.tabs.config')}</span>
@@ -546,6 +615,10 @@ export default function AIAssistantPage() {
           <TabsTrigger value="playground" className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
             <span>{t('aiAssistant.tabs.playground')}</span>
+          </TabsTrigger>
+          <TabsTrigger value="audit" className="flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4" />
+            <span>{t('aiAssistant.tabs.audit')}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1118,6 +1191,164 @@ export default function AIAssistantPage() {
                 {simulating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </Button>
             </div>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 5: AUDITORIA & LOGS */}
+        <TabsContent value="audit" className="space-y-6">
+          <div id="tour-ai-audit" className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <ShieldAlert className="h-5 w-5 text-primary" /> {t('aiAssistant.audit.title')}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {t('aiAssistant.audit.description')}
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={fetchAudit} disabled={loadingAudit}>
+              <RefreshCw className={`mr-1 h-3.5 w-3.5 ${loadingAudit ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
+          </div>
+
+          {/* KPI Cards */}
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card>
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">{t('aiAssistant.audit.totalExecutions')}</p>
+                  <p className="text-2xl font-bold">{auditMetrics.totalExecutions}</p>
+                </div>
+                <Activity className="h-8 w-8 text-primary/60" />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">{t('aiAssistant.audit.totalTokens')}</p>
+                  <p className="text-2xl font-bold">{auditMetrics.totalTokens.toLocaleString()}</p>
+                </div>
+                <Cpu className="h-8 w-8 text-emerald-400/60" />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">{t('aiAssistant.audit.avgLatency')}</p>
+                  <p className="text-2xl font-bold">{auditMetrics.avgLatencyMs} ms</p>
+                </div>
+                <Clock className="h-8 w-8 text-sky-400/60" />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">{t('aiAssistant.audit.handoffRate')}</p>
+                  <p className="text-2xl font-bold">{auditMetrics.handoffRate}%</p>
+                </div>
+                <Zap className="h-8 w-8 text-amber-400/60" />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Security Events Card */}
+          <Card className="border-amber-500/30 bg-amber-500/5">
+            <CardHeader className="py-3">
+              <CardTitle className="text-base flex items-center gap-2 text-amber-400">
+                <AlertTriangle className="h-5 w-5" /> {t('aiAssistant.audit.securityEventsTitle')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {securityEvents.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic py-2">
+                  {t('aiAssistant.audit.emptySecurity')}
+                </p>
+              ) : (
+                securityEvents.map((evt) => (
+                  <div key={evt.id} className="flex items-center justify-between rounded border border-amber-500/20 bg-background/60 p-2.5 text-xs">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={evt.severity === 'critical' ? 'destructive' : 'outline'}
+                        className="text-[10px]"
+                      >
+                        {evt.severity.toUpperCase()}
+                      </Badge>
+                      <span className="font-semibold text-foreground">{evt.event_type}</span>
+                      <span className="text-muted-foreground">— {evt.details}</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground shrink-0 font-mono">
+                      {new Date(evt.created_at).toLocaleTimeString()}
+                    </span>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Execution Logs Table */}
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-base">{t('aiAssistant.audit.logsTitle')}</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {loadingAudit ? (
+                <div className="flex h-32 items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : auditLogs.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic p-6 text-center">
+                  {t('aiAssistant.audit.emptyLogs')}
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-muted/30 text-muted-foreground uppercase font-mono text-[10px] border-b">
+                      <tr>
+                        <th className="p-3">{t('aiAssistant.audit.colTimestamp')}</th>
+                        <th className="p-3">{t('aiAssistant.audit.colInbound')}</th>
+                        <th className="p-3">{t('aiAssistant.audit.colOutbound')}</th>
+                        <th className="p-3">{t('aiAssistant.audit.colModel')}</th>
+                        <th className="p-3">{t('aiAssistant.audit.colTokens')}</th>
+                        <th className="p-3">{t('aiAssistant.audit.colLatency')}</th>
+                        <th className="p-3">{t('aiAssistant.audit.colHandoff')}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {auditLogs.map((log) => (
+                        <tr key={log.id} className="hover:bg-muted/20">
+                          <td className="p-3 font-mono whitespace-nowrap text-[11px]">
+                            {new Date(log.created_at).toLocaleString()}
+                          </td>
+                          <td className="p-3 max-w-[200px] truncate">{log.inbound_message_text || '-'}</td>
+                          <td className="p-3 max-w-[240px] truncate">{log.outbound_text || '-'}</td>
+                          <td className="p-3">
+                            <Badge variant="outline" className="text-[10px]">
+                              {log.model_used}
+                            </Badge>
+                          </td>
+                          <td className="p-3 font-mono">{log.total_tokens || 0}</td>
+                          <td className="p-3 font-mono">{log.execution_time_ms}ms</td>
+                          <td className="p-3">
+                            {log.handoff_triggered ? (
+                              <Badge variant="destructive" className="text-[10px]">
+                                Sim ({log.handoff_reason})
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-[10px]">
+                                Não
+                              </Badge>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>

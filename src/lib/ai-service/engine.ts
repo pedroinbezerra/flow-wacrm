@@ -9,6 +9,7 @@ import {
 import {
   buildSystemPrompt,
   parseAIResponse,
+  detectPromptInjection,
   AIKnowledgeItem,
   AIMediaItem,
 } from './prompt-builder'
@@ -40,14 +41,17 @@ export interface ProcessInboundAIResult {
   responseSent?: boolean
   handoffTriggered?: boolean
   mediaSentCount?: number
+  securityEventLogged?: boolean
 }
 
 /**
  * Handles incoming WhatsApp messages via Smart AI Service.
+ * Includes rate-limiting, prompt injection protection, race condition double-check, and audit logging.
  */
 export async function processInboundWithAIService(
   args: ProcessInboundAIArgs
 ): Promise<ProcessInboundAIResult> {
+  const startTime = Date.now()
   const {
     accountId,
     conversationId,
@@ -96,7 +100,68 @@ export async function processInboundWithAIService(
     return { handled: false, reason: 'human_handler_active' }
   }
 
-  // 3. Decrypt BYOK API Key
+  // 3. Check for Prompt Injection / Jailbreak Attacks
+  const injectionCheck = detectPromptInjection(inboundMessageText)
+  if (injectionCheck.isInjection) {
+    console.warn('[ai-service] Prompt injection detected:', injectionCheck.reason)
+
+    // Log Security Event
+    await supabase.from('ai_security_events').insert({
+      account_id: accountId,
+      conversation_id: conversationId,
+      event_type: 'prompt_injection_detected',
+      severity: 'warning',
+      details: `Tentativa de injeção de prompt: ${injectionCheck.reason}. Texto: "${inboundMessageText.slice(0, 100)}"`,
+    })
+
+    // Trigger Handoff to Human
+    await supabase
+      .from('conversations')
+      .update({
+        ai_handler_status: 'human',
+        ai_handoff_at: new Date().toISOString(),
+        ai_handoff_reason: `Segurança: ${injectionCheck.reason}`,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', conversationId)
+
+    return { handled: true, handoffTriggered: true, securityEventLogged: true, reason: 'injection_blocked' }
+  }
+
+  // 4. Rate Limiting Protection (Max 15 AI messages per conversation per 1 hour)
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  const { count: msgCountInLastHour } = await supabase
+    .from('messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('conversation_id', conversationId)
+    .eq('sender_type', 'bot')
+    .gte('created_at', oneHourAgo)
+
+  if ((msgCountInLastHour ?? 0) >= 15) {
+    console.warn('[ai-service] Rate limit exceeded for conversation:', conversationId)
+
+    await supabase.from('ai_security_events').insert({
+      account_id: accountId,
+      conversation_id: conversationId,
+      event_type: 'rate_limit_exceeded',
+      severity: 'warning',
+      details: 'Limite de 15 respostas da IA por hora excedido nesta conversa. Handoff automático ativado.',
+    })
+
+    await supabase
+      .from('conversations')
+      .update({
+        ai_handler_status: 'human',
+        ai_handoff_at: new Date().toISOString(),
+        ai_handoff_reason: 'Limite de mensagens automáticas por hora excedido',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', conversationId)
+
+    return { handled: true, handoffTriggered: true, securityEventLogged: true, reason: 'rate_limit_exceeded' }
+  }
+
+  // 5. Decrypt BYOK API Key
   let apiKey = ''
   try {
     apiKey = decrypt(config.openai_api_key)
@@ -105,7 +170,7 @@ export async function processInboundWithAIService(
     return { handled: false, reason: 'key_decryption_failed' }
   }
 
-  // 4. Fetch WhatsApp config for sending outbound messages
+  // 6. Fetch WhatsApp config for sending outbound messages
   const { data: waConfig, error: waErr } = await supabase
     .from('whatsapp_config')
     .select('phone_number_id, access_token')
@@ -119,7 +184,7 @@ export async function processInboundWithAIService(
 
   const decryptedAccessToken = decrypt(waConfig.access_token)
 
-  // 5. Fetch Active Knowledge Base items
+  // 7. Fetch Active Knowledge Base items
   const { data: knowledgeRows } = await supabase
     .from('ai_knowledge_base')
     .select('id, category, title, content')
@@ -129,7 +194,7 @@ export async function processInboundWithAIService(
 
   const knowledgeItems: AIKnowledgeItem[] = knowledgeRows || []
 
-  // 6. Fetch Active Media Library items
+  // 8. Fetch Active Media Library items
   const { data: mediaRows } = await supabase
     .from('ai_media_library')
     .select('id, title, media_type, media_url, description')
@@ -139,7 +204,7 @@ export async function processInboundWithAIService(
 
   const mediaItems: AIMediaItem[] = mediaRows || []
 
-  // 7. Fetch Conversation History (last 10 messages)
+  // 9. Fetch Conversation History (last 10 messages)
   const { data: msgHistory } = await supabase
     .from('messages')
     .select('sender_type, content_text')
@@ -155,14 +220,13 @@ export async function processInboundWithAIService(
       content: m.content_text || '',
     }))
 
-  // 8. Build System Prompt & Messages payload
+  // 10. Build System Prompt & Messages payload
   const systemPrompt = buildSystemPrompt(config, knowledgeItems, mediaItems)
   const llmMessages: ChatMessage[] = [
     { role: 'system', content: systemPrompt },
     ...historyMessages,
   ]
 
-  // If the latest message in history isn't equal to inboundMessageText, append it
   if (
     historyMessages.length === 0 ||
     historyMessages[historyMessages.length - 1].content !== inboundMessageText
@@ -170,18 +234,24 @@ export async function processInboundWithAIService(
     llmMessages.push({ role: 'user', content: inboundMessageText })
   }
 
-  // 9. Call OpenAI / BYOK LLM Provider
+  // 11. Call OpenAI / BYOK LLM Provider
   let llmOutput = ''
+  let usage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
+  const modelUsed = config.openai_model || 'gpt-4o-mini'
+
   try {
     const result = await createChatCompletion({
       apiKey,
       baseUrl: config.openai_api_url || 'https://api.openai.com/v1',
-      model: config.openai_model || 'gpt-4o-mini',
+      model: modelUsed,
       messages: llmMessages,
       temperature: Number(config.temperature ?? 0.3),
       maxTokens: Number(config.max_tokens ?? 500),
     })
     llmOutput = result.content
+    if (result.usage) {
+      usage = result.usage
+    }
   } catch (err) {
     console.error('[ai-service] LLM call failed:', err)
     return { handled: false, reason: 'llm_api_error' }
@@ -191,10 +261,22 @@ export async function processInboundWithAIService(
     return { handled: false, reason: 'empty_llm_response' }
   }
 
-  // 10. Parse LLM Output for text, handoff, and media triggers
+  // 12. DOUBLE-CHECK RACE CONDITION: Re-query conversation status before sending outbound message
+  const { data: doubleCheckConv } = await supabase
+    .from('conversations')
+    .select('ai_handler_status')
+    .eq('id', conversationId)
+    .single()
+
+  if (doubleCheckConv?.ai_handler_status === 'human') {
+    console.warn('[ai-service] Race condition prevented: Operator assumed conversation during LLM completion.')
+    return { handled: false, reason: 'human_takeover_during_llm_completion' }
+  }
+
+  // 13. Parse LLM Output for text, handoff, and media triggers
   const parsed = parseAIResponse(llmOutput)
 
-  // 11. Send Text Response via WhatsApp API (if cleanText is non-empty)
+  // 14. Send Text Response via WhatsApp API
   let responseSent = false
   if (parsed.cleanText) {
     try {
@@ -206,7 +288,6 @@ export async function processInboundWithAIService(
         contextMessageId: metaMessageId,
       })
 
-      // Insert message row in DB
       await supabase.from('messages').insert({
         conversation_id: conversationId,
         sender_type: 'bot',
@@ -216,7 +297,6 @@ export async function processInboundWithAIService(
         status: 'delivered',
       })
 
-      // Update conversation last message preview
       await supabase
         .from('conversations')
         .update({
@@ -232,8 +312,9 @@ export async function processInboundWithAIService(
     }
   }
 
-  // 12. Send Media Items if requested by AI
+  // 15. Send Media Items if requested by AI
   let mediaSentCount = 0
+  const sentMediaIds: string[] = []
   if (parsed.mediaIdsToSend.length > 0) {
     for (const mediaId of parsed.mediaIdsToSend) {
       const mediaItem = mediaItems.find((m) => m.id === mediaId)
@@ -249,7 +330,6 @@ export async function processInboundWithAIService(
           caption: mediaItem.title,
         })
 
-        // Insert media message row in DB
         await supabase.from('messages').insert({
           conversation_id: conversationId,
           sender_type: 'bot',
@@ -261,13 +341,14 @@ export async function processInboundWithAIService(
         })
 
         mediaSentCount++
+        sentMediaIds.push(mediaItem.id)
       } catch (mediaErr) {
         console.error('[ai-service] Failed to send media via WhatsApp:', mediaErr)
       }
     }
   }
 
-  // 13. Handle Transfer to Human Handoff if requested
+  // 16. Handle Transfer to Human Handoff if requested
   let handoffTriggered = false
   if (parsed.handoffRequested) {
     const reason = parsed.handoffReason || 'Transferência solicitada pela IA'
@@ -282,12 +363,30 @@ export async function processInboundWithAIService(
       })
       .eq('id', conversationId)
 
-    if (updErr) {
-      console.error('[ai-service] Error updating handoff status on conversation:', updErr)
-    } else {
+    if (!updErr) {
       handoffTriggered = true
     }
   }
+
+  // 17. AUDIT LOGGING: Insert execution log into `ai_execution_logs`
+  const executionTimeMs = Date.now() - startTime
+  const usedKnowledgeIds = knowledgeItems.map((k) => k.id)
+
+  await supabase.from('ai_execution_logs').insert({
+    account_id: accountId,
+    conversation_id: conversationId,
+    inbound_message_text: inboundMessageText,
+    outbound_text: parsed.cleanText,
+    model_used: modelUsed,
+    prompt_tokens: usage.prompt_tokens,
+    completion_tokens: usage.completion_tokens,
+    total_tokens: usage.total_tokens,
+    execution_time_ms: executionTimeMs,
+    knowledge_item_ids: usedKnowledgeIds,
+    media_item_ids: sentMediaIds,
+    handoff_triggered: handoffTriggered,
+    handoff_reason: parsed.handoffReason || null,
+  })
 
   return {
     handled: true,
