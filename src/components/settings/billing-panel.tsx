@@ -6,10 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CreditCard, ShieldCheck, Zap, Calendar, CheckCircle2, AlertTriangle, Download, ExternalLink, FileText, ArrowUpRight, Copy, Activity } from "lucide-react";
+import { CreditCard, ShieldCheck, Zap, Calendar, CheckCircle2, AlertTriangle, Download, ExternalLink, FileText, ArrowUpRight, Copy, Activity, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ConsumptionDashboardCard } from "@/components/consumption/consumption-dashboard-card";
+import { useAuth } from "@/hooks/use-auth";
 
 interface NativeCheckoutData {
   paymentUrl: string | null;
@@ -38,6 +39,45 @@ export function BillingPanel() {
   const [allPlans, setAllPlans] = useState<CommercialPlan[]>([]);
   const [processingCheckout, setProcessingCheckout] = useState(false);
 
+  // Cancellation / Reactivation State
+  const { isOwner, isPendingDeletion, scheduledDeletionAt, refreshProfile } = useAuth();
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [canceling, setCanceling] = useState(false);
+  const [reactivating, setReactivating] = useState(false);
+
+  const handleCancelAccount = async () => {
+    setCanceling(true);
+    try {
+      const res = await fetch("/api/account/cancel", { method: "POST" });
+      const isJson = res.headers.get("content-type")?.includes("application/json");
+      const data = isJson ? await res.json() : null;
+      if (!res.ok) throw new Error(data?.error || `Erro (${res.status}) ao agendar cancelamento.`);
+      toast.success(data?.message || "Conta agendada para exclusão em 90 dias.");
+      setCancelModalOpen(false);
+      await refreshProfile();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setCanceling(false);
+    }
+  };
+
+  const handleReactivateAccount = async () => {
+    setReactivating(true);
+    try {
+      const res = await fetch("/api/account/reactivate", { method: "POST" });
+      const isJson = res.headers.get("content-type")?.includes("application/json");
+      const data = isJson ? await res.json() : null;
+      if (!res.ok) throw new Error(data?.error || `Erro (${res.status}) ao reativar conta.`);
+      toast.success(data?.message || "Conta reativada com sucesso!");
+      await refreshProfile();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setReactivating(false);
+    }
+  };
+
   const fetchSubscriptionData = async () => {
     setLoading(true);
     try {
@@ -46,10 +86,8 @@ export function BillingPanel() {
         fetch("/api/account/invoices"),
       ]);
 
-      const subData = await subRes.json();
-      const invData = await invRes.json();
-
-      if (subRes.ok) {
+      if (subRes.ok && subRes.headers.get("content-type")?.includes("application/json")) {
+        const subData = await subRes.json();
         setPlan(subData.plan);
         setSubscription(subData.subscription);
         setAddons(subData.addons || []);
@@ -57,12 +95,12 @@ export function BillingPanel() {
         setUsage(subData.usage || {});
       }
 
-      if (invRes.ok) {
+      if (invRes.ok && invRes.headers.get("content-type")?.includes("application/json")) {
+        const invData = await invRes.json();
         setInvoices(invData.invoices || []);
       }
     } catch (err) {
       console.error("Failed to load subscription info:", err);
-      toast.error("Falha ao se conectar com o servidor.");
     } finally {
       setLoading(false);
     }
@@ -583,6 +621,96 @@ export function BillingPanel() {
               }}
             >
               Já Realizei o Pagamento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Zona de Cancelamento / Carência de 90 Dias (Dono da Conta) */}
+      {isOwner && (
+        <Card className="border-destructive/30 bg-destructive/5 mt-8">
+          <CardHeader>
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              <CardTitle className="text-base font-bold">Gerenciamento de Cancelamento e Exclusão</CardTitle>
+            </div>
+            <CardDescription className="text-xs">
+              Conforme as regras do Flow Hub, dados pessoais e operacionais são preservados por 90 dias após o cancelamento. Passado esse prazo, os dados são permanentemente expurgados.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {isPendingDeletion ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg bg-card border border-border">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    Exclusão agendada para:{" "}
+                    <span className="text-destructive font-mono">
+                      {scheduledDeletionAt ? new Date(scheduledDeletionAt).toLocaleDateString("pt-BR") : "em 90 dias"}
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Seus dados continuam 100% salvos e seguros. Você pode reativar a qualquer momento antes da data acima.
+                  </p>
+                </div>
+                <Button
+                  onClick={handleReactivateAccount}
+                  disabled={reactivating}
+                  className="gap-2 shrink-0"
+                >
+                  <RefreshCw className={`h-4 w-4 ${reactivating ? "animate-spin" : ""}`} />
+                  {reactivating ? "Reativando..." : "Reativar Conta Agora"}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg bg-card border border-border">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Cancelar e Excluir Esta Conta</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Inicia a contagem regressiva de 90 dias. Faturas tributárias passadas serão preservadas por 5 anos conforme exigido por lei.
+                  </p>
+                </div>
+                <Button
+                  variant="destructive"
+                  onClick={() => setCancelModalOpen(true)}
+                  className="gap-2 shrink-0"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Solicitar Cancelamento
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Modal de Confirmação de Cancelamento */}
+      <Dialog open={cancelModalOpen} onOpenChange={setCancelModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Confirmar Solicitação de Cancelamento
+            </DialogTitle>
+            <DialogDescription className="text-xs space-y-2 pt-2">
+              <p>Ao solicitar o cancelamento:</p>
+              <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+                <li>Sua conta entrará em <strong>carência de 90 dias</strong>.</li>
+                <li>Todos os seus contatos, mensagens e histórico ficarão <strong>100% preservados</strong> durante esse prazo.</li>
+                <li>Caso mude de ideia, você pode reativar sua conta no painel a qualquer momento.</li>
+                <li>Ao término dos 90 dias, os dados serão <strong>excluídos permanentemente</strong> (exceto faturas fiscais mantidas por lei).</li>
+              </ul>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0 pt-3">
+            <Button variant="outline" onClick={() => setCancelModalOpen(false)}>
+              Voltar / Manter Conta
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={canceling}
+              onClick={handleCancelAccount}
+            >
+              {canceling ? "Processando..." : "Confirmar Cancelamento (90 Dias)"}
             </Button>
           </DialogFooter>
         </DialogContent>

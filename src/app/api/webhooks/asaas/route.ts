@@ -43,10 +43,15 @@ export async function POST(req: Request) {
           })
           .eq("id", sub.id);
 
-        // Also update account subscription_status & active plan_id
+        // Also update account subscription_status, active plan_id & clear deletion schedule
         await supabase
           .from("accounts")
-          .update({ plan_id: sub.plan_id, subscription_status: "active" })
+          .update({
+            plan_id: sub.plan_id,
+            subscription_status: "active",
+            scheduled_deletion_at: null,
+            updated_at: new Date().toISOString(),
+          })
           .eq("id", sub.account_id);
 
         // Insert or update Invoice & NF record

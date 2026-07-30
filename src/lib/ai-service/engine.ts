@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { assertAccountOperationalAccess } from '@/lib/auth/account'
 import { decrypt } from '@/lib/whatsapp/encryption'
 import { sendTextMessage, sendMediaMessage } from '@/lib/whatsapp/meta-api'
 import { formatConversationPreview } from '@/lib/conversation-preview'
@@ -59,6 +60,13 @@ export async function processInboundWithAIService(
     inboundMessageText,
     metaMessageId,
   } = args
+
+  try {
+    await assertAccountOperationalAccess(accountId, { isWriteOperation: true })
+  } catch (accErr: any) {
+    console.warn(`[AI Engine] account ${accountId} is restricted/suspended: ${accErr.message}`)
+    return { handled: false, reason: 'account_restricted' }
+  }
 
   const supabase = getSupabaseAdmin()
 

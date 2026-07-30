@@ -10,6 +10,9 @@ import { PresenceHeartbeat } from "@/components/presence/presence-heartbeat";
 import { GuidedTour } from "@/components/onboarding/guided-tour";
 import { ExternalAnalytics } from "@/components/analytics/external-analytics";
 
+import { DunningBanner } from "@/components/account/dunning-banner";
+import { AccountSuspendedModal } from "@/components/account/account-suspended-modal";
+
 // Auth-gated dashboard shell. Extracted from the layout so the layout
 // itself can stay a server component and export metadata (noindex) —
 // client components can't export Next's metadata object.
@@ -49,11 +52,15 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
       <ExternalAnalytics />
       {/* Tour Guiado Interativo (Driver.js) */}
       <GuidedTour />
+      {/* Modal de bloqueio por suspensão ou carência de exclusão */}
+      <AccountSuspendedModal />
       {/* Reports this tab's online/away presence once we know a user is
           signed in. Headless — renders nothing. */}
       <PresenceHeartbeat />
       <Sidebar open={sidebarOpen} onClose={closeSidebar} />
       <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Banner de alerta de inadimplência / carência */}
+        <DunningBanner />
         <Header onOpenSidebar={() => setSidebarOpen(true)} />
         {/* Thinner horizontal padding on mobile so cards have room to breathe. */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>

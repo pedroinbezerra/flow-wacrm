@@ -45,6 +45,8 @@ interface AccountSummary {
   default_currency: string;
   /** Target first response time in minutes (default 5). */
   response_time_target_minutes: number;
+  subscription_status: string;
+  scheduled_deletion_at: string | null;
 }
 
 interface AuthContextValue {
@@ -108,6 +110,16 @@ interface AuthContextValue {
   canSendMessages: boolean;
   /** True if the caller is a system super admin. */
   isSuperAdmin: boolean;
+  /** Status da assinatura da conta ('active', 'past_due', 'read_only', 'suspended', 'canceled'). */
+  subscriptionStatus: string | null;
+  /** Data agendada para exclusão definitiva (se em carência de 90 dias). */
+  scheduledDeletionAt: string | null;
+  /** True se a conta estiver em modo somente leitura (Estágio 3 do dunning). */
+  isReadOnly: boolean;
+  /** True se a conta estiver suspensa por inadimplência (Estágio 4 do dunning). */
+  isSuspended: boolean;
+  /** True se a conta estiver agendada para exclusão definitiva (carência de 90 dias). */
+  isPendingDeletion: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -135,77 +147,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = createClient();
     setProfileLoading(true);
     try {
-      let { data, error } = await supabase
-        .from("profiles")
-        .select(
-          "id, full_name, email, avatar_url, role, beta_features, account_id, account_role, is_super_admin, account:accounts!inner(id, name, default_currency, response_time_target_minutes)",
-        )
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      // Fallback defensivo caso a coluna response_time_target_minutes ainda não exista no DB
-      if (error) {
-        const fallback1 = await supabase
+        let { data, error } = await supabase
           .from("profiles")
           .select(
-            "id, full_name, email, avatar_url, role, beta_features, account_id, account_role, is_super_admin, account:accounts!inner(id, name, default_currency)",
+            "id, full_name, email, avatar_url, role, beta_features, account_id, account_role, is_super_admin, account:accounts!inner(id, name, default_currency, response_time_target_minutes, subscription_status, scheduled_deletion_at)",
           )
           .eq("user_id", userId)
           .maybeSingle();
 
-        if (!fallback1.error) {
-          data = fallback1.data as any;
-          error = null;
-        } else {
-          const fallback2 = await supabase
+        // Fallback defensivo caso colunas de dunning ainda não existam no DB
+        if (error) {
+          const fallback1 = await supabase
             .from("profiles")
             .select(
-              "id, full_name, email, avatar_url, role, beta_features, account_id, account_role, is_super_admin, account:accounts!inner(id, name)",
+              "id, full_name, email, avatar_url, role, beta_features, account_id, account_role, is_super_admin, account:accounts!inner(id, name, default_currency, response_time_target_minutes)",
             )
             .eq("user_id", userId)
             .maybeSingle();
 
-          if (!fallback2.error) {
-            data = fallback2.data as any;
+          if (!fallback1.error) {
+            data = fallback1.data as any;
             error = null;
           }
         }
-      }
 
-      if (error) {
-        console.error("[AuthProvider] fetchProfile error:", {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-        });
-        return;
-      }
+        if (error) {
+          console.error("[AuthProvider] fetchProfile error:", {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code,
+          });
+          return;
+        }
 
-      if (data) {
-        // Supabase's typed client surfaces an embedded `!inner` row
-        // as either an object or a single-element array depending on
-        // the schema's inferred cardinality — normalise to the object
-        // form before reading.
-        const accountRaw = Array.isArray(data.account)
-          ? data.account[0] ?? null
-          : (data.account as {
-              id: string;
-              name: string;
-              default_currency: string | null;
-              response_time_target_minutes: number | null;
-            } | null);
-        // Narrow default_currency defensively: forks running pre-021
-        // schemas won't have the column, so a missing/null value reads
-        // as the safe USD fallback rather than crashing the picker.
-        const accountRow: AccountSummary | null = accountRaw
-          ? {
-              id: accountRaw.id,
-              name: accountRaw.name,
-              default_currency: accountRaw.default_currency ?? DEFAULT_CURRENCY,
-              response_time_target_minutes: accountRaw.response_time_target_minutes ?? 5,
-            }
-          : null;
+        if (data) {
+          const accountRaw = Array.isArray(data.account)
+            ? data.account[0] ?? null
+            : (data.account as {
+                id: string;
+                name: string;
+                default_currency: string | null;
+                response_time_target_minutes: number | null;
+                subscription_status?: string | null;
+                scheduled_deletion_at?: string | null;
+              } | null);
+
+          const accountRow: AccountSummary | null = accountRaw
+            ? {
+                id: accountRaw.id,
+                name: accountRaw.name,
+                default_currency: accountRaw.default_currency ?? DEFAULT_CURRENCY,
+                response_time_target_minutes: accountRaw.response_time_target_minutes ?? 5,
+                subscription_status: accountRaw.subscription_status ?? "active",
+                scheduled_deletion_at: accountRaw.scheduled_deletion_at ?? null,
+              }
+            : null;
 
         // Narrow the DB enum into our AccountRole union. The DB
         // constraint should make this unconditional, but a future
@@ -332,6 +329,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // dependencies downstream.
   const derived = useMemo(() => {
     const role = profile?.account_role ?? null;
+    const subStatus = account?.subscription_status ?? null;
+    const scheduledDel = account?.scheduled_deletion_at ?? null;
+
     return {
       accountRole: role,
       accountId: profile?.account_id ?? null,
@@ -343,8 +343,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       canEditSettings: role ? canEditSettingsFor(role) : false,
       canSendMessages: role ? canSendMessagesFor(role) : false,
       isSuperAdmin: profile?.is_super_admin ?? false,
+      subscriptionStatus: subStatus,
+      scheduledDeletionAt: scheduledDel,
+      isReadOnly: subStatus === "read_only",
+      isSuspended: subStatus === "suspended",
+      isPendingDeletion: !!scheduledDel,
     };
-  }, [profile?.account_role, profile?.account_id, profile?.is_super_admin]);
+  }, [profile?.account_role, profile?.account_id, profile?.is_super_admin, account?.subscription_status, account?.scheduled_deletion_at]);
 
   return (
     <AuthContext.Provider
@@ -399,6 +404,11 @@ export function useAuth(): AuthContextValue {
       canEditSettings: false,
       canSendMessages: false,
       isSuperAdmin: false,
+      subscriptionStatus: null,
+      scheduledDeletionAt: null,
+      isReadOnly: false,
+      isSuspended: false,
+      isPendingDeletion: false,
     };
   }
   return ctx;

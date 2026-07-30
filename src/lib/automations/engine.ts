@@ -16,6 +16,7 @@ import type {
 } from '@/types'
 import { supabaseAdmin } from './admin-client'
 import { engineSendText, engineSendTemplate } from './meta-send'
+import { assertAccountOperationalAccess } from '@/lib/auth/account'
 
 // ------------------------------------------------------------
 // Public API
@@ -57,6 +58,13 @@ export interface DispatchInput {
 export async function runAutomationsForTrigger(input: DispatchInput): Promise<void> {
   try {
     const db = supabaseAdmin()
+
+    try {
+      await assertAccountOperationalAccess(input.accountId, { isWriteOperation: true, client: db })
+    } catch (accErr: any) {
+      console.warn(`[automations] account ${input.accountId} is restricted/suspended: ${accErr.message}`)
+      return
+    }
 
     // Tenant isolation. `contactId` can be caller-supplied (the manual
     // POST /api/automations/engine entrypoint reads it straight from the
@@ -129,6 +137,14 @@ export async function resumePendingExecution(pending: {
   context: AutomationContext
 }): Promise<void> {
   const db = supabaseAdmin()
+
+  try {
+    await assertAccountOperationalAccess(pending.account_id, { isWriteOperation: true, client: db })
+  } catch (accErr: any) {
+    console.warn(`[automations] account ${pending.account_id} is restricted/suspended: ${accErr.message}`)
+    return
+  }
+
   const { data: automation, error } = await db
     .from('automations')
     .select('*')

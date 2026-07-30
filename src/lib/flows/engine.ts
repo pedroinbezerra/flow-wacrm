@@ -33,6 +33,7 @@
  */
 
 import { supabaseAdmin } from "./admin-client";
+import { assertAccountOperationalAccess } from "@/lib/auth/account";
 import {
   engineSendInteractiveButtons,
   engineSendInteractiveList,
@@ -860,6 +861,13 @@ export async function dispatchInboundToFlows(
 ): Promise<DispatchInboundResult> {
   const db = supabaseAdmin();
   try {
+    try {
+      await assertAccountOperationalAccess(input.accountId, { isWriteOperation: true, client: db });
+    } catch (accErr: any) {
+      console.warn(`[flows] account ${input.accountId} is restricted/suspended: ${accErr.message}`);
+      return { consumed: false, outcome: "no_match" };
+    }
+
     let activeRun = await loadActiveRunForContact(
       db,
       input.accountId,
@@ -923,6 +931,8 @@ export async function dispatchManualFlowStart(input: {
   conversationId: string;
 }): Promise<DispatchInboundResult> {
   const db = supabaseAdmin();
+
+  await assertAccountOperationalAccess(input.accountId, { isWriteOperation: true, client: db });
 
   const { data: flowRow, error } = await db
     .from("flows")

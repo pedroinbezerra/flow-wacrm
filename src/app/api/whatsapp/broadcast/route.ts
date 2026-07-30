@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { assertAccountOperationalAccess } from '@/lib/auth/account'
 import { sendTemplateMessage } from '@/lib/whatsapp/meta-api'
 import { decrypt } from '@/lib/whatsapp/encryption'
 import type { SendTimeParams } from '@/lib/whatsapp/template-send-builder'
@@ -94,6 +95,12 @@ export async function POST(request: Request) {
         { error: 'Your profile is not linked to an account.' },
         { status: 403 },
       )
+    }
+
+    try {
+      await assertAccountOperationalAccess(accountId, { isWriteOperation: true, client: supabase })
+    } catch (accErr: any) {
+      return NextResponse.json({ error: accErr.message }, { status: 403 })
     }
 
     const body = await request.json()

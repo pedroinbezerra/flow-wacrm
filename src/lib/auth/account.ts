@@ -87,8 +87,13 @@ export interface AccountContext {
   accountId: string;
   /** Caller's role within their account. */
   role: AccountRole;
-  /** Lightweight account meta — id + name. */
-  account: { id: string; name: string };
+  /** Lightweight account meta — id + name + subscription_status + scheduled_deletion_at. */
+  account: {
+    id: string;
+    name: string;
+    subscription_status: string;
+    scheduled_deletion_at: string | null;
+  };
 }
 
 /**
@@ -115,59 +120,149 @@ export async function getCurrentAccount(): Promise<AccountContext> {
   }
 
   // Selecting through the FK gives us the account name in one
-  // query — `account:accounts!inner(id,name)` is Supabase's
-  // explicit-join syntax. `!inner` so a NULL account_id (which
-  // shouldn't exist) yields no row and trips the guard below
-  // rather than silently returning a half-populated profile.
-  const { data, error } = await supabase
+  // query — `account:accounts!inner(id,name,subscription_status,scheduled_deletion_at)`
+  let { data, error } = await supabase
     .from("profiles")
-    .select("account_id, account_role, account:accounts!inner(id, name)")
+    .select("account_id, account_role, account:accounts!inner(id, name, subscription_status, scheduled_deletion_at)")
     .eq("user_id", user.id)
     .maybeSingle();
+
+  // Fallback defensivo para esquemas legados sem scheduled_deletion_at
+  if (error) {
+    const fallback = await supabase
+      .from("profiles")
+      .select("account_id, account_role, account:accounts!inner(id, name, subscription_status)")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!fallback.error) {
+      data = fallback.data as any;
+      error = null;
+    }
+  }
 
   if (error) {
     console.error("[getCurrentAccount] profile fetch error:", error);
     throw new ForbiddenError("Could not load account context");
   }
   if (!data || !data.account_id || !data.account_role || !data.account) {
-    // Pre-migration profile, or a manual insert that skipped the
-    // signup trigger. The user is authenticated but the app has
-    // no way to scope their queries — treat as forbidden.
     throw new ForbiddenError("Profile is not linked to an account");
   }
   if (!isAccountRole(data.account_role)) {
-    // The DB enum should make this impossible, but a future
-    // migration that broadens the enum without updating TS would
-    // hit this — surface it rather than silently widening.
     throw new ForbiddenError(`Unknown account role: ${data.account_role}`);
   }
 
-  // Supabase's typed client returns related rows as an array even
-  // for `!inner` single-record joins; normalise to a single object.
-  const accountRow = Array.isArray(data.account) ? data.account[0] : data.account;
+  const accountRaw = Array.isArray(data.account)
+    ? data.account[0]
+    : (data.account as {
+        id: string;
+        name: string;
+        subscription_status?: string | null;
+        scheduled_deletion_at?: string | null;
+      });
 
   return {
     supabase,
     userId: user.id,
     accountId: data.account_id,
     role: data.account_role,
-    account: { id: accountRow.id, name: accountRow.name },
+    account: {
+      id: accountRaw.id,
+      name: accountRaw.name,
+      subscription_status: accountRaw.subscription_status ?? "active",
+      scheduled_deletion_at: accountRaw.scheduled_deletion_at ?? null,
+    },
   };
 }
 
 /**
- * Resolve the caller's account context and enforce a minimum role.
- *
- * Throws `UnauthorizedError` / `ForbiddenError` as documented on
- * `getCurrentAccount`, plus `ForbiddenError("Insufficient role")`
- * when the caller is below `min`.
+ * Valida o acesso operacional da conta baseado no status de inadimplência (dunning)
+ * e carência de exclusão.
+ * 
+ * - Se a conta estiver 'suspended' ou agendada para exclusão (carência 90 dias com bloqueio), nega acesso total.
+ * - Se a conta estiver 'read_only' e a operação for de escrita (isWriteOperation = true), nega mutações.
  */
-export async function requireRole(min: AccountRole): Promise<AccountContext> {
+export function checkAccountAccess(
+  ctx: AccountContext,
+  options?: { isWriteOperation?: boolean }
+): void {
+  const status = ctx.account.subscription_status;
+  const isScheduled = !!ctx.account.scheduled_deletion_at;
+
+  // Opção (a): Conta cancelada/agendada para exclusão ou em suspensão total por inadimplência é bloqueada
+  if (status === "suspended" || status === "canceled" || isScheduled) {
+    throw new ForbiddenError(
+      "Acesso bloqueado: Sua conta está suspensa ou em processo de cancelamento. Regularize a fatura ou solicite reativação ao suporte."
+    );
+  }
+
+  // Estágio 3 de inadimplência: modo somente leitura
+  if (status === "read_only" && options?.isWriteOperation) {
+    throw new ForbiddenError(
+      "Ação não permitida: Sua conta está em modo somente leitura devido a pendência financeira."
+    );
+  }
+}
+
+/**
+ * Resolve a conta e valida tanto a regra de papel mínimo quanto as travas de dunning/exclusão.
+ */
+export async function requireRole(
+  min: AccountRole,
+  options?: { isWriteOperation?: boolean }
+): Promise<AccountContext> {
   const ctx = await getCurrentAccount();
   if (!hasMinRole(ctx.role, min)) {
     throw new ForbiddenError(
       `This action requires the '${min}' role or higher`,
     );
   }
+  checkAccountAccess(ctx, options);
   return ctx;
 }
+
+/**
+ * Valida o acesso operacional de uma conta diretamente pelo ID da conta.
+ * Funciona tanto para API routes quanto para webhook handlers e engines em segundo plano.
+ */
+export async function assertAccountOperationalAccess(
+  accountId: string,
+  options?: { isWriteOperation?: boolean; client?: SupabaseClient }
+): Promise<void> {
+  if (!accountId) {
+    throw new ForbiddenError("ID de conta não fornecido.");
+  }
+
+  let client = options?.client;
+  if (!client) {
+    const { supabaseAdmin } = await import("@/lib/automations/admin-client");
+    client = supabaseAdmin();
+  }
+
+  const { data: account, error } = await client
+    .from("accounts")
+    .select("subscription_status, scheduled_deletion_at")
+    .eq("id", accountId)
+    .maybeSingle();
+
+  if (error || !account) {
+    throw new ForbiddenError("Conta não encontrada ou inativa.");
+  }
+
+  const status = account.subscription_status ?? "active";
+  const isScheduled = !!account.scheduled_deletion_at;
+
+  if (status === "suspended" || status === "canceled" || isScheduled) {
+    throw new ForbiddenError(
+      "Acesso bloqueado: Sua conta está suspensa ou em processo de cancelamento. Regularize a fatura ou solicite reativação ao suporte."
+    );
+  }
+
+  if (status === "read_only" && options?.isWriteOperation) {
+    throw new ForbiddenError(
+      "Ação não permitida: Sua conta está em modo somente leitura devido a pendência financeira."
+    );
+  }
+}
+
+

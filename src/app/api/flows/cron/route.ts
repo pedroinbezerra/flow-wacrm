@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'node:crypto'
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/flows/admin-client'
+import { assertAccountOperationalAccess } from '@/lib/auth/account'
+import { supabaseAdmin } from '@/lib/automations/admin-client'
 import { resolveFallbackPolicy } from '@/lib/flows/fallback'
 
 /**
@@ -54,7 +55,7 @@ export async function GET(request: Request) {
   const { data: runs, error } = await admin
     .from('flow_runs')
     .select(
-      'id, flow_id, user_id, contact_id, last_advanced_at, flows ( fallback_policy )',
+      'id, flow_id, account_id, user_id, contact_id, last_advanced_at, flows ( fallback_policy )',
     )
     .eq('status', 'active')
 
@@ -67,6 +68,7 @@ export async function GET(request: Request) {
   type Row = {
     id: string
     flow_id: string
+    account_id: string
     user_id: string
     contact_id: string | null
     last_advanced_at: string
@@ -75,6 +77,12 @@ export async function GET(request: Request) {
 
   let swept = 0
   for (const r of runs as Row[]) {
+    try {
+      await assertAccountOperationalAccess(r.account_id, { isWriteOperation: true, client: admin })
+    } catch {
+      continue
+    }
+
     const flowsField = Array.isArray(r.flows) ? r.flows[0] : r.flows
     const policy = resolveFallbackPolicy(flowsField?.fallback_policy ?? null)
     const lastAdvanced = new Date(r.last_advanced_at)
