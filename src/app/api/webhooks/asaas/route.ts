@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
     if (event === "PAYMENT_RECEIVED" || event === "PAYMENT_CONFIRMED") {
       // Find subscription by asaas_subscription_id or account_id
-      let query = supabase.from("subscriptions").select("id, account_id");
+      let query = supabase.from("subscriptions").select("id, account_id, plan_id");
       if (asaasSubscriptionId) {
         query = query.eq("asaas_subscription_id", asaasSubscriptionId);
       } else if (accountId) {
@@ -43,10 +43,10 @@ export async function POST(req: Request) {
           })
           .eq("id", sub.id);
 
-        // Also update account subscription_status
+        // Also update account subscription_status & active plan_id
         await supabase
           .from("accounts")
-          .update({ subscription_status: "active" })
+          .update({ plan_id: sub.plan_id, subscription_status: "active" })
           .eq("id", sub.account_id);
 
         // Insert or update Invoice & NF record

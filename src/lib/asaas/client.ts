@@ -3,10 +3,6 @@
  * Integration for subscription billing, customer management, webhooks, and NF-e/NFSe.
  */
 
-const ASAAS_BASE_URL = process.env.ASAAS_BASE_URL || "https://api.asaas.com/v3";
-const ASAAS_API_KEY = process.env.ASAAS_API_KEY || "";
-const ASAAS_USER_AGENT = process.env.ASAAS_USER_AGENT || "FlowHub-CRM";
-
 export interface AsaasCustomerInput {
   name: string;
   email: string;
@@ -68,6 +64,24 @@ export interface AsaasPaymentResponse {
   externalReference?: string;
 }
 
+function getAsaasApiKey(): string {
+  const rawKey = process.env.ASAAS_API_KEY || "";
+  const cleanedKey = rawKey.replace(/^['"]|['"]$/g, "").replace(/\\(?=\$)/g, "").trim();
+
+  if (!cleanedKey) {
+    console.error("[Asaas Client] ASAAS_API_KEY is empty. Available ASAAS env vars:", 
+      Object.keys(process.env).filter((k) => k.startsWith("ASAAS"))
+    );
+  }
+
+  return cleanedKey;
+}
+
+function getAsaasBaseUrl(): string {
+  const rawUrl = process.env.ASAAS_BASE_URL || "https://api.asaas.com/v3";
+  return rawUrl.replace(/^['"]|['"]$/g, "").replace(/\/$/, "").trim();
+}
+
 class AsaasError extends Error {
   public errors?: Array<{ code: string; description: string }>;
   constructor(message: string, errors?: Array<{ code: string; description: string }>) {
@@ -78,15 +92,19 @@ class AsaasError extends Error {
 }
 
 async function asaasFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  if (!ASAAS_API_KEY) {
+  const apiKey = getAsaasApiKey();
+
+  if (!apiKey) {
     throw new AsaasError("Asaas API key is missing in environment variables (ASAAS_API_KEY).");
   }
 
-  const url = `${ASAAS_BASE_URL.replace(/\/$/, "")}/${endpoint.replace(/^\//, "")}`;
+  const baseUrl = getAsaasBaseUrl();
+  const url = `${baseUrl}/${endpoint.replace(/^\//, "")}`;
+  const userAgent = (process.env.ASAAS_USER_AGENT || "sgc").replace(/^['"]|['"]$/g, "").trim();
 
   const headers = new Headers(options.headers || {});
-  headers.set("access_token", ASAAS_API_KEY);
-  headers.set("User-Agent", ASAAS_USER_AGENT);
+  headers.set("access_token", apiKey);
+  headers.set("User-Agent", userAgent);
   headers.set("Content-Type", "application/json");
 
   const response = await fetch(url, {
@@ -149,4 +167,48 @@ export async function cancelAsaasSubscription(subscriptionId: string): Promise<{
  */
 export async function getAsaasPayment(paymentId: string): Promise<AsaasPaymentResponse> {
   return asaasFetch<AsaasPaymentResponse>(`/payments/${paymentId}`);
+}
+
+export interface AsaasPixQrCodeResponse {
+  encodedImage: string;
+  payload: string;
+  expirationDate: string;
+}
+
+/**
+ * Fetch PIX QR Code & Copia e Cola for a specific payment
+ */
+export async function getAsaasPaymentPixQrCode(paymentId: string): Promise<AsaasPixQrCodeResponse | null> {
+  try {
+    return await asaasFetch<AsaasPixQrCodeResponse>(`/payments/${paymentId}/pixQrCode`);
+  } catch (err) {
+    console.error("Failed to fetch PIX QR Code:", err);
+    return null;
+  }
+}
+
+/**
+ * Fetch the first pending payment of a subscription.
+ */
+export async function getAsaasSubscriptionFirstPayment(subscriptionId: string): Promise<AsaasPaymentResponse | null> {
+  try {
+    const res = await asaasFetch<{ data: AsaasPaymentResponse[] }>(
+      `/payments?subscription=${encodeURIComponent(subscriptionId)}&status=PENDING`
+    );
+    if (res.data && res.data.length > 0) {
+      return res.data[0];
+    }
+    return null;
+  } catch (err) {
+    console.error("Failed to fetch subscription first payment:", err);
+    return null;
+  }
+}
+
+/**
+ * Fetch the payment URL / invoice URL for the first pending payment of a subscription.
+ */
+export async function getAsaasSubscriptionFirstPaymentUrl(subscriptionId: string): Promise<string | null> {
+  const firstPayment = await getAsaasSubscriptionFirstPayment(subscriptionId);
+  return firstPayment?.invoiceUrl || firstPayment?.bankSlipUrl || null;
 }

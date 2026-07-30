@@ -6,8 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CreditCard, ShieldCheck, Zap, Calendar, CheckCircle2, AlertTriangle, Download, ExternalLink, FileText, ArrowUpRight } from "lucide-react";
+import { CreditCard, ShieldCheck, Zap, Calendar, CheckCircle2, AlertTriangle, Download, ExternalLink, FileText, ArrowUpRight, Copy } from "lucide-react";
 import { toast } from "sonner";
+
+interface NativeCheckoutData {
+  paymentUrl: string | null;
+  bankSlipUrl: string | null;
+  pix: {
+    encodedImage: string;
+    payload: string;
+    expirationDate?: string;
+  } | null;
+  asaasSubscriptionId?: string;
+}
 
 export function BillingPanel() {
   const [loading, setLoading] = useState(true);
@@ -17,8 +28,10 @@ export function BillingPanel() {
   const [effectiveFeatures, setEffectiveFeatures] = useState<PlanFeatures>({});
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
-  // Upgrade Modal State
+  // Native In-App Checkout State
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [checkoutData, setCheckoutData] = useState<NativeCheckoutData | null>(null);
+  const [copiedPix, setCopiedPix] = useState(false);
   const [allPlans, setAllPlans] = useState<CommercialPlan[]>([]);
   const [processingCheckout, setProcessingCheckout] = useState(false);
 
@@ -85,14 +98,19 @@ export function BillingPanel() {
         throw new Error(data.error || "Erro no checkout");
       }
 
-      toast.success("Redirecionando para a página de pagamento seguro do Asaas...");
-
-      if (data.paymentUrl) {
-        window.open(data.paymentUrl, "_blank");
+      if (data.isFreePlan) {
+        toast.success("Plano gratuito ativado com sucesso para sua empresa!");
+        setCheckoutModalOpen(false);
+        fetchSubscriptionData();
+      } else {
+        setCheckoutData({
+          paymentUrl: data.paymentUrl || null,
+          bankSlipUrl: data.bankSlipUrl || null,
+          pix: data.pix || null,
+          asaasSubscriptionId: data.asaasSubscriptionId,
+        });
+        setCheckoutModalOpen(false);
       }
-
-      setCheckoutModalOpen(false);
-      fetchSubscriptionData();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Erro ao selecionar plano");
     } finally {
@@ -180,9 +198,9 @@ export function BillingPanel() {
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground font-medium">Id do Cliente Asaas</p>
-              <p className="text-xs font-mono text-muted-foreground">
-                {subscription?.asaas_customer_id || "Integrado"}
+              <p className="text-xs text-muted-foreground font-medium">Forma de Pagamento</p>
+              <p className="text-sm font-semibold text-foreground">
+                Pagamento Seguro (PIX / Cartão / Boleto)
               </p>
             </div>
           </div>
@@ -379,7 +397,7 @@ export function BillingPanel() {
                       className="w-full gap-2"
                       variant={isCurrent ? "outline" : "default"}
                     >
-                      {isCurrent ? "Plano Selecionado" : processingCheckout ? "Gerando Cobrança..." : "Assinar com Asaas"}
+                      {isCurrent ? "Plano Selecionado" : processingCheckout ? "Gerando Cobrança..." : "Assinar"}
                       {!isCurrent && <ExternalLink className="h-3.5 w-3.5" />}
                     </Button>
                   </CardContent>
@@ -390,6 +408,118 @@ export function BillingPanel() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setCheckoutModalOpen(false)}>Cancelar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Native In-App Payment Checkout (PIX QR Code, Copia e Cola, Boleto & Cartao) */}
+      <Dialog open={Boolean(checkoutData)} onOpenChange={(open) => { if (!open) setCheckoutData(null); }}>
+        <DialogContent className="sm:max-w-xl w-full flex flex-col p-6 space-y-4">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+              <CreditCard className="h-5 w-5 text-primary" />
+              Pagamento da Assinatura
+            </DialogTitle>
+            <DialogDescription>
+              Conclua o pagamento do seu plano sem sair do Flow Hub.
+            </DialogDescription>
+          </DialogHeader>
+
+          {checkoutData?.pix ? (
+            <div className="flex flex-col items-center justify-center space-y-4 p-5 border border-border rounded-xl bg-card">
+              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                PIX Gerado Instantaneamente
+              </div>
+
+              {/* QR Code Image */}
+              {checkoutData.pix.encodedImage && (
+                <div className="p-3 bg-white rounded-xl shadow-inner border border-zinc-200">
+                  <img
+                    src={`data:image/png;base64,${checkoutData.pix.encodedImage}`}
+                    alt="PIX QR Code"
+                    className="w-48 h-48 object-contain"
+                  />
+                </div>
+              )}
+
+              {/* Copia e Cola Code */}
+              <div className="w-full space-y-2 text-center">
+                <p className="text-xs text-muted-foreground font-medium">Escaneie o QR Code acima ou use o PIX Copia e Cola abaixo:</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    readOnly
+                    value={checkoutData.pix.payload}
+                    className="flex-1 text-xs font-mono bg-muted border border-border rounded-md px-3 py-2 text-foreground truncate select-all"
+                  />
+                  <Button
+                    size="sm"
+                    className="gap-1.5 shrink-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(checkoutData.pix!.payload);
+                      setCopiedPix(true);
+                      toast.success("Código PIX copiado para a área de transferência!");
+                      setTimeout(() => setCopiedPix(false), 3000);
+                    }}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    {copiedPix ? "Copiado!" : "Copiar PIX"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="p-6 border border-border rounded-xl bg-muted/40 text-center space-y-3">
+              <p className="text-sm font-medium text-foreground">Sua cobrança foi gerada no Asaas com sucesso!</p>
+              <p className="text-xs text-muted-foreground">Escolha abaixo a opção desejada para concluir o pagamento.</p>
+            </div>
+          )}
+
+          {/* Alternative options (Boleto or Full Invoice Page) */}
+          <div className="flex flex-wrap gap-2 pt-1 justify-center">
+            {checkoutData?.bankSlipUrl && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={() => window.open(checkoutData.bankSlipUrl!, "_blank")}
+              >
+                <Download className="h-3.5 w-3.5" />
+                Baixar Boleto
+              </Button>
+            )}
+            {checkoutData?.paymentUrl && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={() => window.open(checkoutData.paymentUrl!, "_blank")}
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Cartão de Crédito / Fatura no Asaas
+              </Button>
+            )}
+          </div>
+
+          <DialogFooter className="pt-3 border-t border-border flex items-center justify-between sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCheckoutData(null);
+                fetchSubscriptionData();
+              }}
+            >
+              Fechar
+            </Button>
+            <Button
+              onClick={() => {
+                setCheckoutData(null);
+                fetchSubscriptionData();
+                toast.success("Status da assinatura atualizado!");
+              }}
+            >
+              Já Realizei o Pagamento
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

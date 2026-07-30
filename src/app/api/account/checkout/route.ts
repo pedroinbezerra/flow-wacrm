@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { getCurrentAccount } from "@/lib/auth/account";
-import { getOrCreateAsaasCustomer, createAsaasSubscription } from "@/lib/asaas/client";
+import { supabaseAdmin } from "@/lib/automations/admin-client";
+import {
+  getOrCreateAsaasCustomer,
+  createAsaasSubscription,
+  getAsaasSubscriptionFirstPayment,
+  getAsaasPaymentPixQrCode,
+} from "@/lib/asaas/client";
 
 export async function POST(req: Request) {
   try {
@@ -29,6 +35,45 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Plano comercial não encontrado." }, { status: 404 });
     }
 
+    const adminClient = supabaseAdmin();
+
+    // If the plan is free (R$ 0,00), activate directly without financial charge
+    if (Number(plan.price) === 0) {
+      const { data: sub } = await adminClient
+        .from("subscriptions")
+        .upsert(
+          {
+            account_id: account.id,
+            plan_id: plan.id,
+            status: "active",
+            current_period_start: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "account_id" }
+        )
+        .select()
+        .single();
+
+      await adminClient
+        .from("accounts")
+        .update({ plan_id: plan.id, subscription_status: "active" })
+        .eq("id", account.id);
+
+      return NextResponse.json({
+        success: true,
+        isFreePlan: true,
+        subscription: sub || null,
+        paymentUrl: null,
+      });
+    }
+
+    if (Number(plan.price) < 5) {
+      return NextResponse.json(
+        { error: "O Asaas exige um valor mínimo de R$ 5,00 para gerar cobranças recorrentes no sistema." },
+        { status: 400 }
+      );
+    }
+
     // 1. Get or Create Asaas Customer
     const customer = await getOrCreateAsaasCustomer({
       name: user.user_metadata?.full_name || account.name || "Cliente Flow Hub",
@@ -50,14 +95,19 @@ export async function POST(req: Request) {
       externalReference: account.id,
     });
 
-    // 3. Upsert Subscription locally
-    const { data: sub, error: subErr } = await supabase
+    // Fetch first payment and PIX QR Code if available
+    const firstPayment = await getAsaasSubscriptionFirstPayment(asaasSub.id);
+    const pixQrCode = firstPayment?.id ? await getAsaasPaymentPixQrCode(firstPayment.id) : null;
+    const paymentUrl = asaasSub.paymentLink || firstPayment?.invoiceUrl || firstPayment?.bankSlipUrl || null;
+
+    // 3. Upsert Subscription locally via service role (status past_due until Asaas webhook confirms payment)
+    const { data: sub, error: subErr } = await adminClient
       .from("subscriptions")
       .upsert(
         {
           account_id: account.id,
           plan_id: plan.id,
-          status: "active",
+          status: "past_due",
           current_period_start: new Date().toISOString(),
           asaas_subscription_id: asaasSub.id,
           asaas_customer_id: customer.id,
@@ -70,19 +120,17 @@ export async function POST(req: Request) {
 
     if (subErr) {
       console.error("Failed to upsert local subscription:", subErr);
+      throw new Error("Erro ao registrar a assinatura no sistema.");
     }
-
-    // Also update account table
-    await supabase
-      .from("accounts")
-      .update({ plan_id: plan.id, subscription_status: "active" })
-      .eq("id", account.id);
 
     return NextResponse.json({
       success: true,
       subscription: sub || null,
-      paymentUrl: asaasSub.paymentLink || null,
+      paymentUrl,
+      bankSlipUrl: firstPayment?.bankSlipUrl || null,
+      pix: pixQrCode || null,
       asaasSubscriptionId: asaasSub.id,
+      asaasPaymentId: firstPayment?.id || null,
     });
   } catch (err: unknown) {
     console.error("[POST /api/account/checkout]", err);
