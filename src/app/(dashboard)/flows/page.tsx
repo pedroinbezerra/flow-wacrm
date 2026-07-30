@@ -16,6 +16,7 @@ import {
   HelpCircle,
   UserPlus,
   FileText,
+  Zap,
 } from "lucide-react";
 
 import { useCan } from "@/hooks/use-can";
@@ -187,6 +188,36 @@ export default function FlowsPage() {
     }
   }
 
+  async function handleToggleStatus(flow: FlowRow) {
+    const newStatus = flow.status === "active" ? "draft" : "active";
+    try {
+      const res = await fetch(`/api/flows/${flow.id}/activate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || (newStatus === "active" ? t("flows.failedActivate") : t("flows.failedDeactivate")));
+      }
+
+      setFlows((prev) =>
+        prev.map((f) => (f.id === flow.id ? { ...f, status: newStatus } : f))
+      );
+
+      if (newStatus === "active") {
+        toast.success(t("flows.activateSuccess", {}, "Fluxo ativado com sucesso."));
+      } else {
+        toast.success(t("flows.deactivateSuccess", {}, "Fluxo desativado com sucesso."));
+      }
+    } catch (err) {
+      console.error(err);
+      const msg = err instanceof Error ? err.message : t("flows.failedActivate");
+      toast.error(msg);
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -203,9 +234,6 @@ export default function FlowsPage() {
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               {t("flows.title")}
             </h1>
-            <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary text-[10px] uppercase font-semibold">
-              {t("flows.beta")}
-            </Badge>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             {t("flows.description")}
@@ -238,6 +266,7 @@ export default function FlowsPage() {
               t={t}
               onEdit={() => router.push(`/flows/${flow.id}`)}
               onDelete={() => handleDelete(flow)}
+              onToggleStatus={() => handleToggleStatus(flow)}
             />
           ))}
         </div>
@@ -361,11 +390,13 @@ function FlowCard({
   t,
   onEdit,
   onDelete,
+  onToggleStatus,
 }: {
   flow: FlowRow;
   t: (key: string, params?: Record<string, string | number>, defaultValue?: string) => string;
   onEdit: () => void;
   onDelete: () => void;
+  onToggleStatus: () => void;
 }) {
   const triggerSummary = describeTrigger(flow, t);
   const statusLabels: Record<FlowRow["status"], string> = {
@@ -388,16 +419,28 @@ function FlowCard({
             {flow.name}
           </h3>
         </div>
-        <Badge
-          variant="outline"
-          className={cn(
-            "shrink-0 gap-1 text-[10px]",
-            STATUS_COLORS[flow.status],
+        <div className="flex items-center gap-1.5 shrink-0">
+          {flow.status === "active" && (
+            <Badge
+              variant="outline"
+              className="border-amber-500/40 bg-amber-500/10 text-amber-300 text-[10px] gap-1"
+              title="Este fluxo responde no WhatsApp antes do Atendimento por Inteligência Artificial."
+            >
+              <Zap className="h-3 w-3" />
+              {t("flows.precedesAI", {}, "Responde antes da IA")}
+            </Badge>
           )}
-        >
-          <StatusIcon className="h-3 w-3" />
-          {statusLabels[flow.status]}
-        </Badge>
+          <Badge
+            variant="outline"
+            className={cn(
+              "shrink-0 gap-1 text-[10px]",
+              STATUS_COLORS[flow.status],
+            )}
+          >
+            <StatusIcon className="h-3 w-3" />
+            {statusLabels[flow.status]}
+          </Badge>
+        </div>
       </div>
 
       <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
@@ -414,6 +457,29 @@ function FlowCard({
       </div>
 
       <div className="mt-4 flex items-center justify-end gap-2 border-t border-border pt-3">
+        {flow.status === "active" ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggleStatus}
+            className="text-amber-400 hover:bg-amber-500/10 hover:text-amber-300"
+            title={t("flows.deactivate", {}, "Desativar")}
+          >
+            <PauseCircle className="h-3.5 w-3.5" />
+            {t("flows.deactivate", {}, "Desativar")}
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggleStatus}
+            className="text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+            title={t("flows.activate", {}, "Ativar")}
+          >
+            <PlayCircle className="h-3.5 w-3.5" />
+            {t("flows.activate", {}, "Ativar")}
+          </Button>
+        )}
         <Button variant="ghost" size="sm" onClick={onEdit}>
           <Pencil className="h-3.5 w-3.5" />
           {t("common.edit")}

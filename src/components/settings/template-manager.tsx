@@ -18,6 +18,7 @@ import {
   uploadAccountMedia,
   MEDIA_MAX_BYTES_BY_KIND,
 } from '@/lib/storage/upload-media';
+import { normalizeMediaSrc } from '@/lib/storage/media-src';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -555,8 +556,11 @@ export function TemplateManager() {
     }
     setUploadingHeader(true);
     try {
-      const { publicUrl } = await uploadAccountMedia('chat-media', file);
-      setForm((f) => ({ ...f, header_media_url: publicUrl }));
+      // proxyPath — chat-media is private since migration 040; template
+      // submit/edit/send all resolve this to a fresh signed URL at the
+      // moment Meta actually needs to fetch it (see resolveSendableMediaLink).
+      const { proxyPath } = await uploadAccountMedia('chat-media', file);
+      setForm((f) => ({ ...f, header_media_url: proxyPath }));
       toast.success(t('settings.templates.toasts.imageUploaded'));
     } catch (err) {
       toast.error(
@@ -973,7 +977,7 @@ export function TemplateManager() {
                   {form.header_format === 'image' && form.header_media_url && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={form.header_media_url}
+                      src={normalizeMediaSrc(form.header_media_url) ?? form.header_media_url}
                       alt={t('settings.templates.dialog.headerSampleAlt')}
                       className="max-h-28 rounded-md border border-border object-contain"
                     />

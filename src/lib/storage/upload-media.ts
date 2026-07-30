@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { toProxyPath } from "@/lib/storage/media-src";
 
 /**
  * Shared media-upload helper for Supabase Storage buckets that use the
@@ -62,16 +63,31 @@ export function buildMediaPath(
 }
 
 export interface UploadAccountMediaResult {
-  /** Public URL Meta can fetch at send time. */
+  /**
+   * Legacy field name. Since migration 040 both buckets are private, so
+   * this URL is NOT fetchable by anyone without a signed token — Supabase's
+   * `getPublicUrl` just builds the URL shape, it doesn't check whether the
+   * bucket actually allows anonymous reads. Kept only so any not-yet-migrated
+   * caller doesn't break at the type level; use `proxyPath` for anything
+   * that renders in the UI, and resolve through
+   * `resolveSendableMediaLink`/`getSignedMediaUrl` (src/lib/storage/media-access.ts)
+   * for anything an external party (Meta) needs to fetch.
+   */
   publicUrl: string;
   /** Storage object path (account-scoped). */
   path: string;
+  /**
+   * Same-origin, authenticated path (`/api/media/<bucket>/<path>`) — what
+   * should actually be stored/rendered going forward. Resolves to a fresh
+   * signed URL on every view via the proxy route, so it never expires.
+   */
+  proxyPath: string;
 }
 
 /**
- * Upload a file to an account-scoped Storage bucket and return its public
- * URL. Throws with a user-facing message on auth / account-resolution /
- * upload failure — callers surface it via a toast.
+ * Upload a file to an account-scoped Storage bucket. Throws with a
+ * user-facing message on auth / account-resolution / upload failure —
+ * callers surface it via a toast.
  *
  * Size validation is the caller's responsibility (limits can differ per
  * feature); `MEDIA_MAX_BYTES` is exported for the common case.
@@ -114,7 +130,7 @@ export async function uploadAccountMedia(
     data: { publicUrl },
   } = supabase.storage.from(bucket).getPublicUrl(path);
 
-  return { publicUrl, path };
+  return { publicUrl, path, proxyPath: toProxyPath(bucket, path) };
 }
 
 /**

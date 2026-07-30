@@ -22,6 +22,7 @@ import {
 import { formatConversationPreview } from '@/lib/conversation-preview'
 import type { MessageTemplate } from '@/types'
 import { isMessageTemplate } from '@/lib/whatsapp/template-row-guard'
+import { resolveSendableMediaLink } from '@/lib/storage/media-access'
 
 export async function POST(request: Request) {
   try {
@@ -85,7 +86,9 @@ export async function POST(request: Request) {
     }
 
     // Media kinds (image/video/document/audio) are sent to Meta via a
-    // public URL the composer already uploaded to the chat-media bucket.
+    // link resolved at send time (see resolveSendableMediaLink below) —
+    // the composer already uploaded the file to the chat-media bucket,
+    // which is private since migration 040.
     const MEDIA_KINDS = ['image', 'video', 'document', 'audio'] as const
     const isMediaKind = (MEDIA_KINDS as readonly string[]).includes(message_type)
 
@@ -293,12 +296,21 @@ export async function POST(request: Request) {
         // content_text doubles as the caption (ignored for audio inside
         // sendMediaMessage). filename surfaces in the recipient's chat
         // for documents only.
+        //
+        // `media_url` here is our own proxy path (or, for any
+        // not-yet-migrated caller, a legacy public Storage URL) — Meta
+        // can't fetch either directly since the bucket went private in
+        // migration 040. resolveSendableMediaLink turns it into a
+        // signed URL good for a few minutes, which is all Meta needs
+        // since it fetches immediately.
+        const metaLink = await resolveSendableMediaLink(media_url)
+        console.log(`[whatsapp/send] Resolved media link for Meta (${message_type}):`, metaLink)
         const result = await sendMediaMessage({
           phoneNumberId: config.phone_number_id,
           accessToken,
           to: phone,
           kind: message_type as MediaKind,
-          link: media_url,
+          link: metaLink,
           caption: content_text || undefined,
           filename: filename || undefined,
           contextMessageId,

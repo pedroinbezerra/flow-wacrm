@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentAccount } from "@/lib/auth/account";
-import { getEffectiveAccountConfig } from "@/lib/plans/limits";
+import { getEffectiveAccountConfig, getAllAccountUsage } from "@/lib/plans/limits";
 
 export async function GET() {
   try {
@@ -23,11 +23,11 @@ export async function GET() {
       .eq("account_id", account.id)
       .eq("status", "active");
 
-    // Compute effective consolidated configuration
-    const { features: effectiveFeatures, plan: activePlan } = await getEffectiveAccountConfig(
-      supabase,
-      account.id
-    );
+    // Compute effective consolidated configuration & real-time usage
+    const [{ features: effectiveFeatures, plan: activePlan }, usage] = await Promise.all([
+      getEffectiveAccountConfig(supabase, account.id),
+      getAllAccountUsage(supabase, account.id),
+    ]);
 
     return NextResponse.json({
       account,
@@ -35,6 +35,7 @@ export async function GET() {
       plan: subscription?.plan || activePlan || null,
       addons: addons || [],
       effectiveFeatures,
+      usage,
     });
   } catch (err: unknown) {
     console.error("[GET /api/account/subscription]", err);

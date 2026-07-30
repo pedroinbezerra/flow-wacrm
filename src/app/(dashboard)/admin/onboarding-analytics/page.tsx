@@ -9,6 +9,9 @@ import {
   ArrowDownRight,
   BarChart3,
   Sparkles,
+  RefreshCw,
+  Lightbulb,
+  ArrowUpRight,
 } from "lucide-react";
 import {
   BarChart,
@@ -19,6 +22,11 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { AIConfigButton } from "@/components/ai/ai-config-modal";
+import type { AIJourneyInsight } from "@/lib/onboarding/ai-journey-insights";
 import type { OnboardingAnalyticsSummary, OnboardingStepKey } from "@/types";
 
 const STEP_NAMES: Record<OnboardingStepKey, string> = {
@@ -35,7 +43,9 @@ import { useTranslation } from "@/hooks/use-translation";
 export default function OnboardingAnalyticsPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<OnboardingAnalyticsSummary | null>(null);
+  const [insights, setInsights] = useState<AIJourneyInsight[]>([]);
   const [loading, setLoading] = useState(true);
+  const [generatingAI, setGeneratingAI] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const STEP_NAMES: Record<OnboardingStepKey, string> = {
@@ -45,6 +55,23 @@ export default function OnboardingAnalyticsPage() {
     create_first_campaign: t("onboarding.steps.create_first_campaign.title"),
     send_first_campaign: t("onboarding.steps.send_first_campaign.title"),
     invite_team: t("onboarding.steps.invite_team.title"),
+  };
+
+  const generateAIInsights = async () => {
+    try {
+      setGeneratingAI(true);
+      const res = await fetch("/api/admin/onboarding-analytics/ai-insights", { method: "POST" });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.insights) {
+          setInsights(json.insights);
+        }
+      }
+    } catch (err) {
+      console.error("Erro ao gerar insights de jornada com IA:", err);
+    } finally {
+      setGeneratingAI(false);
+    }
   };
 
   useEffect(() => {
@@ -112,6 +139,20 @@ export default function OnboardingAnalyticsPage() {
           <p className="text-sm text-muted-foreground">
             {t("onboarding.analytics.subtitle")}
           </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <AIConfigButton label="Configuração de IA" />
+
+          <Button
+            size="sm"
+            onClick={generateAIInsights}
+            disabled={generatingAI}
+            className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700 shadow-sm"
+          >
+            <Sparkles className={`h-4 w-4 mr-2 ${generatingAI ? "animate-spin" : ""}`} />
+            {generatingAI ? "Gerando Insights..." : "Analisar Jornada com IA"}
+          </Button>
         </div>
       </div>
 
@@ -192,6 +233,52 @@ export default function OnboardingAnalyticsPage() {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* AI Journey & Onboarding Insights */}
+      {insights.length > 0 && (
+        <Card className="border-violet-500/30 bg-violet-500/5 dark:bg-violet-950/10">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-violet-500" />
+              <CardTitle className="text-base font-bold text-violet-950 dark:text-violet-200">
+                AI Journey & Activation Insights
+              </CardTitle>
+            </div>
+            <CardDescription className="text-xs">
+              Análise inteligente de gargalos do funil de ativação, retenção e adoção de produto
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {insights.map((insight, idx) => (
+              <div
+                key={idx}
+                className="p-4 rounded-xl bg-card border border-border space-y-2 shadow-xs"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold">{insight.title}</span>
+                  <Badge
+                    variant={insight.severity === "critical" ? "destructive" : insight.severity === "warning" ? "secondary" : "outline"}
+                    className="text-[10px] uppercase"
+                  >
+                    {insight.severity}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">{insight.summary}</p>
+
+                <div className="pt-2 border-t border-border/50 text-xs">
+                  <span className="font-semibold text-foreground">Ação de Product/Growth: </span>
+                  <span className="text-muted-foreground">{insight.recommended_action}</span>
+                </div>
+
+                <div className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                  <ArrowUpRight className="h-3 w-3" />
+                  <span>Impacto Estimado: {insight.estimated_impact}</span>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -28,6 +28,7 @@ import {
   Cpu,
   Clock,
   AlertTriangle,
+  UserCheck,
 } from 'lucide-react'
 import { useTranslation } from '@/hooks/use-translation'
 import { Button } from '@/components/ui/button'
@@ -124,6 +125,13 @@ interface AuditMetrics {
   handoffRate: number
 }
 
+interface ActiveFlowInfo {
+  id: string
+  name: string
+  status: string
+  trigger_type: string
+}
+
 export default function AIAssistantPage() {
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('config')
@@ -135,6 +143,7 @@ export default function AIAssistantPage() {
   const [newApiKey, setNewApiKey] = useState('')
   const [testingKey, setTestingKey] = useState(false)
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [activeFlows, setActiveFlows] = useState<ActiveFlowInfo[]>([])
 
   // Dynamic LLM Models State
   const [availableModels, setAvailableModels] = useState<string[]>([
@@ -287,11 +296,26 @@ export default function AIAssistantPage() {
     }
   }
 
+  // Load Active Flows for Precedence Warning
+  const fetchActiveFlows = async () => {
+    try {
+      const res = await fetch('/api/flows')
+      const data = await res.json()
+      if (res.ok && Array.isArray(data.flows)) {
+        const active = data.flows.filter((f: ActiveFlowInfo) => f.status === 'active')
+        setActiveFlows(active)
+      }
+    } catch {
+      // quiet
+    }
+  }
+
   useEffect(() => {
     fetchConfig()
     fetchKnowledge()
     fetchMedia()
     fetchAudit()
+    fetchActiveFlows()
   }, [])
 
   useEffect(() => {
@@ -579,7 +603,7 @@ export default function AIAssistantPage() {
                 </Badge>
               )}
             </div>
-            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t('aiAssistant.title')}</h1>
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl mt-3">{t('aiAssistant.title')}</h1>
             <p className="text-sm text-muted-foreground max-w-2xl">
               {t('aiAssistant.subtitle')}
             </p>
@@ -596,6 +620,71 @@ export default function AIAssistantPage() {
           )}
         </div>
       </div>
+
+      {/* Routing Order & Precedence Card */}
+      <Card id="tour-ai-routing" className="border-border bg-card/60">
+        <CardContent className="p-4 md:p-6 space-y-4">
+          <div className="flex flex-col gap-1">
+            <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground">
+              <Zap className="h-4 w-4 text-amber-400" />
+              {t('aiAssistant.routing.title', {}, 'Ordem de Roteamento & Prioridade de Atendimento')}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {t('aiAssistant.routing.subtitle', {}, 'Como o Flow Hub decide quem responde às mensagens recebidas no WhatsApp.')}
+            </p>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-lg border bg-background/50 p-3 space-y-1">
+              <div className="flex items-center gap-1.5 text-amber-400 font-semibold text-xs">
+                <Zap className="h-3.5 w-3.5" />
+                {t('aiAssistant.routing.step1Title', {}, '1º Fluxos Visuais')}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                {t('aiAssistant.routing.step1Desc', {}, 'Automações rígidas de menu e triagem respondem primeiro.')}
+              </p>
+            </div>
+
+            <div className="rounded-lg border bg-background/50 p-3 space-y-1">
+              <div className="flex items-center gap-1.5 text-primary font-semibold text-xs">
+                <Bot className="h-3.5 w-3.5" />
+                {t('aiAssistant.routing.step2Title', {}, '2º Atendimento IA')}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                {t('aiAssistant.routing.step2Desc', {}, 'Responde se nenhum fluxo for acionado e a IA estiver ativa.')}
+              </p>
+            </div>
+
+            <div className="rounded-lg border bg-background/50 p-3 space-y-1">
+              <div className="flex items-center gap-1.5 text-emerald-400 font-semibold text-xs">
+                <UserCheck className="h-3.5 w-3.5" />
+                {t('aiAssistant.routing.step3Title', {}, '3º Atendente Humano')}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                {t('aiAssistant.routing.step3Desc', {}, 'Assume a conversa quando a IA aciona a transferência.')}
+              </p>
+            </div>
+          </div>
+
+          {activeFlows.length > 0 && (
+            <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <span className="font-semibold">
+                  {t('aiAssistant.routing.activeFlowsWarning', { count: activeFlows.length }, `Você possui ${activeFlows.length} fluxo(s) ativo(s) que intercepta(m) mensagens antes da IA:`)}
+                </span>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {activeFlows.map((f) => (
+                    <Badge key={f.id} variant="outline" className="border-amber-400/40 bg-amber-500/20 text-amber-200 text-[10px]">
+                      {f.name}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

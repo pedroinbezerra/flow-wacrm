@@ -244,10 +244,13 @@ export function MessageComposer({
       }
       setBusy(true);
       try {
-        const { publicUrl, path } = await uploadAccountMedia(CHAT_MEDIA_BUCKET, file);
+        const { proxyPath, path } = await uploadAccountMedia(CHAT_MEDIA_BUCKET, file);
         // Replacing an existing draft? GC the previous object first.
         removeStaged(draftRef.current?.path);
-        setDraft({ kind, mediaUrl: publicUrl, path, filename: file.name, caption: "" });
+        // proxyPath (not the legacy public URL) — the bucket is private
+        // since migration 040, so only our authenticated proxy route
+        // (/api/media/...) can actually render this for the current user.
+        setDraft({ kind, mediaUrl: proxyPath, path, filename: file.name, caption: "" });
       } catch (err) {
         toast.error(t("inbox.uploadFailed"));
       } finally {
@@ -282,9 +285,9 @@ export function MessageComposer({
       }
       setBusy(true);
       try {
-        const { publicUrl, path } = await uploadAccountMedia(CHAT_MEDIA_BUCKET, file);
+        const { proxyPath, path } = await uploadAccountMedia(CHAT_MEDIA_BUCKET, file);
         removeStaged(draftRef.current?.path);
-        setDraft({ kind: "audio", mediaUrl: publicUrl, path, filename: file.name, caption: "" });
+        setDraft({ kind: "audio", mediaUrl: proxyPath, path, filename: file.name, caption: "" });
       } catch (err) {
         toast.error(t("inbox.uploadFailed"));
       } finally {

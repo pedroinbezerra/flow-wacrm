@@ -6,8 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CreditCard, ShieldCheck, Zap, Calendar, CheckCircle2, AlertTriangle, Download, ExternalLink, FileText, ArrowUpRight, Copy } from "lucide-react";
+import { CreditCard, ShieldCheck, Zap, Calendar, CheckCircle2, AlertTriangle, Download, ExternalLink, FileText, ArrowUpRight, Copy, Activity } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { ConsumptionDashboardCard } from "@/components/consumption/consumption-dashboard-card";
 
 interface NativeCheckoutData {
   paymentUrl: string | null;
@@ -26,6 +28,7 @@ export function BillingPanel() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [addons, setAddons] = useState<AccountAddon[]>([]);
   const [effectiveFeatures, setEffectiveFeatures] = useState<PlanFeatures>({});
+  const [usage, setUsage] = useState<Record<string, number>>({});
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   // Native In-App Checkout State
@@ -51,6 +54,7 @@ export function BillingPanel() {
         setSubscription(subData.subscription);
         setAddons(subData.addons || []);
         setEffectiveFeatures(subData.effectiveFeatures || {});
+        setUsage(subData.usage || {});
       }
 
       if (invRes.ok) {
@@ -139,6 +143,70 @@ export function BillingPanel() {
     }
   };
 
+  const renderUsageCard = (
+    label: string,
+    featureKey: keyof PlanFeatures,
+    usageKey: string
+  ) => {
+    const maxVal = effectiveFeatures[featureKey];
+    if (maxVal === undefined || maxVal === null || typeof maxVal === "boolean") {
+      return null;
+    }
+
+    const used = usage[usageKey] || 0;
+    const isUnlimited = Number(maxVal) <= 0 || Number(maxVal) >= 999999;
+    const pct = isUnlimited ? 0 : Math.round((used / Number(maxVal)) * 100);
+
+    return (
+      <div className="p-3.5 rounded-lg border border-border bg-card/60 flex flex-col justify-between space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-foreground">{label}</span>
+          <span className="text-xs font-bold font-mono text-foreground">
+            {used} <span className="text-muted-foreground font-normal">/ {isUnlimited ? "∞" : String(maxVal)}</span>
+          </span>
+        </div>
+
+        {!isUnlimited ? (
+          <div className="space-y-1">
+            <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+              <div
+                className={cn(
+                  "h-full transition-all rounded-full",
+                  pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-primary"
+                )}
+                style={{ width: `${Math.min(pct, 100)}%` }}
+              />
+            </div>
+            <div className="flex justify-between items-center text-[10px] pt-0.5">
+              <span
+                className={cn(
+                  "font-medium",
+                  pct >= 100 ? "text-red-500 font-bold" : pct >= 80 ? "text-amber-500 font-bold" : "text-muted-foreground"
+                )}
+              >
+                {pct >= 100 ? "Limite Atingido" : pct >= 80 ? "Próximo do Limite" : `${pct}% consumido`}
+              </span>
+              {pct >= 80 && (
+                <button
+                  type="button"
+                  onClick={openUpgradeModal}
+                  className="text-primary hover:underline font-semibold flex items-center gap-0.5"
+                >
+                  Expandir +
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 text-[10px] text-emerald-500 font-medium pt-1">
+            <CheckCircle2 className="h-3 w-3" />
+            Uso Ilimitado
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -207,46 +275,42 @@ export function BillingPanel() {
         </CardContent>
       </Card>
 
-      {/* Effective Configuration & Consolidated Limits */}
+      {/* Operational Consumption & Computational Franchise */}
+      <ConsumptionDashboardCard />
+
+      {/* Real-Time Consumption & Consolidated Limits */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-bold flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-primary" />
-            Configuração Efetiva & Limites da Conta
+            <Activity className="h-4 w-4 text-primary" />
+            Consumo em Tempo Real & Limites da Conta
           </CardTitle>
           <CardDescription>
-            Soma do plano original com todos os recursos adicionais contratados.
+            Acompanhe o uso atual da sua empresa em comparação com o limite da sua Configuração Efetiva.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-            <div className="p-3 rounded-lg border border-border bg-muted/30">
-              <p className="text-xs text-muted-foreground">Usuários / Membros</p>
-              <p className="text-lg font-bold text-foreground">{effectiveFeatures.max_users ?? "Ilimitado"}</p>
-            </div>
-            <div className="p-3 rounded-lg border border-border bg-muted/30">
-              <p className="text-xs text-muted-foreground">Contatos</p>
-              <p className="text-lg font-bold text-foreground">{effectiveFeatures.max_contacts ?? "Ilimitado"}</p>
-            </div>
-            <div className="p-3 rounded-lg border border-border bg-muted/30">
-              <p className="text-xs text-muted-foreground">Fluxos de Automação</p>
-              <p className="text-lg font-bold text-foreground">{effectiveFeatures.max_flows ?? "Ilimitado"}</p>
-            </div>
-            <div className="p-3 rounded-lg border border-border bg-muted/30">
-              <p className="text-xs text-muted-foreground">Funis Kanban</p>
-              <p className="text-lg font-bold text-foreground">{effectiveFeatures.max_kanban_funnels ?? "Ilimitado"}</p>
-            </div>
-            <div className="p-3 rounded-lg border border-border bg-muted/30">
-              <p className="text-xs text-muted-foreground">Boards de Atendimento</p>
-              <p className="text-lg font-bold text-foreground">{effectiveFeatures.max_boards ?? "Ilimitado"}</p>
-            </div>
-            <div className="p-3 rounded-lg border border-border bg-muted/30">
-              <p className="text-xs text-muted-foreground">Disparos / Campanha</p>
-              <p className="text-lg font-bold text-foreground">{effectiveFeatures.max_broadcasts_per_campaign ?? "Ilimitado"}</p>
+            {renderUsageCard("Usuários / Membros", "max_users", "max_users")}
+            {renderUsageCard("Contatos Cadastrados", "max_contacts", "max_contacts")}
+            {renderUsageCard("Fluxos de Automação", "max_flows", "max_flows")}
+            {renderUsageCard("Funis Kanban", "max_kanban_funnels", "max_kanban_funnels")}
+            {renderUsageCard("Boards de Atendimento", "max_boards", "max_boards")}
+
+            <div className="p-3.5 rounded-lg border border-border bg-card/60 flex flex-col justify-between space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-foreground">Disparos / Campanha</span>
+                <span className="text-xs font-bold font-mono text-foreground">
+                  {effectiveFeatures.max_broadcasts_per_campaign ?? "Ilimitado"}
+                </span>
+              </div>
+              <p className="text-[10px] text-muted-foreground pt-1">
+                Limite máximo de contatos por disparo de transmissão.
+              </p>
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2 pt-2 border-t border-border">
             <Badge variant={effectiveFeatures.allow_scheduling ? "default" : "outline"}>
               {effectiveFeatures.allow_scheduling ? "✓ Agendamento Habilitado" : "✕ Sem Agendamento"}
             </Badge>
@@ -309,7 +373,7 @@ export function BillingPanel() {
         <CardContent>
           {invoices.length === 0 ? (
             <div className="py-6 text-center text-sm text-muted-foreground">
-              Nenhuma fatura registrada até o momento. As faturas pagas via Asaas aparecerão aqui automaticamente.
+              Nenhuma fatura registrada até o momento. As faturas pagas aparecerão aqui automaticamente.
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -496,7 +560,7 @@ export function BillingPanel() {
                 onClick={() => window.open(checkoutData.paymentUrl!, "_blank")}
               >
                 <ExternalLink className="h-3.5 w-3.5" />
-                Cartão de Crédito / Fatura no Asaas
+                Cartão de Crédito
               </Button>
             )}
           </div>

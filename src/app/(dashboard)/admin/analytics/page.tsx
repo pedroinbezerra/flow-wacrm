@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, DollarSign, Users, Building2, AlertTriangle, PlugZap, Layers, Shield, Activity } from "lucide-react";
 import { toast } from "sonner";
+import { AdminConsumptionIntelligence } from "@/components/admin/admin-consumption-intelligence";
 
 interface AdminMetrics {
   mrr: number;
@@ -174,6 +175,11 @@ export default function AdminAnalyticsPage() {
             <p className="text-xs text-muted-foreground pt-1">Fluxos interativos ativos na plataforma</p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Operational Consumption, Telemetry & AI Pricing Insights */}
+      <div className="pt-6 border-t border-border">
+        <AdminConsumptionIntelligence />
       </div>
     </div>
   );

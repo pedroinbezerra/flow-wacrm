@@ -220,7 +220,9 @@
     "betaFeatures": "Recursos Beta",
     "adminPlans": "Planos Comerciais",
     "adminAnalytics": "Inteligência Comercial",
+    "adminConsumption": "Telemetria & Consumo",
     "adminOnboarding": "Inteligência & Onboarding",
+    "aiConfig": "Configuração de IA",
     "signOut": "Sair",
     "beta": "Beta",
     "openMenu": "Abrir menu",
@@ -774,6 +776,7 @@
     "statusDraft": "Rascunho",
     "statusActive": "Ativo",
     "statusArchived": "Arquivado",
+    "precedesAI": "Responde antes da IA",
     "noFlows": "Nenhum fluxo ainda",
     "noFlowsHint": "Construa sua primeira conversa — um menu de boas-vindas, uma busca de pedido, um bot de FAQ. Os clientes tocam em botões; o bot os roteia para a resposta correta (ou para o agente correto).",
     "flowsNav": "Fluxos",
@@ -783,7 +786,12 @@
     "edited": "Editado",
     "unsavedChanges": "Alterações não salvas — clique em Salvar para persistir",
     "activate": "Ativar",
+    "deactivate": "Desativar",
     "pause": "Pausar",
+    "activateSuccess": "Fluxo ativado com sucesso.",
+    "deactivateSuccess": "Fluxo desativado com sucesso.",
+    "failedActivate": "Não foi possível ativar o fluxo.",
+    "failedDeactivate": "Não foi possível desativar o fluxo.",
     "fixIssuesBeforeActivating": "Corrija os problemas abaixo antes de ativar",
     "noIssuesReady": "Sem problemas. Pronto para ativar.",
     "validationSummary": "{errors} erro{errors, plural, one {} other {s}}, {warnings} aviso{warnings, plural, one {} other {s}}",
@@ -1827,6 +1835,18 @@
         "actionsTitle": "Testar & Salvar ⚡",
         "actionsDesc": "Salve as credenciais e clique em 'Testar Conexão API' para validar o funcionamento."
       },
+      "settings_ai": {
+        "headerTitle": "Configuração de IA 🤖",
+        "headerDesc": "Gerencie os provedores de inteligência artificial, chaves de API e parâmetros de inferência do Flow Hub.",
+        "providerTitle": "Provedor & Endpoint API 🌐",
+        "providerDesc": "Escolha um dos provedores suportados (OpenAI, OpenRouter, Groq, DeepSeek) ou insira a URL do seu servidor proxy local.",
+        "keyTitle": "Chave de API (BYOK) 🔑",
+        "keyDesc": "Informe sua chave de API (Bring Your Own Key). As credenciais são salvas com criptografia de ponta a ponta.",
+        "modelTitle": "Modelo & Parâmetros 🎛️",
+        "modelDesc": "Defina o modelo de IA padrão (ex: GPT-4o Mini), a temperatura para criatividade das respostas e limite de tokens.",
+        "actionsTitle": "Testar Conexão & Salvar ⚡",
+        "actionsDesc": "Valide a conexão com a API de IA usando o botão 'Testar Conexão' antes de salvar suas alterações."
+      },
       "boards": {
         "headerTitle": "Quadros de Atendimento 📋",
         "headerDesc": "Organize atendimentos em múltiplos quadros visuais com prioridades e controle de retorno.",
@@ -2010,6 +2030,17 @@
       "colSeverity": "Severidade",
       "colEvent": "Evento",
       "colDetails": "Detalhes"
+    },
+    "routing": {
+      "title": "Ordem de Roteamento & Prioridade de Atendimento",
+      "subtitle": "Como o Flow Hub decide quem responde às mensagens recebidas no WhatsApp.",
+      "step1Title": "1º Fluxos Visuais",
+      "step1Desc": "Automações rígidas de menu e triagem respondem primeiro.",
+      "step2Title": "2º Atendimento IA",
+      "step2Desc": "Responde se nenhum fluxo for acionado e a IA estiver ativa.",
+      "step3Title": "3º Atendente Humano",
+      "step3Desc": "Assume a conversa quando a IA aciona a transferência.",
+      "activeFlowsWarning": "Você possui {count} fluxo(s) ativo(s) que intercepta(m) mensagens antes da IA:"
     }
   }
 }

@@ -11,6 +11,7 @@ import {
 } from '@/lib/whatsapp/template-validators'
 import { buildMetaTemplatePayload } from '@/lib/whatsapp/template-components'
 import { ensureImageHeaderHandle } from '@/lib/whatsapp/template-header-handle'
+import { resolveSendableMediaLink } from '@/lib/storage/media-access'
 
 /**
  * Per-template lifecycle endpoint.
@@ -160,6 +161,15 @@ export async function PATCH(
           { error: e instanceof Error ? e.message : 'Header image upload failed.' },
           { status: 400 },
         )
+      }
+
+      // video/document headers (and any image header that skipped the
+      // handle path above) still send header_media_url straight to
+      // Meta as the edit-time sample — resolve it the same way, or
+      // template edits break the moment chat-media went private
+      // (migration 040).
+      if (payload.header_media_url && !payload.header_handle) {
+        payload.header_media_url = await resolveSendableMediaLink(payload.header_media_url)
       }
 
       const metaPayload = buildMetaTemplatePayload(payload)

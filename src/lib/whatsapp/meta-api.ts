@@ -330,6 +330,7 @@ import {
   buildSendComponents,
   type SendTimeParams,
 } from './template-send-builder'
+import { resolveSendableMediaLink } from '@/lib/storage/media-access'
 
 export interface SendTemplateMessageArgs {
   phoneNumberId: string
@@ -395,12 +396,30 @@ export async function sendTemplateMessage(
   }
 
   if (template) {
-    const components = buildSendComponents(template, {
+    // header_media_url (whether on the template row or as a per-send
+    // override) may be a proxy path into the private chat-media bucket
+    // (migration 040) or a legacy direct public-Storage URL from before
+    // that migration. Either way Meta needs a URL it can fetch RIGHT
+    // NOW, and a template can be reused for months after creation, so
+    // this must be re-resolved on every send rather than cached.
+    const [resolvedTemplate, resolvedHeaderMediaUrl] = await Promise.all([
+      template.header_media_url
+        ? resolveSendableMediaLink(template.header_media_url).then((signedUrl) => ({
+            ...template,
+            header_media_url: signedUrl,
+          }))
+        : Promise.resolve(template),
+      messageParams?.headerMediaUrl
+        ? resolveSendableMediaLink(messageParams.headerMediaUrl)
+        : Promise.resolve(messageParams?.headerMediaUrl),
+    ])
+
+    const components = buildSendComponents(resolvedTemplate, {
       // Legacy callers pass body values in `params`; fold them into
       // `messageParams.body` so the new path covers them too.
       body: messageParams?.body ?? params,
       headerText: messageParams?.headerText,
-      headerMediaUrl: messageParams?.headerMediaUrl,
+      headerMediaUrl: resolvedHeaderMediaUrl,
       headerMediaId: messageParams?.headerMediaId,
       buttonParams: messageParams?.buttonParams,
     })

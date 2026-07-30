@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { ReplyQuote } from "./reply-quote";
 import { MessageReactions } from "./message-reactions";
 import { useTranslation } from "@/hooks/use-translation";
+import { normalizeMediaSrc } from "@/lib/storage/media-src";
 
 interface MessageBubbleProps {
   message: Message;
@@ -129,6 +130,10 @@ function MediaImage({ url, alt }: { url: string; alt: string }) {
 
 function MessageContent({ message }: { message: Message }) {
   const { t } = useTranslation();
+  // Rewrites any pre-migration-040 direct public Storage URL to our
+  // authenticated proxy path; already-proxied paths and the inbound
+  // Meta media proxy (/api/whatsapp/media/...) pass through unchanged.
+  const mediaSrc = normalizeMediaSrc(message.media_url);
 
   switch (message.content_type) {
     case "text":
@@ -141,8 +146,8 @@ function MessageContent({ message }: { message: Message }) {
     case "image":
       return (
         <div>
-          {message.media_url ? (
-            <MediaImage url={message.media_url} alt="Shared image" />
+          {mediaSrc ? (
+            <MediaImage url={mediaSrc} alt="Shared image" />
           ) : (
             <MediaUnavailable label={t("inbox.messageTypes.image")} />
           )}
@@ -157,9 +162,9 @@ function MessageContent({ message }: { message: Message }) {
     case "video":
       return (
         <div>
-          {message.media_url ? (
+          {mediaSrc ? (
             <video
-              src={message.media_url}
+              src={mediaSrc}
               controls
               className="max-h-64 max-w-60 rounded-lg"
             />
@@ -177,8 +182,8 @@ function MessageContent({ message }: { message: Message }) {
     case "audio":
       return (
         <div>
-          {message.media_url ? (
-            <audio src={message.media_url} controls className="max-w-60" />
+          {mediaSrc ? (
+            <audio src={mediaSrc} controls className="max-w-60" />
           ) : (
             <MediaUnavailable label={t("inbox.messageTypes.audio")} />
           )}
@@ -186,12 +191,12 @@ function MessageContent({ message }: { message: Message }) {
       );
 
     case "document":
-      if (!message.media_url) {
+      if (!mediaSrc) {
         return <MediaUnavailable label={message.content_text || t("inbox.messageTypes.document")} />;
       }
       return (
         <a
-          href={message.media_url}
+          href={mediaSrc}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm hover:bg-muted"

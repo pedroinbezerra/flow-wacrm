@@ -47,6 +47,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 import { uploadAccountMedia, MEDIA_MAX_BYTES } from "@/lib/storage/upload-media";
+import { normalizeMediaSrc } from "@/lib/storage/media-src";
 import { slugify, type BuilderNode } from "../shared";
 import { NextNodeRow, NodeKeySelect, TextRow } from "./fields";
 
@@ -914,11 +915,14 @@ function SendMediaForm({
       try {
         // Account-scoped upload (path `account-<id>/...`) — see
         // uploadAccountMedia + migration 020's flow-media RLS policy.
-        const { publicUrl } = await uploadAccountMedia(FLOW_MEDIA_BUCKET, file);
+        // proxyPath (not the legacy public URL) — flow-media is private
+        // since migration 040; the flows engine resolves this to a
+        // signed URL right before sending (see flows/engine.ts).
+        const { proxyPath } = await uploadAccountMedia(FLOW_MEDIA_BUCKET, file);
         // Patch all fields in one call so the form doesn't re-render
         // with a half-uploaded state.
         onUpdateConfig({
-          media_url: publicUrl,
+          media_url: proxyPath,
           filename: file.name,
         });
         toast.success(t("flows.fileUploaded"));
@@ -972,7 +976,7 @@ function SendMediaForm({
           <div className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 text-xs">
             <Paperclip className="h-3.5 w-3.5 shrink-0 text-cyan-400" />
             <a
-              href={cfg.media_url}
+              href={normalizeMediaSrc(cfg.media_url) ?? cfg.media_url}
               target="_blank"
               rel="noopener noreferrer"
               className="min-w-0 flex-1 truncate text-foreground hover:text-cyan-300"

@@ -40,6 +40,7 @@ import {
   engineSendText,
 } from "./meta-send";
 import { decideFallback, resolveFallbackPolicy } from "./fallback";
+import { resolveSendableMediaLink } from "@/lib/storage/media-access";
 import {
   type CollectInputNodeConfig,
   type ConditionNodeConfig,
@@ -627,13 +628,19 @@ async function advanceFromNodeKey(
     if (node.node_type === "send_media") {
       const cfg = node.config as unknown as SendMediaNodeConfig;
       try {
+        // cfg.media_url is our proxy path (or, for flows saved before
+        // migration 040, a legacy public Storage URL) — flow-media is
+        // private now, so resolve to a fresh signed URL right before
+        // every send. The flow can run indefinitely after being built,
+        // so this must be re-resolved on each execution, not cached.
+        const mediaLink = await resolveSendableMediaLink(cfg.media_url);
         const { whatsapp_message_id } = await engineSendMedia({
           accountId: run.account_id,
     userId: run.user_id,
           conversationId: run.conversation_id!,
           contactId: run.contact_id!,
           kind: cfg.media_type,
-          link: cfg.media_url,
+          link: mediaLink,
           caption: cfg.caption
             ? interpolateVars(cfg.caption, run.vars)
             : undefined,

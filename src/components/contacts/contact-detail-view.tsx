@@ -34,6 +34,11 @@ import {
   Save,
   X,
   DollarSign,
+  Shield,
+  Download,
+  UserX,
+  AlertCircle,
+  Ban,
 } from 'lucide-react';
 
 interface ContactDetailViewProps {
@@ -84,6 +89,81 @@ export function ContactDetailView({
   // Deals tab
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loadingDeals, setLoadingDeals] = useState(false);
+
+  // LGPD tab
+  const [exportingLGPD, setExportingLGPD] = useState(false);
+  const [anonymizingLGPD, setAnonymizingLGPD] = useState(false);
+  const [togglingOptOut, setTogglingOptOut] = useState(false);
+
+  async function handleExportLGPD() {
+    if (!contactId) return;
+    setExportingLGPD(true);
+    try {
+      const res = await fetch(`/api/contacts/${contactId}/lgpd`);
+      if (!res.ok) throw new Error('Erro na resposta da API');
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `lgpd_export_contact_${contactId}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Dados do titular exportados com sucesso sob a LGPD!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Falha ao exportar dados do titular.');
+    } finally {
+      setExportingLGPD(false);
+    }
+  }
+
+  async function handleAnonymizeLGPD() {
+    if (!contactId) return;
+    if (
+      !confirm(
+        'ATENÇÃO: Deseja realmente anonimizar este contato conforme a LGPD? Esta ação substituirá dados pessoais por informações genéricas e revogará o consentimento.',
+      )
+    ) {
+      return;
+    }
+    setAnonymizingLGPD(true);
+    try {
+      const res = await fetch(`/api/contacts/${contactId}/lgpd`, { method: 'POST' });
+      if (!res.ok) throw new Error('Erro ao anonimizar');
+      toast.success('Contato anonimizado com sucesso sob a LGPD!');
+      fetchContact();
+      onUpdated();
+    } catch (err) {
+      console.error(err);
+      toast.error('Falha ao anonimizar contato.');
+    } finally {
+      setAnonymizingLGPD(false);
+    }
+  }
+
+  async function handleToggleOptOut(newOptOut: boolean) {
+    if (!contactId) return;
+    setTogglingOptOut(true);
+    try {
+      const res = await fetch(`/api/contacts/${contactId}/lgpd`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ opt_out: newOptOut }),
+      });
+      if (!res.ok) throw new Error('Erro ao alterar opt-out');
+      toast.success(newOptOut ? 'Contato marcado como Opt-Out LGPD' : 'Consentimento LGPD ativado');
+      fetchContact();
+      onUpdated();
+    } catch (err) {
+      console.error(err);
+      toast.error('Falha ao alterar opt-out.');
+    } finally {
+      setTogglingOptOut(false);
+    }
+  }
 
   const fetchContact = useCallback(async () => {
     if (!contactId) return;
@@ -381,6 +461,15 @@ export function ContactDetailView({
                         {contact.company}
                       </span>
                     )}
+                    {contact.opt_out ? (
+                      <Badge variant="destructive" className="text-[10px] py-0 px-1.5 gap-1">
+                        <Ban className="size-2.5" /> Opt-Out LGPD
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 gap-1">
+                        <Shield className="size-2.5" /> LGPD Ativo
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>
@@ -418,6 +507,12 @@ export function ContactDetailView({
                   className="data-active:bg-muted data-active:text-primary text-muted-foreground"
                 >
                   {t('contacts.detail.deals')}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="lgpd"
+                  className="data-active:bg-muted data-active:text-primary text-muted-foreground"
+                >
+                  LGPD
                 </TabsTrigger>
               </TabsList>
 
@@ -682,6 +777,92 @@ export function ContactDetailView({
                     ))}
                   </div>
                 )}
+              </TabsContent>
+
+              {/* LGPD & Privacidade Tab */}
+              <TabsContent value="lgpd" className="flex-1 overflow-y-auto px-4 py-3">
+                <div className="space-y-4">
+                  <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Shield className="size-4 text-primary" />
+                      <h4 className="text-sm font-medium text-foreground">Status de Consentimento</h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Contatos em Opt-Out não receberão mensagens ativas de campanhas ou automações.
+                    </p>
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-xs text-muted-foreground">Status Atual:</span>
+                      <Badge
+                        variant={contact.opt_out ? 'destructive' : 'outline'}
+                        className="text-xs"
+                      >
+                        {contact.opt_out ? 'Opt-Out (Bloqueado)' : 'Consentimento Ativo'}
+                      </Badge>
+                    </div>
+                    <Button
+                      onClick={() => handleToggleOptOut(!contact.opt_out)}
+                      disabled={togglingOptOut}
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2 text-xs"
+                    >
+                      {togglingOptOut ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        <Ban className="size-3.5 mr-1.5" />
+                      )}
+                      {contact.opt_out ? 'Reativar Consentimento' : 'Marcar como Opt-Out (LGPD)'}
+                    </Button>
+                  </div>
+
+                  <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Download className="size-4 text-blue-500" />
+                      <h4 className="text-sm font-medium text-foreground">Direito de Portabilidade (Art. 18, V)</h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Baixe um arquivo estruturado em JSON contendo todo o perfil, histórico de conversas, tags e valores do titular.
+                    </p>
+                    <Button
+                      onClick={handleExportLGPD}
+                      disabled={exportingLGPD}
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
+                    >
+                      {exportingLGPD ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        <Download className="size-3.5 mr-1.5" />
+                      )}
+                      Exportar Dados do Titular (JSON)
+                    </Button>
+                  </div>
+
+                  <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3 space-y-2">
+                    <div className="flex items-center gap-2 text-red-500">
+                      <UserX className="size-4" />
+                      <h4 className="text-sm font-medium">Direito de Eliminação / Anonimização (Art. 18, VI)</h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Substitua os dados pessoais por registros anônimos mantendo a integridade do sistema.
+                    </p>
+                    <Button
+                      onClick={handleAnonymizeLGPD}
+                      disabled={anonymizingLGPD}
+                      variant="destructive"
+                      size="sm"
+                      className="w-full text-xs"
+                    >
+                      {anonymizingLGPD ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        <AlertCircle className="size-3.5 mr-1.5" />
+                      )}
+                      Anonimizar Contato (LGPD)
+                    </Button>
+                  </div>
+                </div>
               </TabsContent>
             </Tabs>
           </div>

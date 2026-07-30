@@ -167,6 +167,12 @@ function LoginPageInner() {
               {t("auth.login.createAccount")}
             </Link>
           </p>
+
+          <div className="mt-6 flex justify-center gap-3 text-xs text-muted-foreground">
+            <Link href="/terms" className="hover:text-foreground transition-colors">Termos de Uso</Link>
+            <span>•</span>
+            <Link href="/privacy" className="hover:text-foreground transition-colors">Política de Privacidade (LGPD)</Link>
+          </div>
         </CardContent>
       </Card>
     </div>

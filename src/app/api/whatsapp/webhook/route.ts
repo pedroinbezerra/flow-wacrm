@@ -688,6 +688,26 @@ async function processMessage(
   const flowConsumed = flowResult.consumed
   const inboundText = contentText ?? message.text?.body ?? ''
 
+  // LGPD Opt-out Keyword Detection ("SAIR", "STOP", "PARAR", "CANCELAR", "DESCADASTRA")
+  const cleanedInboundText = inboundText.trim().toLowerCase()
+  const optOutKeywords = ['sair', 'stop', 'parar', 'cancelar', 'opt-out', 'optout', 'descadastrar', 'descadastra']
+  if (optOutKeywords.includes(cleanedInboundText)) {
+    try {
+      await supabaseAdmin()
+        .from('contacts')
+        .update({
+          opt_out: true,
+          opt_out_at: new Date().toISOString(),
+          consent_status: 'opted_out',
+          consent_updated_at: new Date().toISOString(),
+        })
+        .eq('id', contactRecord.id)
+      console.log(`[lgpd-webhook] Contact ${contactRecord.id} opted-out via keyword '${inboundText}'`)
+    } catch (optErr) {
+      console.error('[lgpd-webhook] Failed to set opt-out for contact:', optErr)
+    }
+  }
+
   // ============================================================
   // Smart AI Service Dispatch
   //

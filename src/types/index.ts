@@ -70,6 +70,7 @@ export interface CommercialPlan {
   trial_days: number;
   status: PlanStatus;
   features: PlanFeatures;
+  monthly_compute_credits?: number;
   created_at: string;
   updated_at: string;
 }
@@ -187,6 +188,10 @@ export interface Contact {
   email?: string;
   company?: string;
   avatar_url?: string;
+  opt_out?: boolean;
+  opt_out_at?: string | null;
+  consent_status?: 'opted_in' | 'opted_out' | 'revoked';
+  consent_updated_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -798,5 +803,87 @@ export interface OnboardingAnalyticsSummary {
     skipped: number;
   }>;
   feature_usage_30d: Record<string, number>;
+}
+
+// ============================================================
+// Motor de Consumo Computacional & Telemetria (039)
+// ============================================================
+
+export type ResourceType =
+  | 'whatsapp_message'
+  | 'ai_execution'
+  | 'audio_transcription'
+  | 'automation_execution'
+  | 'webhook_dispatch'
+  | 'pdf_generation'
+  | 'ocr_scan'
+  | (string & {});
+
+export interface CreditWeight {
+  resource_type: ResourceType;
+  credit_weight: number;
+  description: string;
+  unit_cost_estimate: number;
+  status: 'active' | 'inactive';
+  updated_at: string;
+}
+
+export interface UsageEvent {
+  id: string;
+  account_id: string;
+  resource_type: ResourceType;
+  quantity: number;
+  compute_credits: number;
+  estimated_cost: number;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface ResourceUsageBreakdown {
+  resource_type: ResourceType;
+  total_quantity: number;
+  total_credits: number;
+  total_estimated_cost: number;
+}
+
+export interface AccountConsumptionSummary {
+  account_id: string;
+  plan_name: string;
+  monthly_allowance_credits: number;
+  total_credits_used: number;
+  remaining_credits: number;
+  usage_percentage: number;
+  total_estimated_cost: number;
+  daily_average_credits: number;
+  breakdown_by_resource: ResourceUsageBreakdown[];
+}
+
+export interface FairUseAccountFlag {
+  account_id: string;
+  account_name: string;
+  plan_name: string;
+  total_credits_used: number;
+  monthly_allowance_credits: number;
+  plan_average_credits: number;
+  z_score: number;
+  status: 'normal' | 'high' | 'critical_fair_use';
+}
+
+export interface SuperAdminConsumptionIntelligence {
+  total_accounts_monitored: number;
+  total_credits_consumed_30d: number;
+  total_estimated_cost_30d: number;
+  average_cost_per_account: number;
+  top_cost_resources: ResourceUsageBreakdown[];
+  fair_use_flags: FairUseAccountFlag[];
+}
+
+export interface AICommercialInsight {
+  title: string;
+  category: 'pricing' | 'quota' | 'fair_use' | 'cost_optimization';
+  severity: 'info' | 'warning' | 'critical';
+  summary: string;
+  recommended_action: string;
+  estimated_financial_impact: string;
 }
 

@@ -278,49 +278,97 @@ export function GuidedTour() {
         },
       ];
     } else if (pathname.startsWith("/settings")) {
-      tourKey = "settings";
-      steps = [
-        {
-          element: "#tour-settings-rail",
-          popover: {
-            title: t("onboarding.tour.settings.railTitle"),
-            description: t("onboarding.tour.settings.railDesc"),
-            side: "right",
+      const isAiTab = typeof window !== "undefined" && window.location.search.includes("tab=ai");
+
+      if (isAiTab) {
+        tourKey = "settings_ai";
+        steps = [
+          {
+            element: "#tour-ai-settings-header",
+            popover: {
+              title: t("onboarding.tour.settings_ai.headerTitle"),
+              description: t("onboarding.tour.settings_ai.headerDesc"),
+              side: "bottom",
+            },
           },
-        },
-        {
-          element: "#tour-whatsapp-status",
-          popover: {
-            title: t("onboarding.tour.settings.statusTitle"),
-            description: t("onboarding.tour.settings.statusDesc"),
-            side: "bottom",
+          {
+            element: "#tour-ai-settings-provider",
+            popover: {
+              title: t("onboarding.tour.settings_ai.providerTitle"),
+              description: t("onboarding.tour.settings_ai.providerDesc"),
+              side: "bottom",
+            },
           },
-        },
-        {
-          element: "#tour-whatsapp-credentials",
-          popover: {
-            title: t("onboarding.tour.settings.credentialsTitle"),
-            description: t("onboarding.tour.settings.credentialsDesc"),
-            side: "bottom",
+          {
+            element: "#tour-ai-settings-key",
+            popover: {
+              title: t("onboarding.tour.settings_ai.keyTitle"),
+              description: t("onboarding.tour.settings_ai.keyDesc"),
+              side: "bottom",
+            },
           },
-        },
-        {
-          element: "#tour-whatsapp-webhook",
-          popover: {
-            title: t("onboarding.tour.settings.webhookTitle"),
-            description: t("onboarding.tour.settings.webhookDesc"),
-            side: "bottom",
+          {
+            element: "#tour-ai-settings-model",
+            popover: {
+              title: t("onboarding.tour.settings_ai.modelTitle"),
+              description: t("onboarding.tour.settings_ai.modelDesc"),
+              side: "bottom",
+            },
           },
-        },
-        {
-          element: "#tour-whatsapp-actions",
-          popover: {
-            title: t("onboarding.tour.settings.actionsTitle"),
-            description: t("onboarding.tour.settings.actionsDesc"),
-            side: "top",
+          {
+            element: "#tour-ai-settings-actions",
+            popover: {
+              title: t("onboarding.tour.settings_ai.actionsTitle"),
+              description: t("onboarding.tour.settings_ai.actionsDesc"),
+              side: "top",
+            },
           },
-        },
-      ];
+        ];
+      } else {
+        tourKey = "settings";
+        steps = [
+          {
+            element: "#tour-settings-rail",
+            popover: {
+              title: t("onboarding.tour.settings.railTitle"),
+              description: t("onboarding.tour.settings.railDesc"),
+              side: "right",
+            },
+          },
+          {
+            element: "#tour-whatsapp-status",
+            popover: {
+              title: t("onboarding.tour.settings.statusTitle"),
+              description: t("onboarding.tour.settings.statusDesc"),
+              side: "bottom",
+            },
+          },
+          {
+            element: "#tour-whatsapp-credentials",
+            popover: {
+              title: t("onboarding.tour.settings.credentialsTitle"),
+              description: t("onboarding.tour.settings.credentialsDesc"),
+              side: "bottom",
+            },
+          },
+          {
+            element: "#tour-whatsapp-webhook",
+            popover: {
+              title: t("onboarding.tour.settings.webhookTitle"),
+              description: t("onboarding.tour.settings.webhookDesc"),
+              side: "bottom",
+            },
+          },
+          {
+            element: "#tour-whatsapp-actions",
+            popover: {
+              title: t("onboarding.tour.settings.actionsTitle"),
+              description: t("onboarding.tour.settings.actionsDesc"),
+              side: "top",
+            },
+          },
+        ];
+      }
     } else if (pathname === "/dashboard") {
       tourKey = "dashboard_overview";
       steps = [

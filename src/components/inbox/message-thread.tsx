@@ -682,9 +682,6 @@ export function MessageThread({
           console.error("Failed to send media:", reason);
           toast.error(`Failed to send: ${reason}`);
           onUpdateMessage(tempId, { status: "failed" });
-          // The upload never reached the recipient — GC the orphaned
-          // object rather than leaving it in the public bucket forever.
-          void deleteAccountMedia(CHAT_MEDIA_BUCKET, payload.path).catch(() => {});
           return;
         }
 
@@ -694,7 +691,6 @@ export function MessageThread({
         const reason = err instanceof Error ? err.message : "network error";
         toast.error(`Failed to send: ${reason}`);
         onUpdateMessage(tempId, { status: "failed" });
-        void deleteAccountMedia(CHAT_MEDIA_BUCKET, payload.path).catch(() => {});
       }
     },
     [conversation, onNewMessage, onUpdateMessage],
@@ -1159,63 +1155,67 @@ export function MessageThread({
     <div className={cn("flex min-w-0 flex-1 flex-col", DOODLE_BG_CLASSES)}>
       {/* Header — solid card surface sits on top of the doodle so the
           name/avatar/dropdowns stay legible. */}
-      <div className="flex flex-col gap-3 border-b border-border bg-card px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          {/* Back-to-list button — mobile only. Hidden on lg+ where the
-              conversation list is always visible next to the thread. */}
+      {/* Header — solid card surface with clean toolbar layout groups */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-3 py-2 sm:px-4">
+        {/* Left Side: Contact Info & Status Badges */}
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+          {/* Back-to-list button — mobile only. */}
           {onBack && (
             <button
               type="button"
               onClick={onBack}
               aria-label={t("inbox.backToConversations")}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-4 w-4" />
             </button>
           )}
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium text-foreground">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary ring-1 ring-primary/20">
             {displayName.charAt(0).toUpperCase()}
           </div>
-          <div className="min-w-0">
-            <h2 className="truncate text-sm font-semibold text-foreground">{displayName}</h2>
-            <p className="truncate text-xs text-muted-foreground">{contact.phone}</p>
+          <div className="min-w-0 shrink">
+            <h2 className="truncate text-xs font-semibold text-foreground">{displayName}</h2>
+            <p className="truncate text-[11px] text-muted-foreground">{contact.phone}</p>
           </div>
-          {/* Session timer badge — hidden on the narrowest phones so
-              the name + back arrow keep their room. */}
-          <Badge
-            variant="outline"
-            className={cn(
-              "ml-1 hidden gap-1 border-border text-[10px] sm:inline-flex sm:ml-2",
-              sessionInfo.expired ? "text-red-400" : "text-primary"
-            )}
-          >
-            <Clock className="h-3 w-3" />
-            {sessionInfo.remaining}
-          </Badge>
-          {/* AI Handler Status Badge */}
-          <Badge
-            variant="outline"
-            className={cn(
-              "ml-1 gap-1 text-[10px] sm:inline-flex border-border",
-              conversation.ai_handler_status === "human"
-                ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
-                : "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
-            )}
-          >
-            {conversation.ai_handler_status === "human" ? (
-              <>
-                <User className="h-3 w-3" /> Humano
-              </>
-            ) : (
-              <>
-                <Bot className="h-3 w-3" /> IA Ativa
-              </>
-            )}
-          </Badge>
+
+          {/* Session timer & AI status badges */}
+          <div className="hidden items-center gap-1 sm:flex">
+            <Badge
+              variant="outline"
+              className={cn(
+                "gap-1 border-border text-[10px] font-medium px-1.5 py-0.5 whitespace-nowrap",
+                sessionInfo.expired ? "text-red-400 border-red-500/30 bg-red-500/10" : "text-primary border-primary/30 bg-primary/10"
+              )}
+            >
+              <Clock className="h-3 w-3" />
+              {sessionInfo.remaining}
+            </Badge>
+
+            <Badge
+              variant="outline"
+              className={cn(
+                "gap-1 text-[10px] font-medium px-1.5 py-0.5 border-border whitespace-nowrap",
+                conversation.ai_handler_status === "human"
+                  ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
+                  : "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+              )}
+            >
+              {conversation.ai_handler_status === "human" ? (
+                <>
+                  <User className="h-3 w-3" /> Humano
+                </>
+              ) : (
+                <>
+                  <Bot className="h-3 w-3" /> IA Ativa
+                </>
+              )}
+            </Badge>
+          </div>
         </div>
 
-        <div className="flex w-full flex-wrap items-center gap-1 sm:w-auto sm:justify-end sm:gap-2">
-          {/* AI Handoff Toggle Button */}
+        {/* Right Side: Action Control Groups */}
+        <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
+          {/* Group 1: AI Handoff CTA */}
           <Button
             type="button"
             variant="outline"
@@ -1223,7 +1223,7 @@ export function MessageThread({
             onClick={handleToggleAIHandler}
             disabled={updatingHandlerStatus}
             className={cn(
-              "h-8 text-xs font-medium gap-1",
+              "h-7 text-[11px] font-medium gap-1 px-2.5 rounded-md transition-all shadow-xs whitespace-nowrap",
               conversation.ai_handler_status === "human"
                 ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
                 : "border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20"
@@ -1231,204 +1231,204 @@ export function MessageThread({
           >
             {conversation.ai_handler_status === "human" ? (
               <>
-                <Sparkles className="h-3.5 w-3.5" /> Devolver para IA
+                <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                <span className="whitespace-nowrap">Devolver para IA</span>
               </>
             ) : (
               <>
-                <UserCheck className="h-3.5 w-3.5" /> Assumir Atendimento
+                <UserCheck className="h-3.5 w-3.5 shrink-0" />
+                <span className="whitespace-nowrap">Assumir Atendimento</span>
               </>
             )}
           </Button>
-          {/* Contact-panel toggle — desktop only. The contact sidebar
-              eats a chunk of horizontal width that crowds the thread on
-              smaller laptops; this lets agents reclaim it when they just
-              want to read and reply. Hidden on mobile, where the sidebar
-              never renders as a permanent panel anyway. Issue #258. */}
-          {onToggleContactPanel && (
-            <button
-              type="button"
-              onClick={onToggleContactPanel}
-              aria-label={
-                contactPanelOpen ? t("inbox.hideContactPanel") : t("inbox.showContactPanel")
-              }
-              aria-pressed={contactPanelOpen}
-              title={contactPanelOpen ? t("inbox.hideContact") : t("inbox.showContact")}
-              className={cn(
-                "hidden h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-muted hover:text-foreground lg:inline-flex",
-                contactPanelOpen ? "text-primary" : "text-muted-foreground",
-              )}
-            >
-              {contactPanelOpen ? (
-                <PanelRightClose className="h-4 w-4" />
-              ) : (
-                <PanelRightOpen className="h-4 w-4" />
-              )}
-            </button>
-          )}
 
-          {/* Manual refresh — forces a refetch of the messages + the
-              conversation list (the parent bumps its resyncToken). Useful
-              when realtime missed an event or the agent just wants to be
-              sure nothing's stale. Only rendered when the parent wires
-              up `onRefresh`. */}
-          {onRefresh && (
-            <button
-              type="button"
-              onClick={handleRefreshClick}
-              disabled={isRefreshing}
-              aria-label={t("inbox.refreshConversation")}
-              title={t("inbox.refresh")}
-              className={cn(
-                "inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-60",
-              )}
-            >
-              <RefreshCw
-                className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")}
-              />
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={handleOpenLinkBoard}
-            title={t("inbox.board.addToBoard")}
-            className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <FolderKanban className="h-3 w-3" />
-            <span className="hidden sm:inline">{t("inbox.board.addToBoard")}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleToggleAwaitingReturn}
-            disabled={updatingBoardFlags}
-            title={
-              defaultBoardItem?.awaiting_return
-                ? t("boards.clearAwaitingReturn")
-                : t("boards.markAwaitingReturn")
-            }
-            className={cn(
-              "inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs transition-colors",
-              defaultBoardItem?.awaiting_return
-                ? "bg-amber-500/15 text-amber-500 hover:bg-amber-500/20"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              updatingBoardFlags && "opacity-60",
-            )}
-          >
-            <Clock3 className="h-3 w-3" />
-            <span className="hidden sm:inline">{t("boards.awaitingReturn")}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleTogglePriority}
-            disabled={updatingBoardFlags}
-            title={
-              (defaultBoardItem?.priority_rank ?? 0) > 0
-                ? t("boards.clearPriority")
-                : t("boards.promotePriority")
-            }
-            className={cn(
-              "inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs transition-colors",
-              (defaultBoardItem?.priority_rank ?? 0) > 0
-                ? "bg-red-500/15 text-red-400 hover:bg-red-500/20"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              updatingBoardFlags && "opacity-60",
-            )}
-          >
-            <Pin className={cn("h-3 w-3", (defaultBoardItem?.priority_rank ?? 0) > 0 && "fill-current")} />
-            <span className="hidden sm:inline">{t("boards.priority")}</span>
-          </button>
-
-          {/* Status dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger className={cn(
-                  "inline-flex items-center justify-center h-7 gap-1 px-2 text-xs rounded-md hover:bg-muted",
+          {/* Group 2: Ticket Management (Status & Assignment) */}
+          <div className="flex items-center gap-0.5 rounded-md border border-border/60 bg-muted/40 p-0.5">
+            {/* Status dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className={cn(
+                  "inline-flex items-center justify-center h-7 gap-1 px-2 text-[11px] font-medium rounded-md transition-colors whitespace-nowrap hover:bg-muted",
                   currentStatus?.color ?? "text-muted-foreground"
-                )}>
-                {currentStatus?.label ?? t("common.status")}
-                <ChevronDown className="h-3 w-3" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="border-border bg-popover"
-            >
-              {statusOptions.map((opt: typeof statusOptions[number]) => (
-                <DropdownMenuItem
-                  key={opt.value}
-                  onClick={() => handleStatusChange(opt.value)}
-                  className={cn("text-sm", opt.color)}
-                >
-                  {opt.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Assign dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              className={cn(
-                "inline-flex items-center justify-center h-7 gap-1 px-2 text-xs rounded-md hover:bg-muted",
-                assignedAgentId ? "text-primary" : "text-muted-foreground"
-              )}
-            >
-              <UserPlus className="h-3 w-3" />
-              <span className="hidden sm:inline">{assignLabel}</span>
-              <ChevronDown className="h-3 w-3" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="border-border bg-popover"
-            >
-              {profiles.length === 0 ? (
-                <DropdownMenuItem disabled className="text-sm text-muted-foreground">
-                  {t("inbox.noAvailableTeammates")}
-                </DropdownMenuItem>
-              ) : (
-                profiles.map((p) => {
-                  const isSelected = p.user_id === assignedAgentId;
-                  const presence = getPresence(p.user_id);
-                  return (
-                    <DropdownMenuItem
-                      key={p.id}
-                      onClick={() => handleAssignChange(p.user_id)}
-                      className={cn(
-                        "text-sm",
-                        isSelected ? "text-primary" : "text-popover-foreground"
-                      )}
-                    >
-                      <PresenceDot
-                        status={presence}
-                        label={presenceLabel(
-                          presence,
-                          getRow(p.user_id)?.last_seen_at ?? null,
-                          now
-                        )}
-                        className="mr-2"
-                      />
-                      <span className="flex-1">
-                        {p.full_name}
-                        {p.user_id === user?.id ? ` (${t("inbox.me")})` : ""}
-                      </span>
-                      {isSelected && <Check className="ml-2 h-3 w-3" />}
-                    </DropdownMenuItem>
-                  );
-                })
-              )}
-              {assignedAgentId && (
-                <>
-                  <DropdownMenuSeparator className="bg-border" />
+                )}
+              >
+                <span className="whitespace-nowrap">{currentStatus?.label ?? t("common.status")}</span>
+                <ChevronDown className="h-3 w-3 opacity-70 shrink-0" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="border-border bg-popover">
+                {statusOptions.map((opt: typeof statusOptions[number]) => (
                   <DropdownMenuItem
-                    onClick={() => handleAssignChange(null)}
-                    className="text-sm text-muted-foreground"
+                    key={opt.value}
+                    onClick={() => handleStatusChange(opt.value)}
+                    className={cn("text-xs", opt.color)}
                   >
-                    {t("inbox.unassign")}
+                    {opt.label}
                   </DropdownMenuItem>
-                </>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <div className="h-3.5 w-[1px] bg-border/60 shrink-0" />
+
+            {/* Assign dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className={cn(
+                  "inline-flex items-center justify-center h-7 gap-1 px-2 text-[11px] font-medium rounded-md transition-colors whitespace-nowrap hover:bg-muted",
+                  assignedAgentId ? "text-primary font-semibold" : "text-muted-foreground"
+                )}
+              >
+                <UserPlus className="h-3.5 w-3.5 shrink-0" />
+                <span className="whitespace-nowrap">{assignLabel}</span>
+                <ChevronDown className="h-3 w-3 opacity-70 shrink-0" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="border-border bg-popover">
+                {profiles.length === 0 ? (
+                  <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                    {t("inbox.noAvailableTeammates")}
+                  </DropdownMenuItem>
+                ) : (
+                  profiles.map((p) => {
+                    const isSelected = p.user_id === assignedAgentId;
+                    const presence = getPresence(p.user_id);
+                    return (
+                      <DropdownMenuItem
+                        key={p.id}
+                        onClick={() => handleAssignChange(p.user_id)}
+                        className={cn(
+                          "text-xs",
+                          isSelected ? "text-primary font-medium" : "text-popover-foreground"
+                        )}
+                      >
+                        <PresenceDot
+                          status={presence}
+                          label={presenceLabel(
+                            presence,
+                            getRow(p.user_id)?.last_seen_at ?? null,
+                            now
+                          )}
+                          className="mr-2"
+                        />
+                        <span className="flex-1 whitespace-nowrap">
+                          {p.full_name}
+                          {p.user_id === user?.id ? ` (${t("inbox.me")})` : ""}
+                        </span>
+                        {isSelected && <Check className="ml-2 h-3.5 w-3.5 text-primary" />}
+                      </DropdownMenuItem>
+                    );
+                  })
+                )}
+                {assignedAgentId && (
+                  <>
+                    <DropdownMenuSeparator className="bg-border" />
+                    <DropdownMenuItem
+                      onClick={() => handleAssignChange(null)}
+                      className="text-xs text-muted-foreground"
+                    >
+                      {t("inbox.unassign")}
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Group 3: CRM & Board Tools */}
+          <div className="flex items-center gap-0.5 rounded-md border border-border/60 bg-muted/40 p-0.5">
+            <button
+              type="button"
+              onClick={handleOpenLinkBoard}
+              title={t("inbox.board.addToBoard")}
+              className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium whitespace-nowrap text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <FolderKanban className="h-3.5 w-3.5 shrink-0" />
+              <span className="hidden sm:inline whitespace-nowrap">{t("inbox.board.addToBoard")}</span>
+            </button>
+
+            <div className="h-3.5 w-[1px] bg-border/60 shrink-0" />
+
+            {/* Aguardando retorno toggle */}
+            <button
+              type="button"
+              onClick={handleToggleAwaitingReturn}
+              disabled={updatingBoardFlags}
+              title={
+                defaultBoardItem?.awaiting_return
+                  ? t("boards.clearAwaitingReturn")
+                  : t("boards.markAwaitingReturn")
+              }
+              className={cn(
+                "inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium whitespace-nowrap transition-colors",
+                defaultBoardItem?.awaiting_return
+                  ? "bg-amber-500/20 text-amber-400 font-semibold"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                updatingBoardFlags && "opacity-60"
               )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            >
+              <Clock3 className="h-3.5 w-3.5 shrink-0" />
+              <span className="hidden sm:inline whitespace-nowrap">{t("boards.awaitingReturn")}</span>
+            </button>
+
+            {/* Prioridade toggle */}
+            <button
+              type="button"
+              onClick={handleTogglePriority}
+              disabled={updatingBoardFlags}
+              title={
+                (defaultBoardItem?.priority_rank ?? 0) > 0
+                  ? t("boards.clearPriority")
+                  : t("boards.promotePriority")
+              }
+              className={cn(
+                "inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium whitespace-nowrap transition-colors",
+                (defaultBoardItem?.priority_rank ?? 0) > 0
+                  ? "bg-red-500/20 text-red-400 font-semibold"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                updatingBoardFlags && "opacity-60"
+              )}
+            >
+              <Pin className={cn("h-3.5 w-3.5 shrink-0", (defaultBoardItem?.priority_rank ?? 0) > 0 && "fill-current")} />
+              <span className="hidden sm:inline whitespace-nowrap">{t("boards.priority")}</span>
+            </button>
+          </div>
+
+          {/* Group 4: Header Utilities (Refresh & Sidebar Toggle) */}
+          <div className="flex items-center gap-0.5">
+            {onRefresh && (
+              <button
+                type="button"
+                onClick={handleRefreshClick}
+                disabled={isRefreshing}
+                aria-label={t("inbox.refreshConversation")}
+                title={t("inbox.refresh")}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-60"
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+              </button>
+            )}
+
+            {onToggleContactPanel && (
+              <button
+                type="button"
+                onClick={onToggleContactPanel}
+                aria-label={
+                  contactPanelOpen ? t("inbox.hideContactPanel") : t("inbox.showContactPanel")
+                }
+                aria-pressed={contactPanelOpen}
+                title={contactPanelOpen ? t("inbox.hideContact") : t("inbox.showContact")}
+                className={cn(
+                  "hidden h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-muted hover:text-foreground lg:inline-flex",
+                  contactPanelOpen ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                {contactPanelOpen ? (
+                  <PanelRightClose className="h-3.5 w-3.5" />
+                ) : (
+                  <PanelRightOpen className="h-3.5 w-3.5" />
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

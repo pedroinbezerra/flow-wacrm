@@ -226,3 +226,27 @@ async function getFeatureCurrentCount(
       return 0;
   }
 }
+
+/**
+ * Get current usage counts for all numeric feature limits of an account.
+ */
+export async function getAllAccountUsage(
+  supabase: SupabaseClient,
+  accountId: string
+): Promise<Record<string, number>> {
+  const [users, contacts, flows, kanbanFunnels, boards] = await Promise.all([
+    getFeatureCurrentCount(supabase, accountId, "max_users"),
+    getFeatureCurrentCount(supabase, accountId, "max_contacts"),
+    getFeatureCurrentCount(supabase, accountId, "max_flows"),
+    getFeatureCurrentCount(supabase, accountId, "max_kanban_funnels"),
+    getFeatureCurrentCount(supabase, accountId, "max_boards"),
+  ]);
+
+  return {
+    max_users: users,
+    max_contacts: contacts,
+    max_flows: flows,
+    max_kanban_funnels: kanbanFunnels,
+    max_boards: boards,
+  };
+}

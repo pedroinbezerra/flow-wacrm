@@ -1,4 +1,5 @@
 import {
+  Bot,
   Coins,
   CreditCard,
   FileText,
@@ -30,6 +31,7 @@ export const SETTINGS_SECTIONS = [
   'appearance',
   'billing',
   'whatsapp',
+  'ai',
   'templates',
   'fields',
   'deals',
@@ -55,6 +57,7 @@ export const SECTION_META: Record<SettingsSection, SectionMeta> = {
   appearance: { id: 'appearance', labelKey: 'settings.sections.appearance', icon: Palette, group: 'account' },
   billing: { id: 'billing', labelKey: 'settings.sections.billing', icon: CreditCard, group: 'account' },
   whatsapp: { id: 'whatsapp', labelKey: 'settings.sections.whatsapp', icon: PlugZap, group: 'workspace' },
+  ai: { id: 'ai', labelKey: 'navigation.aiConfig', icon: Bot, group: 'workspace' },
   templates: { id: 'templates', labelKey: 'settings.sections.templates', icon: FileText, group: 'workspace' },
   fields: { id: 'fields', labelKey: 'settings.sections.fieldsAndTags', icon: Tags, group: 'workspace' },
   deals: { id: 'deals', labelKey: 'settings.sections.dealsAndCurrency', icon: Coins, group: 'workspace' },

@@ -600,7 +600,14 @@ export default function ContactsPage() {
                     />
                   </TableCell>
                   <TableCell className="text-foreground font-medium">
-                    {contact.name || <span className="text-muted-foreground italic">{t("contacts.unnamed")}</span>}
+                    <div className="flex items-center gap-2">
+                      <span>{contact.name || <span className="text-muted-foreground italic">{t("contacts.unnamed")}</span>}</span>
+                      {contact.opt_out && (
+                        <span className="inline-flex items-center rounded-full bg-red-500/10 px-1.5 py-0.5 text-[10px] font-medium text-red-500 border border-red-500/20">
+                          Opt-Out
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground font-mono text-xs">
                     {contact.phone}
