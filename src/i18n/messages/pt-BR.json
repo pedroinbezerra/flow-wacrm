@@ -292,6 +292,15 @@
       "newBroadcast": "Nova Transmissão",
       "newAutomation": "Nova Automação"
     },
+    "dowShort": {
+      "mon": "Seg",
+      "tue": "Ter",
+      "wed": "Qua",
+      "thu": "Qui",
+      "fri": "Sex",
+      "sat": "Sáb",
+      "dom": "Dom"
+    },
     "crmTitle": "FlowHub"
   },
 

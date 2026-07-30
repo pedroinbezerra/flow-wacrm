@@ -60,9 +60,19 @@ export function PresenceHeartbeat() {
         p_status: currentStatus(),
       });
       if (error && !cancelled) {
-        // Non-fatal: presence is best-effort. Log once per failure so a
-        // misconfigured RPC is visible without spamming.
-        console.error("[PresenceHeartbeat] touch_presence failed:", error.message);
+        // Non-fatal: presence is best-effort. Suppress transient network
+        // errors (offline, timeout, proxy reset) to avoid console spam.
+        // Only log errors that hint at a real misconfiguration.
+        const msg = error.message ?? "";
+        const isTransient =
+          msg.includes("Failed to fetch") ||
+          msg.includes("connection timeout") ||
+          msg.includes("upstream connect error") ||
+          msg.includes("NetworkError") ||
+          msg.includes("Load failed");
+        if (!isTransient) {
+          console.error("[PresenceHeartbeat] touch_presence failed:", msg);
+        }
       }
     };
 

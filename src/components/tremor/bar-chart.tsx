@@ -695,6 +695,8 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
               tick={{
                 transform:
                   layout !== "vertical" ? "translate(0, 6)" : undefined,
+                fill: "var(--muted-foreground)",
+                fontSize: 10,
               }}
               fill=""
               stroke=""
@@ -752,6 +754,8 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
                   layout !== "vertical"
                     ? "translate(-3, 0)"
                     : "translate(0, 0)",
+                fill: "var(--muted-foreground)",
+                fontSize: 10,
               }}
               {...(layout !== "vertical"
                 ? {
@@ -786,7 +790,7 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
               wrapperStyle={{ outline: "none" }}
               isAnimationActive={true}
               animationDuration={100}
-              cursor={{ fill: "#d1d5db", opacity: "0.15" }}
+              cursor={{ fill: "var(--muted-foreground)", opacity: "0.10" }}
               offset={20}
               position={{
                 y: layout === "horizontal" ? 0 : undefined,

@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { Clock, Pencil, Settings2, Check } from 'lucide-react'
-import { DOW_SHORT_MON_FIRST } from '@/lib/dashboard/date-utils'
 import type { ResponseTimeSummary } from '@/lib/dashboard/types'
 import { useTranslation } from '@/hooks/use-translation'
 import { useAuth } from '@/hooks/use-auth'
@@ -46,9 +45,12 @@ export function ResponseTimeChart({
 
   const hasData = data?.buckets.some((b) => b.avgMinutes != null) ?? false
 
+  // Monday-first weekday labels, translated via i18n.
+  const DOW_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'dom'] as const
+
   const chartData =
     data?.buckets.map((b, i) => ({
-      day: DOW_SHORT_MON_FIRST[i],
+      day: t(`dashboard.dowShort.${DOW_KEYS[i]}`),
       [CATEGORY]: b.avgMinutes ?? 0,
       samples: b.samples,
     })) ?? []

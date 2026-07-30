@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/use-auth'
 import { useTranslation } from '@/hooks/use-translation'
@@ -73,6 +73,11 @@ function JourneyTriggerButton({ onClick }: { onClick: () => void }) {
 export default function DashboardPage() {
   const { defaultCurrency } = useAuth()
   const { t } = useTranslation()
+  // Keep a stable ref for `t` so the data-fetching effect doesn't re-run
+  // on every render. The `t` closure is recreated each render (new object
+  // identity) but its output is always the same (static pt-BR dictionary).
+  const tRef = useRef(t)
+  tRef.current = t
   const [metrics, setMetrics] = useState<MetricsBundle | null>(null)
   const [metricsLoading, setMetricsLoading] = useState(true)
 
@@ -136,11 +141,12 @@ export default function DashboardPage() {
       .catch((err) => console.error('[dashboard] response time failed:', err))
       .finally(() => setResponseTimeLoading(false))
 
-    loadActivity(db, t, 50)
+    loadActivity(db, tRef.current, 50)
       .then(setActivity)
       .catch((err) => console.error('[dashboard] activity failed:', err))
       .finally(() => setActivityLoading(false))
-  }, [t])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Range switch handler — kept in an event callback (not an effect)
   // so the setState calls stay out of the react-hooks/set-state-in-effect
