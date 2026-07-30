@@ -207,6 +207,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
               return (
                 <li key={item.href}>
                   <Link
+                    id={`tour-nav-${item.href.replace("/", "")}`}
                     href={item.href}
                     className={cn(
                       // Taller on mobile so fingers can hit the row reliably (≥44px).
@@ -241,6 +242,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
               return (
                 <li key={item.href}>
                   <Link
+                    id={`tour-nav-${item.href.replace("/", "")}`}
                     href={item.href}
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:py-2",
@@ -273,16 +275,16 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                 </li>
                 <li>
                   <Link
-                    href="/admin/analytics"
+                    href="/admin/onboarding-analytics"
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:py-2",
-                      pathname.startsWith("/admin/analytics")
+                      pathname.startsWith("/admin/onboarding-analytics")
                         ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
                     <TrendingUp className="h-4 w-4" />
-                    {t("navigation.adminAnalytics")}
+                    {t("navigation.adminOnboarding")}
                   </Link>
                 </li>
               </>

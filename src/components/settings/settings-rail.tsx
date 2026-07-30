@@ -48,6 +48,7 @@ export function SettingsRail({
 
   return (
     <nav
+      id="tour-settings-rail"
       aria-label="Settings sections"
       className={cn(
         'flex gap-1 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',

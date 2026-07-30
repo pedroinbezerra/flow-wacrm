@@ -197,23 +197,30 @@ export default function FlowsPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+      <header id="tour-flows-header" className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold text-foreground">{t("flows.title")}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              {t("flows.title")}
+            </h1>
+            <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary text-[10px] uppercase font-semibold">
+              {t("flows.beta")}
+            </Badge>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             {t("flows.description")}
           </p>
         </div>
-        <GatedButton
-          canAct={canCreate}
-          gateReason="create flows"
-          onClick={() => setCreateOpen(true)}
-        >
-          <Plus className="h-4 w-4" />
-          {t("flows.newFlow")}
-        </GatedButton>
+        <div id="tour-flows-new">
+          <GatedButton
+            canAct={canCreate}
+            gateReason="create flows"
+            onClick={() => setCreateOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            {t("flows.newFlow")}
+          </GatedButton>
+        </div>
       </header>
 
       {flows.length === 0 ? (
@@ -223,7 +230,7 @@ export default function FlowsPage() {
           t={t}
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div id="tour-flows-list" className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {flows.map((flow) => (
             <FlowCard
               key={flow.id}

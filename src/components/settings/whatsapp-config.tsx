@@ -428,7 +428,7 @@ export function WhatsAppConfig() {
         )}
 
         {/* Connection Status */}
-        <Alert className="bg-card border-border">
+        <Alert id="tour-whatsapp-status" className="bg-card border-border">
           <div className="flex items-center gap-2">
             {connectionStatus === 'connected' ? (
               <CheckCircle2 className="size-4 text-primary" />
@@ -552,7 +552,7 @@ export function WhatsAppConfig() {
         )}
 
         {/* API Credentials */}
-        <Card>
+        <Card id="tour-whatsapp-credentials">
           <CardHeader>
             <CardTitle className="text-foreground">{t('settings.whatsappConfig.apiCredentialsTitle')}</CardTitle>
             <CardDescription className="text-muted-foreground">
@@ -651,7 +651,7 @@ export function WhatsAppConfig() {
         </Card>
 
         {/* Webhook URL */}
-        <Card>
+        <Card id="tour-whatsapp-webhook">
           <CardHeader>
             <CardTitle className="text-foreground">Webhook Configuration</CardTitle>
             <CardDescription className="text-muted-foreground">
@@ -681,7 +681,7 @@ export function WhatsAppConfig() {
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-3">
+        <div id="tour-whatsapp-actions" className="flex flex-wrap gap-3">
           <Button
             onClick={handleSave}
             disabled={saving}

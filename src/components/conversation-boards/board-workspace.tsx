@@ -748,7 +748,7 @@ export function BoardWorkspace() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      <div id="tour-boards-header" className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="flex items-center gap-2">
             <FolderKanban className="h-5 w-5 text-primary" />
@@ -763,7 +763,7 @@ export function BoardWorkspace() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div id="tour-boards-actions" className="flex flex-wrap gap-2">
           {canCreate && (
             <>
               <Button variant="outline" onClick={() => setCreateGroupOpen(true)}>
@@ -789,7 +789,7 @@ export function BoardWorkspace() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-3">
+      <div id="tour-boards-selector" className="rounded-xl border border-border bg-card p-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0 flex-1">
             <Label className="text-xs text-muted-foreground">
@@ -868,7 +868,7 @@ export function BoardWorkspace() {
           onDragCancel={handleDragCancel}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-3 overflow-x-auto pb-3">
+          <div id="tour-boards-lanes" className="flex gap-3 overflow-x-auto pb-3">
             <PriorityColumn
               items={groupedItems.priorityItems}
               onOpenInbox={handleOpenInbox}

@@ -10,6 +10,7 @@ import {
   UserPlus,
   DollarSign,
   Send,
+  Sparkles,
 } from 'lucide-react'
 
 import {
@@ -34,14 +35,62 @@ import { ConversationsChart } from '@/components/dashboard/conversations-chart'
 import { PipelineDonut } from '@/components/dashboard/pipeline-donut'
 import { ResponseTimeChart } from '@/components/dashboard/response-time-chart'
 import { ActivityFeed } from '@/components/dashboard/activity-feed'
+import { OnboardingChecklist } from "@/components/onboarding/onboarding-checklist"
 
 type RangeDays = 7 | 30 | 90
+
+function JourneyTriggerButton({ onClick }: { onClick: () => void }) {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setExpanded(false);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <button
+      onClick={onClick}
+      className="group relative inline-flex h-8 items-center justify-center rounded-lg border border-primary/35 bg-primary/10 px-2.5 text-xs font-semibold text-primary shadow-sm hover:bg-primary/20 transition-all duration-500 ease-in-out"
+      title={t("onboarding.triggerTitle")}
+    >
+      <Sparkles className="h-4 w-4 shrink-0 transition-transform duration-300 group-hover:scale-110" />
+      <span
+        className={`overflow-hidden whitespace-nowrap transition-all duration-500 ease-in-out ${
+          expanded
+            ? "max-w-xs opacity-100 ml-2"
+            : "max-w-0 opacity-0 ml-0 group-hover:max-w-xs group-hover:opacity-100 group-hover:ml-2"
+        }`}
+      >
+        {t("onboarding.title")}
+      </span>
+    </button>
+  );
+}
 
 export default function DashboardPage() {
   const { defaultCurrency } = useAuth()
   const { t } = useTranslation()
   const [metrics, setMetrics] = useState<MetricsBundle | null>(null)
   const [metricsLoading, setMetricsLoading] = useState(true)
+
+  const [checklistOpen, setChecklistOpen] = useState<boolean>(true)
+
+  useEffect(() => {
+    try {
+      const dismissed = localStorage.getItem("flow_onboarding_checklist_dismissed") === "true"
+      setChecklistOpen(!dismissed)
+    } catch (_e) {}
+  }, [])
+
+  const handleActivateChecklist = () => {
+    try {
+      localStorage.setItem("flow_onboarding_checklist_dismissed", "false")
+    } catch (_e) {}
+    setChecklistOpen(true)
+  }
 
   const [range, setRange] = useState<RangeDays>(30)
   // Keep a cache per range so switching tabs doesn't re-fetch what we
@@ -60,47 +109,38 @@ export default function DashboardPage() {
   const [responseTime, setResponseTime] = useState<ResponseTimeSummary | null>(null)
   const [responseTimeLoading, setResponseTimeLoading] = useState(true)
 
-  const [activity, setActivity] = useState<ActivityItem[] | null>(null)
+  const [activity, setActivity] = useState<ActivityItem[]>([])
   const [activityLoading, setActivityLoading] = useState(true)
 
-  const loadAll = useCallback(() => {
+  // Fetch initial bundle (metrics, activity, response-time, 30d series)
+  useEffect(() => {
     const db = createClient()
 
-    // Kick everything off in parallel. Each block has its own
-    // setState + finally so a slow query doesn't hold up faster
-    // sections — each widget shows its own skeleton independently.
-    void loadMetrics(db)
-      .then((m) => setMetrics(m))
+    loadMetrics(db)
+      .then(setMetrics)
       .catch((err) => console.error('[dashboard] metrics failed:', err))
       .finally(() => setMetricsLoading(false))
 
-    void loadConversationsSeries(db, 30)
+    loadConversationsSeries(db, 30)
       .then((s) => setSeries((prev) => ({ ...prev, 30: s })))
       .catch((err) => console.error('[dashboard] series failed:', err))
       .finally(() => setSeriesLoading(false))
 
-    void loadPipelineDonut(db)
-      .then((p) => setPipeline(p))
+    loadPipelineDonut(db)
+      .then(setPipeline)
       .catch((err) => console.error('[dashboard] pipeline failed:', err))
       .finally(() => setPipelineLoading(false))
 
-    void loadResponseTime(db)
-      .then((r) => setResponseTime(r))
+    loadResponseTime(db)
+      .then(setResponseTime)
       .catch((err) => console.error('[dashboard] response time failed:', err))
       .finally(() => setResponseTimeLoading(false))
 
-    // Fetch up to 50 so the biggest page-size option in the feed
-    // (50 rows) is already in memory — switching sizes then becomes
-    // a pure client-side slice with no extra round trip.
-    void loadActivity(db, t, 50)
-      .then((a) => setActivity(a))
+    loadActivity(db, t, 50)
+      .then(setActivity)
       .catch((err) => console.error('[dashboard] activity failed:', err))
       .finally(() => setActivityLoading(false))
-  }, [])
-
-  useEffect(() => {
-    loadAll()
-  }, [loadAll])
+  }, [t])
 
   // Range switch handler — kept in an event callback (not an effect)
   // so the setState calls stay out of the react-hooks/set-state-in-effect
@@ -123,12 +163,21 @@ export default function DashboardPage() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">{t("dashboard.title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t("dashboard.description")}
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">{t("dashboard.title")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t("dashboard.description")}
+          </p>
+        </div>
+
+        {!checklistOpen && (
+          <JourneyTriggerButton onClick={handleActivateChecklist} />
+        )}
       </div>
+
+      {/* Checklist de Implantação e Jornada de Onboarding */}
+      <OnboardingChecklist open={checklistOpen} onOpenChange={setChecklistOpen} />
 
       {/* Metric cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

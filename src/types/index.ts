@@ -746,3 +746,54 @@ export interface AutomationLog {
   created_at: string;
   contact?: Contact;
 }
+
+// ============================================================
+// Onboarding & Product Intelligence Types
+// ============================================================
+
+export type OnboardingStepKey =
+  | 'connect_whatsapp'
+  | 'create_first_flow'
+  | 'import_contacts'
+  | 'create_first_campaign'
+  | 'send_first_campaign'
+  | 'invite_team';
+
+export interface OnboardingStepProgress {
+  step_key: OnboardingStepKey;
+  completed: boolean;
+  completed_at?: string | null;
+  skipped: boolean;
+  action_url: string;
+}
+
+export interface OnboardingJourneySummary {
+  account_id: string;
+  user_id: string;
+  total_steps: number;
+  completed_steps: number;
+  percentage: number;
+  is_fully_configured: boolean;
+  steps: OnboardingStepProgress[];
+}
+
+export interface UserEventPayload {
+  event_name: string;
+  event_data?: Record<string, unknown>;
+  page_url?: string;
+  session_id?: string;
+}
+
+export interface OnboardingAnalyticsSummary {
+  total_users: number;
+  started_onboarding: number;
+  completed_onboarding: number;
+  completion_rate: number;
+  step_breakdown: Record<OnboardingStepKey, {
+    total_started: number;
+    completed: number;
+    skipped: number;
+  }>;
+  feature_usage_30d: Record<string, number>;
+}
+

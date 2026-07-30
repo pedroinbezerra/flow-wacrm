@@ -43,6 +43,8 @@ interface AccountSummary {
   /** Default deal currency (ISO-4217). NOT NULL DEFAULT 'USD' in the
    *  DB (migration 021); narrowed to DEFAULT_CURRENCY when absent. */
   default_currency: string;
+  /** Target first response time in minutes (default 5). */
+  response_time_target_minutes: number;
 }
 
 interface AuthContextValue {
@@ -82,12 +84,14 @@ interface AuthContextValue {
   accountId: string | null;
   /** Role within that account. Null while loading. */
   accountRole: AccountRole | null;
-  /** Lightweight account meta — id + name + default_currency. Null while loading. */
+  /** Lightweight account meta — id + name + default_currency + response_time_target_minutes. Null while loading. */
   account: AccountSummary | null;
   /** Account default deal currency. Falls back to DEFAULT_CURRENCY
    *  while loading or when no account is resolved, so callers can use
    *  it unconditionally. */
   defaultCurrency: string;
+  /** Target first response time in minutes (default 5). */
+  responseTimeTargetMinutes: number;
   /** True if `accountRole === 'owner'`. */
   isOwner: boolean;
   /** True if `accountRole === 'admin'` (does NOT include owner — use canManageMembers for "admin or above"). */
@@ -131,18 +135,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = createClient();
     setProfileLoading(true);
     try {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from("profiles")
         .select(
-          // `account:accounts!inner(id, name)` — explicit join on the
-          // single FK profiles.account_id → accounts.id. `!inner` so a
-          // missing account collapses to null rather than a half-
-          // populated row (shouldn't happen post-017 NOT NULL, but
-          // belt-and-braces against forks running older schemas).
-          "id, full_name, email, avatar_url, role, beta_features, account_id, account_role, is_super_admin, account:accounts!inner(id, name, default_currency)",
+          "id, full_name, email, avatar_url, role, beta_features, account_id, account_role, is_super_admin, account:accounts!inner(id, name, default_currency, response_time_target_minutes)",
         )
         .eq("user_id", userId)
         .maybeSingle();
+
+      // Fallback defensivo caso a coluna response_time_target_minutes ainda não exista no DB
+      if (error) {
+        const fallback1 = await supabase
+          .from("profiles")
+          .select(
+            "id, full_name, email, avatar_url, role, beta_features, account_id, account_role, is_super_admin, account:accounts!inner(id, name, default_currency)",
+          )
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (!fallback1.error) {
+          data = fallback1.data as any;
+          error = null;
+        } else {
+          const fallback2 = await supabase
+            .from("profiles")
+            .select(
+              "id, full_name, email, avatar_url, role, beta_features, account_id, account_role, is_super_admin, account:accounts!inner(id, name)",
+            )
+            .eq("user_id", userId)
+            .maybeSingle();
+
+          if (!fallback2.error) {
+            data = fallback2.data as any;
+            error = null;
+          }
+        }
+      }
 
       if (error) {
         console.error("[AuthProvider] fetchProfile error:", {
@@ -165,6 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               id: string;
               name: string;
               default_currency: string | null;
+              response_time_target_minutes: number | null;
             } | null);
         // Narrow default_currency defensively: forks running pre-021
         // schemas won't have the column, so a missing/null value reads
@@ -174,6 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               id: accountRaw.id,
               name: accountRaw.name,
               default_currency: accountRaw.default_currency ?? DEFAULT_CURRENCY,
+              response_time_target_minutes: accountRaw.response_time_target_minutes ?? 5,
             }
           : null;
 
@@ -327,6 +357,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refreshProfile,
         account,
         defaultCurrency: account?.default_currency ?? DEFAULT_CURRENCY,
+        responseTimeTargetMinutes: account?.response_time_target_minutes ?? 5,
         ...derived,
       }}
     >
@@ -357,6 +388,7 @@ export function useAuth(): AuthContextValue {
       refreshProfile: async () => {},
       account: null,
       defaultCurrency: DEFAULT_CURRENCY,
+      responseTimeTargetMinutes: 5,
       accountId: null,
       accountRole: null,
       isOwner: false,

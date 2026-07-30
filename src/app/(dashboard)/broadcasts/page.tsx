@@ -179,22 +179,24 @@ export default function BroadcastsPage() {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <div id="tour-broadcasts-header" className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">{t('broadcasts.title')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {t('broadcasts.description')}
           </p>
         </div>
-        <GatedButton
-          canAct={canCreate}
-          gateReason="create broadcasts"
-          onClick={() => router.push('/broadcasts/new')}
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4" />
-          {t('broadcasts.new')}
-        </GatedButton>
+        <div id="tour-broadcasts-new">
+          <GatedButton
+            canAct={canCreate}
+            gateReason="create broadcasts"
+            onClick={() => router.push('/broadcasts/new')}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4" />
+            {t('broadcasts.new')}
+          </GatedButton>
+        </div>
       </div>
 
       {broadcasts.length === 0 ? (
@@ -215,7 +217,7 @@ export default function BroadcastsPage() {
           </GatedButton>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+        <div id="tour-broadcasts-stats" className="overflow-x-auto rounded-xl border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">

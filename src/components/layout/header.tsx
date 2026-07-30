@@ -23,12 +23,15 @@ const pageTitles: Record<string, string> = {
   "/dashboard": "navigation.dashboard",
   "/inbox": "navigation.inbox",
   "/contacts": "navigation.contacts",
+  "/boards": "navigation.boards",
   "/pipelines": "navigation.pipelines",
   "/broadcasts": "navigation.broadcasts",
   "/automations": "navigation.automations",
+  "/flows": "navigation.flows",
   "/settings": "navigation.settings",
   "/admin/plans": "navigation.adminPlans",
   "/admin/analytics": "navigation.adminAnalytics",
+  "/admin/onboarding": "navigation.adminOnboarding",
 };
 
 function getPageTitleKey(pathname: string): string {
@@ -38,6 +41,8 @@ function getPageTitleKey(pathname: string): string {
   );
   return match ? match[1] : "navigation.dashboard";
 }
+
+import { TourTriggerButton } from "@/components/onboarding/tour-trigger-button";
 
 interface HeaderProps {
   /** Wired to the shell's drawer state. Used only on mobile — the
@@ -75,6 +80,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-1 sm:gap-2">
+        <TourTriggerButton />
         <ModeToggle />
 
         <DropdownMenu>

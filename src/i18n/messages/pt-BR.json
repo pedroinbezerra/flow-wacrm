@@ -1,6 +1,7 @@
 {
   "common": {
     "save": "Salvar",
+    "saved": "Salvo com sucesso",
     "copy": "Copiar",
     "saving": "Salvando...",
     "cancel": "Cancelar",
@@ -218,6 +219,7 @@
     "betaFeatures": "Recursos Beta",
     "adminPlans": "Planos Comerciais",
     "adminAnalytics": "Inteligência Comercial",
+    "adminOnboarding": "Inteligência & Onboarding",
     "signOut": "Sair",
     "beta": "Beta",
     "openMenu": "Abrir menu",
@@ -273,6 +275,9 @@
     "avgResponseTime": "Tempo Médio de Primeira Resposta",
     "responseTimeDescription": "Minutos para responder à primeira mensagem não respondida de um cliente, por dia da semana",
     "target": "meta {minutes}m",
+    "editTargetTitle": "Configurar Meta de Atendimento",
+    "editTargetDesc": "Defina a meta de tempo para a primeira resposta da equipe (em minutos).",
+    "saveTarget": "Salvar Meta",
     "thisWeek": "Esta semana:",
     "lastWeek": "Semana passada:",
     "noRepliesRecorded": "Nenhuma resposta registrada ainda",
@@ -749,6 +754,8 @@
     "orStartBlank": "Ou comece em branco",
     "createBlank": "Criar fluxo em branco",
     "createFirstFlow": "Criar seu primeiro fluxo",
+    "addTag": "Adicionar tag",
+    "removeTag": "Remover tag",
     "node": "nó",
     "nodes": "nós",
     "nodesTitle": "Nós ({count})",
@@ -1075,6 +1082,7 @@
     "chooseTemplate": "Escolher modelo",
     "whatsappNotConnected": "WhatsApp® não está conectado. Acesse Configurações para conectar sua conta.",
     "customer": "Cliente",
+    "unknownContact": "Contato desconhecido",
     "session": {
       "noCustomerMessages": "Sem mensagens do cliente",
       "expired": "Expirado",
@@ -1699,5 +1707,150 @@
     "daysAgo": "{count}d atrás",
     "monthsAgo": "{count}mês atrás",
     "yearsAgo": "{count}a atrás"
+  },
+
+  "onboarding": {
+    "title": "Jornada de Implantação",
+    "percentageCompleted": "{percentage}% concluído",
+    "fullyConfigured": "Parabéns! Seu ambiente está 100% configurado.",
+    "stepsProgress": "Conclua as etapas recomendadas ({completed} de {total})",
+    "fullyConfiguredBannerTitle": "Ambiente Totalmente Configurado! 🎉",
+    "fullyConfiguredBannerDesc": "Todas as etapas recomendadas foram concluídas. O Flow Hub está pronto para maximizar seus resultados.",
+    "restartTour": "Tour Guiado",
+    "closeChecklist": "Fechar Jornada de Implantação",
+    "triggerTitle": "Exibir Jornada de Implantação",
+    "completed": "Concluído",
+    "pending": "Pendente",
+    "configure": "Configurar",
+    "steps": {
+      "connect_whatsapp": {
+        "title": "Conectar WhatsApp Oficial",
+        "description": "Vincule o número da sua empresa via Meta API para iniciar os atendimentos."
+      },
+      "create_first_flow": {
+        "title": "Criar o primeiro fluxo",
+        "description": "Monte seu primeiro robô de atendimento automático visual."
+      },
+      "import_contacts": {
+        "title": "Importar contatos",
+        "description": "Cadastre ou importe sua lista de contatos em formato CSV ou manual."
+      },
+      "create_first_campaign": {
+        "title": "Criar a primeira campanha",
+        "description": "Prepare um modelo de mensagem aprovado para disparo em massa."
+      },
+      "send_first_campaign": {
+        "title": "Enviar a primeira campanha",
+        "description": "Dispare sua primeira transmissão para sua base de clientes."
+      },
+      "invite_team": {
+        "title": "Convidar usuários para a equipe",
+        "description": "Adicione atendentes e gestores para colaborar na sua conta."
+      }
+    },
+    "tour": {
+      "triggerTitle": "Iniciar Tour Guiado",
+      "triggerText": "Tour Guiado",
+      "welcomeTitle": "Bem-vindo ao Flow Hub! 👋",
+      "welcomeDesc": "Esta é a sua plataforma de automação e CRM para WhatsApp. Vamos fazer um breve tour rápido pelos principais recursos.",
+      "inboxTitle": "Caixa de Entrada Compartilhada 💬",
+      "inboxDesc": "Atenda seus clientes via WhatsApp com múltiplos atendentes, etiquetas e histórico completo.",
+      "contactsTitle": "Gestão de Contatos 👥",
+      "contactsDesc": "Importe e organize seus contatos, aplique tags e acompanhe a jornada de cada cliente.",
+      "flowsTitle": "Construtor de Fluxos e Automações ⚡",
+      "flowsDesc": "Crie chatbots e automações visuais sem código para responder mensagens instantaneamente.",
+      "broadcastsTitle": "Campanhas e Disparos 🚀",
+      "broadcastsDesc": "Envie mensagens em massa com modelos aprovados pela Meta para suas listas segmentadas.",
+      "checklistTitle": "Checklist de Implantação 📋",
+      "checklistDesc": "Acompanhe o seu progresso de configuração para deixar seu ambiente 100% pronto para uso!",
+      "inbox": {
+        "listTitle": "Lista de Conversas 💬",
+        "listDesc": "Visualize todas as conversas ativas, não lidas ou atribuídas a você.",
+        "searchTitle": "Filtros e Busca 🔍",
+        "searchDesc": "Filtre por status, atendente responsável ou etiquetas.",
+        "chatTitle": "Área de Atendimento 📱",
+        "chatDesc": "Envie mensagens de texto, áudios, mídias e notas internas.",
+        "sidebarTitle": "Painel do Cliente 👤",
+        "sidebarDesc": "Veja os dados do contato, tags e deals associados no CRM."
+      },
+      "contacts": {
+        "headerTitle": "Gestão de Contatos 👥",
+        "headerDesc": "Centralize a lista de clientes e prospects da sua empresa.",
+        "actionsTitle": "Importar e Adicionar ➕",
+        "actionsDesc": "Adicione contatos manualmente ou importe listas em lote via CSV.",
+        "filtersTitle": "Filtros e Tags 🏷️",
+        "filtersDesc": "Filtre contatos por etiquetas, data de cadastro e campos customizados.",
+        "tableTitle": "Lista de Contatos 📑",
+        "tableDesc": "Acesse os detalhes, histórico de conversas e execute ações em lote."
+      },
+      "flows": {
+        "headerTitle": "Construtor de Fluxos ⚡",
+        "headerDesc": "Crie chatbots inteligentes e triagem automática sem código.",
+        "newTitle": "Novo Fluxo ➕",
+        "newDesc": "Crie um novo fluxo em branco ou utilize nossos modelos prontos.",
+        "listTitle": "Seus Fluxos 🛠️",
+        "listDesc": "Gerencie os fluxos ativos, rascunhos e monitore as estatísticas de uso."
+      },
+      "broadcasts": {
+        "headerTitle": "Campanhas e Transmissões 🚀",
+        "headerDesc": "Dispare mensagens em massa com alta entregabilidade via WhatsApp API.",
+        "newTitle": "Nova Campanha ➕",
+        "newDesc": "Monte sua campanha escolhendo o modelo da Meta, público-alvo e agendamento.",
+        "statsTitle": "Relatórios e Entregas 📊",
+        "statsDesc": "Acompanhe métricas em tempo real de mensagens enviadas, entregues e lidas."
+      },
+      "pipelines": {
+        "headerTitle": "Funil de Vendas (CRM) 📊",
+        "headerDesc": "Acompanhe a evolução de oportunidades e negócios em formato Kanban.",
+        "stagesTitle": "Estágios do Funil 🎯",
+        "stagesDesc": "Mova os cartões entre as etapas de prospecção, negociação e fechamento."
+      },
+      "settings": {
+        "railTitle": "Painel de Configurações ⚙️",
+        "railDesc": "Alterne entre perfil, equipe, integração do WhatsApp e personalização de marca.",
+        "statusTitle": "Status da Conexão WhatsApp 🟢",
+        "statusDesc": "Acompanhe se as credenciais da Meta API estão válidas e ativas.",
+        "credentialsTitle": "Credenciais da Meta API 🔑",
+        "credentialsDesc": "Informe o Phone Number ID, WABA ID, Access Token e Verify Token gerados no Painel da Meta.",
+        "webhookTitle": "URL do Webhook 🔗",
+        "webhookDesc": "Copie e cole este endereço no Painel da Meta para receber as mensagens recebidas em tempo real.",
+        "actionsTitle": "Testar & Salvar ⚡",
+        "actionsDesc": "Salve as credenciais e clique em 'Testar Conexão API' para validar o funcionamento."
+      },
+      "boards": {
+        "headerTitle": "Quadros de Atendimento 📋",
+        "headerDesc": "Organize atendimentos em múltiplos quadros visuais com prioridades e controle de retorno.",
+        "actionsTitle": "Grupos e Quadros ➕",
+        "actionsDesc": "Crie novos grupos de trabalho, quadros e personalize as raias de atendimento.",
+        "selectorTitle": "Seleção de Quadros 🗂️",
+        "selectorDesc": "Alterne rapidamente entre diferentes quadros e visualize o status atual da equipe.",
+        "lanesTitle": "Raias de Atendimento 📌",
+        "lanesDesc": "Mova conversas entre as raias e acompanhe pendências que exigem resposta."
+      },
+      "automations": {
+        "headerTitle": "Regras de Automação 🤖",
+        "headerDesc": "Configure regras automáticas de distribuição, etiquetas e atalhos de atendimento.",
+        "actionsTitle": "Criar Regra ⚡",
+        "actionsDesc": "Crie novas automações com condições e ações personalizadas."
+      }
+    },
+    "analytics": {
+      "title": "Inteligência da Jornada e Onboarding",
+      "subtitle": "Acompanhe o funil de implantação, gargalos de adoção e retenção dos usuários.",
+      "startedCount": "Iniciaram Onboarding",
+      "registeredTotal": "de {total} usuários cadastrados",
+      "completedCount": "Concluíram Implantação",
+      "conversionRate": "{rate}% de conversão do onboarding",
+      "avgSetupTime": "Tempo Médio de Setup",
+      "avgSetupDesc": "~15 min até o 1º envio de mensagem",
+      "trialConversion": "Conversão Trial → Assinatura",
+      "trialConversionDesc": "+38% para usuários com 100% de implantação",
+      "stepCompletionChartTitle": "Conclusão por Etapa da Implantação",
+      "stepCompletionChartSubtitle": "Identifique quais atividades possuem maior engajamento ou índice de abandono.",
+      "chartCompleted": "Concluído",
+      "chartSkipped": "Pulado",
+      "loadingMetrics": "Carregando métricas da jornada...",
+      "errorTitle": "Erro ao carregar inteligência de onboarding"
+    }
   }
 }

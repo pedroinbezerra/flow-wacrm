@@ -7,6 +7,8 @@ import { useTranslation } from "@/hooks/use-translation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { PresenceHeartbeat } from "@/components/presence/presence-heartbeat";
+import { GuidedTour } from "@/components/onboarding/guided-tour";
+import { ExternalAnalytics } from "@/components/analytics/external-analytics";
 
 // Auth-gated dashboard shell. Extracted from the layout so the layout
 // itself can stay a server component and export metadata (noindex) —
@@ -42,7 +44,11 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
   if (!user) return null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div id="tour-welcome" className="flex h-screen overflow-hidden bg-background">
+      {/* Telemetria e Analytics Externos (Clarity + GA4) */}
+      <ExternalAnalytics />
+      {/* Tour Guiado Interativo (Driver.js) */}
+      <GuidedTour />
       {/* Reports this tab's online/away presence once we know a user is
           signed in. Headless — renders nothing. */}
       <PresenceHeartbeat />
