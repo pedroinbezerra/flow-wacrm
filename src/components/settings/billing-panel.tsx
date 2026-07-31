@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ConsumptionDashboardCard } from "@/components/consumption/consumption-dashboard-card";
 import { useAuth } from "@/hooks/use-auth";
-import { isValidCpfOrCnpj } from "@/lib/validation/fiscal";
+import { isValidCpfOrCnpj, formatCpfCnpj } from "@/lib/validation/fiscal";
 
 interface NativeCheckoutData {
   paymentUrl: string | null;
@@ -39,6 +39,12 @@ export function BillingPanel() {
   const [copiedPix, setCopiedPix] = useState(false);
   const [allPlans, setAllPlans] = useState<CommercialPlan[]>([]);
   const [processingCheckout, setProcessingCheckout] = useState(false);
+
+  // Modal de captura urgente de CPF/CNPJ para Checkout
+  const [requireCpfModalOpen, setRequireCpfModalOpen] = useState(false);
+  const [promptCpfCnpj, setPromptCpfCnpj] = useState("");
+  const [pendingPlanForCheckout, setPendingPlanForCheckout] = useState<string | null>(null);
+  const [savingPromptCpf, setSavingPromptCpf] = useState(false);
 
   // Cancellation / Reactivation State
   const { isOwner, isPendingDeletion, scheduledDeletionAt, refreshProfile } = useAuth();
@@ -197,6 +203,12 @@ export function BillingPanel() {
       const data = await res.json();
 
       if (!res.ok) {
+        if (data?.error && (data.error.includes("CPF ou CNPJ") || data.error.includes("nota fiscal"))) {
+          setPendingPlanForCheckout(selectedPlanId);
+          setRequireCpfModalOpen(true);
+          setCheckoutModalOpen(false);
+          return;
+        }
         throw new Error(data.error || "Erro no checkout");
       }
 
@@ -217,6 +229,36 @@ export function BillingPanel() {
       toast.error(err instanceof Error ? err.message : "Erro ao selecionar plano");
     } finally {
       setProcessingCheckout(false);
+    }
+  };
+
+  const handleSaveCpfAndResumeCheckout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!promptCpfCnpj.trim() || !isValidCpfOrCnpj(promptCpfCnpj)) {
+      toast.error("O CPF ou CNPJ digitado é inválido. Por favor, verifique os números e dígitos.");
+      return;
+    }
+    setSavingPromptCpf(true);
+    try {
+      const res = await fetch("/api/account", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cpf_cnpj: promptCpfCnpj }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Erro ao salvar CPF/CNPJ.");
+
+      toast.success("CPF/CNPJ salvo com sucesso! Gerando sua cobrança...");
+      setRequireCpfModalOpen(false);
+      setFiscalCpfCnpj(formatCpfCnpj(promptCpfCnpj));
+
+      if (pendingPlanForCheckout) {
+        await handleSelectPlanForCheckout(pendingPlanForCheckout);
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao salvar dados fiscais.");
+    } finally {
+      setSavingPromptCpf(false);
     }
   };
 
@@ -887,6 +929,51 @@ export function BillingPanel() {
               {canceling ? "Processando..." : "Confirmar Cancelamento (90 Dias)"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Cadastro Obrigatório de CPF/CNPJ para Checkout */}
+      <Dialog open={requireCpfModalOpen} onOpenChange={setRequireCpfModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-primary">
+              <FileText className="size-5" />
+              Cadastro de CPF ou CNPJ Obrigatório
+            </DialogTitle>
+            <DialogDescription>
+              Para a emissão oficial da Nota Fiscal (NF-e) e liberação da cobrança pelo Asaas, por favor informe o seu CPF ou CNPJ abaixo.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveCpfAndResumeCheckout} className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label htmlFor="prompt-cpf-cnpj" className="text-xs font-semibold text-foreground">
+                CPF ou CNPJ (Com ou sem formatação)
+              </label>
+              <input
+                id="prompt-cpf-cnpj"
+                type="text"
+                required
+                value={promptCpfCnpj}
+                onChange={(e) => setPromptCpfCnpj(formatCpfCnpj(e.target.value))}
+                placeholder="000.000.000-00 ou 00.000.000/0001-00"
+                maxLength={18}
+                className="w-full rounded-xl border border-border bg-background p-2.5 text-sm text-foreground focus:border-primary focus:outline-none"
+              />
+              <p className="text-xs text-muted-foreground">
+                Esse dado será salvo de forma segura em sua conta para autorizar o pagamento no Asaas.
+              </p>
+            </div>
+
+            <DialogFooter className="pt-2 gap-2 sm:gap-0">
+              <Button type="button" variant="outline" onClick={() => setRequireCpfModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={savingPromptCpf}>
+                {savingPromptCpf ? "Salvando e Gerando..." : "Salvar e Continuar Checkout"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

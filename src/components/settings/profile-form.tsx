@@ -18,6 +18,8 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { SettingsPanelHead } from './settings-panel-head';
 
+import { isValidCpfOrCnpj, formatCpfCnpj } from '@/lib/validation/fiscal';
+
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const ALLOWED_MIME = new Set([
   'image/png',
@@ -39,17 +41,31 @@ export function ProfileForm() {
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [cpfCnpj, setCpfCnpj] = useState('');
+  const [initialCpfCnpj, setInitialCpfCnpj] = useState('');
   const [pendingAvatar, setPendingAvatar] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [removeAvatar, setRemoveAvatar] = useState(false);
   const [saving, setSaving] = useState(false);
   const [emailChangePending, setEmailChangePending] = useState(false);
 
-  // Seed form state once the profile loads.
+  // Seed form state once the profile loads + busca dados fiscais da conta (CPF/CNPJ).
   useEffect(() => {
     if (!profile) return;
     setFullName(profile.full_name ?? '');
     setEmail(profile.email ?? '');
+
+    // Busca CPF/CNPJ da conta
+    void fetch('/api/account')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.account?.cpf_cnpj) {
+          const formatted = formatCpfCnpj(data.account.cpf_cnpj);
+          setCpfCnpj(formatted);
+          setInitialCpfCnpj(formatted);
+        }
+      })
+      .catch((err) => console.error('[profile-form] Erro ao carregar dados da conta:', err));
   }, [profile]);
 
   // Cleanup object URLs to avoid leaks.
@@ -111,10 +127,31 @@ export function ProfileForm() {
       toast.error(t('common.invalidEmail'));
       return;
     }
+    const trimmedCpfCnpj = cpfCnpj.trim();
+    if (trimmedCpfCnpj !== '' && !isValidCpfOrCnpj(trimmedCpfCnpj)) {
+      toast.error('O CPF ou CNPJ informado é inválido.', {
+        description: 'Por favor, verifique a quantidade de números e os dígitos verificadores.',
+      });
+      return;
+    }
 
     setSaving(true);
     try {
       let nextAvatarUrl: string | null = profile.avatar_url ?? null;
+
+      // Update account CPF/CNPJ if changed
+      if (trimmedCpfCnpj !== initialCpfCnpj) {
+        const accRes = await fetch('/api/account', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cpf_cnpj: trimmedCpfCnpj }),
+        });
+        const accData = await accRes.json();
+        if (!accRes.ok) {
+          throw new Error(accData?.error || 'Falha ao salvar CPF/CNPJ da conta.');
+        }
+        setInitialCpfCnpj(formatCpfCnpj(trimmedCpfCnpj));
+      }
 
       // Upload a newly-staged image, if any.
       if (pendingAvatar) {
@@ -195,6 +232,7 @@ export function ProfileForm() {
     !!profile &&
     (fullName.trim() !== (profile.full_name ?? '') ||
       email.trim().toLowerCase() !== (profile.email ?? '').toLowerCase() ||
+      cpfCnpj.trim() !== initialCpfCnpj ||
       pendingAvatar !== null ||
       removeAvatar);
 
@@ -298,6 +336,28 @@ export function ProfileForm() {
                 </span>
               </p>
             )}
+          </div>
+
+          {/* CPF / CNPJ (Dados Fiscais / Asaas) */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="profile-cpf-cnpj" className="text-foreground font-medium">
+                CPF ou CNPJ (Dados Fiscais / Nota Fiscal Asaas)
+              </Label>
+              <span className="text-[11px] text-muted-foreground">Obrigatório para Emissão de Nota Fiscal</span>
+            </div>
+            <Input
+              id="profile-cpf-cnpj"
+              type="text"
+              value={cpfCnpj}
+              onChange={(e) => setCpfCnpj(formatCpfCnpj(e.target.value))}
+              placeholder="000.000.000-00 ou 00.000.000/0001-00"
+              maxLength={18}
+              disabled={saving}
+            />
+            <p className="text-xs text-muted-foreground">
+              Necessário para emissão oficial de Nota Fiscal (NF-e) e aprovação de assinaturas e upgrades pelo Asaas.
+            </p>
           </div>
 
           {/* Read-only block */}
