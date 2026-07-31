@@ -3,6 +3,7 @@
 // GET / POST — Daily cron endpoint to permanently purge accounts past their 90-day grace period.
 // Protected by `AUTOMATION_CRON_SECRET` via header `x-cron-secret`.
 
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/automations/admin-client";
 
@@ -15,13 +16,23 @@ export async function POST(request: Request) {
 }
 
 async function handlePurgeCron(request: Request) {
-  const expected = process.env.AUTOMATION_CRON_SECRET;
+  const expected = process.env.AUTOMATION_CRON_SECRET || process.env.CRON_SECRET;
   if (!expected) {
     return NextResponse.json({ error: "Cron secret not configured" }, { status: 503 });
   }
 
-  const supplied = request.headers.get("x-cron-secret") ?? "";
-  if (supplied !== expected) {
+  const authHeader = request.headers.get("authorization");
+  const bearerSecret = authHeader?.toLowerCase().startsWith("bearer ")
+    ? authHeader.substring(7).trim()
+    : "";
+  const supplied = request.headers.get("x-cron-secret") || bearerSecret;
+  const suppliedBuf = Buffer.from(supplied);
+  const expectedBuf = Buffer.from(expected);
+
+  if (
+    suppliedBuf.length !== expectedBuf.length ||
+    !timingSafeEqual(suppliedBuf, expectedBuf)
+  ) {
     return NextResponse.json({ error: "Unauthorized cron access" }, { status: 401 });
   }
 

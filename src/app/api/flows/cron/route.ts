@@ -28,7 +28,7 @@ import { resolveFallbackPolicy } from '@/lib/flows/fallback'
  * tenants.
  */
 export async function GET(request: Request) {
-  const expected = process.env.AUTOMATION_CRON_SECRET
+  const expected = process.env.AUTOMATION_CRON_SECRET || process.env.CRON_SECRET
   if (!expected) {
     return NextResponse.json({ error: 'cron not configured' }, { status: 503 })
   }
@@ -36,7 +36,11 @@ export async function GET(request: Request) {
   // can't recover the secret byte-by-byte from response-time deltas.
   // Length pre-check is required by timingSafeEqual (throws otherwise)
   // and leaks only the length itself, which isn't sensitive.
-  const supplied = request.headers.get('x-cron-secret') ?? ''
+  const authHeader = request.headers.get('authorization')
+  const bearerSecret = authHeader?.toLowerCase().startsWith('bearer ')
+    ? authHeader.substring(7).trim()
+    : ''
+  const supplied = request.headers.get('x-cron-secret') || bearerSecret
   const suppliedBuf = Buffer.from(supplied)
   const expectedBuf = Buffer.from(expected)
   if (
