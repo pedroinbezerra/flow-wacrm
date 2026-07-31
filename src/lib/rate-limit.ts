@@ -1,25 +1,16 @@
 /**
- * In-memory per-key rate limiter.
+ * Hybrid per-key rate limiter (Upstash Redis + In-memory Fallback).
  *
- * Fixed-window counter (not token bucket): every identifier gets a
- * fresh N-request budget each window. Simple, allocation-light, and
- * fine for a single-instance VPS — which is how forkers of this
- * template will usually deploy.
+ * Primary: Uses Upstash Redis (@upstash/ratelimit) sliding-window algorithm
+ * when UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN environment variables
+ * are set. Perfect for serverless (Vercel) multi-instance deployments.
  *
- * Trade-off: a single Node process holds the Map, so horizontal scale
- * (multiple regions, multiple Hostinger nodes, Vercel serverless fan-
- * out) silently defeats the limit. If you scale beyond one instance,
- * swap the `check` implementation for Redis / Upstash / Cloudflare
- * Durable Objects keeping the same return shape. The call sites won't
- * change.
- *
- * Memory: entries are ~50 bytes each. With LIGHT_SWEEP below, expired
- * keys get cleared opportunistically on every ~1 000th call, so a
- * healthy instance stays in the low-MB range even with thousands of
- * distinct users. No background timer — works in serverless edge
- * runtimes that don't keep timers alive across requests.
+ * Fallback: Uses a Node in-memory Map fixed-window counter when Redis credentials
+ * are missing (local dev, unit tests, single-instance VPS).
  */
 
+import { Redis } from '@upstash/redis';
+import { Ratelimit } from '@upstash/ratelimit';
 import { NextResponse } from 'next/server';
 
 export interface RateLimitOptions {
@@ -38,16 +29,26 @@ export interface RateLimitResult {
   limit: number;
 }
 
+export interface UpstashRedisMetrics {
+  configured: boolean;
+  status: 'connected' | 'error' | 'fallback_in_memory';
+  usedMemory?: string;
+  usedMemoryBytes?: number;
+  totalCommandsProcessed?: number;
+  instantaneousOpsPerSec?: number;
+  keyspaceHits?: number;
+  keyspaceMisses?: number;
+  dbSize?: number;
+  message?: string;
+  error?: string;
+}
+
 interface Entry {
   count: number;
   resetAt: number;
 }
 
 const buckets = new Map<string, Entry>();
-
-// Opportunistic cleanup. Running a sweep on every call would be
-// quadratic; running it 1-in-N lets the Map self-drain without a
-// background timer.
 const LIGHT_SWEEP_EVERY = 1000;
 let callsSinceSweep = 0;
 
@@ -57,7 +58,7 @@ function sweepExpired(now: number) {
   }
 }
 
-export function checkRateLimit(
+function checkInMemoryRateLimit(
   key: string,
   { limit, windowMs }: RateLimitOptions,
 ): RateLimitResult {
@@ -87,6 +88,144 @@ export function checkRateLimit(
     reset: entry.resetAt,
     limit,
   };
+}
+
+let redisClient: Redis | null | undefined;
+
+function getUpstashRedis(): Redis | null {
+  if (redisClient !== undefined) return redisClient;
+
+  const url =
+    process.env.UPSTASH_REDIS_REST_URL ||
+    process.env.FLOWHUB_KV_REST_API_URL ||
+    process.env.KV_REST_API_URL;
+  const token =
+    process.env.UPSTASH_REDIS_REST_TOKEN ||
+    process.env.FLOWHUB_KV_REST_API_TOKEN ||
+    process.env.KV_REST_API_TOKEN;
+
+  if (!url || !token) {
+    redisClient = null;
+    return null;
+  }
+
+  try {
+    redisClient = new Redis({ url, token });
+    return redisClient;
+  } catch (err) {
+    console.error('[RateLimit] Erro ao inicializar cliente Upstash Redis:', err);
+    redisClient = null;
+    return null;
+  }
+}
+
+const ratelimitCache = new Map<string, Ratelimit>();
+
+function getRatelimitInstance(limit: number, windowMs: number): Ratelimit | null {
+  const redis = getUpstashRedis();
+  if (!redis) return null;
+
+  const cacheKey = `${limit}:${windowMs}`;
+  if (!ratelimitCache.has(cacheKey)) {
+    ratelimitCache.set(
+      cacheKey,
+      new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(limit, `${windowMs} ms`),
+        analytics: true,
+        prefix: 'wacrm:ratelimit',
+      }),
+    );
+  }
+  return ratelimitCache.get(cacheKey)!;
+}
+
+export async function checkRateLimit(
+  key: string,
+  { limit, windowMs }: RateLimitOptions,
+): Promise<RateLimitResult> {
+  const upstashRatelimit = getRatelimitInstance(limit, windowMs);
+
+  if (upstashRatelimit) {
+    try {
+      const res = await upstashRatelimit.limit(key);
+      return {
+        success: res.success,
+        remaining: res.remaining,
+        reset: res.reset,
+        limit: res.limit,
+      };
+    } catch (error) {
+      console.warn('[RateLimit] Chamada Upstash Redis falhou, fallback para in-memory:', error);
+    }
+  }
+
+  return checkInMemoryRateLimit(key, { limit, windowMs });
+}
+
+export async function getUpstashRedisMetrics(): Promise<UpstashRedisMetrics> {
+  const redis = getUpstashRedis();
+  if (!redis) {
+    return {
+      configured: false,
+      status: 'fallback_in_memory',
+      message: 'Variáveis UPSTASH_REDIS_REST_URL e UPSTASH_REDIS_REST_TOKEN não estão configuradas no ambiente. A aplicação está utilizando limitação em memória local.',
+    };
+  }
+
+  try {
+    const redisAny = redis as unknown as {
+      info?: () => Promise<string>;
+      dbsize?: () => Promise<number>;
+      call?: <T>(cmd: string, ...args: unknown[]) => Promise<T>;
+    };
+
+    let rawInfo: string | undefined;
+    let dbsize: number | undefined;
+
+    if (typeof redisAny.info === 'function') {
+      rawInfo = await redisAny.info();
+    } else if (typeof redisAny.call === 'function') {
+      rawInfo = await redisAny.call<string>('info');
+    }
+
+    if (typeof redisAny.dbsize === 'function') {
+      dbsize = await redisAny.dbsize();
+    } else if (typeof redisAny.call === 'function') {
+      dbsize = await redisAny.call<number>('dbsize');
+    }
+
+    const infoMap: Record<string, string> = {};
+    if (typeof rawInfo === 'string') {
+      const lines = rawInfo.split(/\r?\n/);
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('#') && trimmed.includes(':')) {
+          const [key, ...vals] = trimmed.split(':');
+          infoMap[key.trim()] = vals.join(':').trim();
+        }
+      }
+    }
+
+    return {
+      configured: true,
+      status: 'connected',
+      usedMemory: infoMap.used_memory_human || (infoMap.used_memory ? `${infoMap.used_memory} B` : 'N/A'),
+      usedMemoryBytes: infoMap.used_memory ? parseInt(infoMap.used_memory, 10) : undefined,
+      totalCommandsProcessed: infoMap.total_commands_processed ? parseInt(infoMap.total_commands_processed, 10) : 0,
+      instantaneousOpsPerSec: infoMap.instantaneous_ops_per_sec ? parseInt(infoMap.instantaneous_ops_per_sec, 10) : 0,
+      keyspaceHits: infoMap.keyspace_hits ? parseInt(infoMap.keyspace_hits, 10) : 0,
+      keyspaceMisses: infoMap.keyspace_misses ? parseInt(infoMap.keyspace_misses, 10) : 0,
+      dbSize: typeof dbsize === 'number' ? dbsize : 0,
+    };
+  } catch (err: any) {
+    console.error('[RateLimit] Erro ao buscar métricas do Upstash Redis:', err);
+    return {
+      configured: true,
+      status: 'error',
+      error: err.message || 'Falha ao se comunicar com a REST API do Upstash Redis.',
+    };
+  }
 }
 
 /**
@@ -143,9 +282,10 @@ export const RATE_LIMITS = {
   adminAction: { limit: 30, windowMs: 60_000 },
 } as const;
 
-/** Test-only helper. Clears the in-memory state so unit tests don't
- *  leak buckets across files. Not wired up in production code. */
+/** Test-only helper. Clears in-memory buckets and cached Upstash client. */
 export function __resetRateLimitForTests() {
   buckets.clear();
   callsSinceSweep = 0;
+  redisClient = undefined;
+  ratelimitCache.clear();
 }

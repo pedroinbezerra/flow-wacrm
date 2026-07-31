@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ConsumptionDashboardCard } from "@/components/consumption/consumption-dashboard-card";
 import { useAuth } from "@/hooks/use-auth";
+import { isValidCpfOrCnpj } from "@/lib/validation/fiscal";
 
 interface NativeCheckoutData {
   paymentUrl: string | null;
@@ -78,12 +79,24 @@ export function BillingPanel() {
     }
   };
 
+  // Fiscal & Billing Data State
+  const [fiscalCpfCnpj, setFiscalCpfCnpj] = useState("");
+  const [fiscalCompanyName, setFiscalCompanyName] = useState("");
+  const [fiscalPhone, setFiscalPhone] = useState("");
+  const [fiscalPostalCode, setFiscalPostalCode] = useState("");
+  const [fiscalStreet, setFiscalStreet] = useState("");
+  const [fiscalNumber, setFiscalNumber] = useState("");
+  const [fiscalCity, setFiscalCity] = useState("");
+  const [fiscalState, setFiscalState] = useState("");
+  const [savingFiscal, setSavingFiscal] = useState(false);
+
   const fetchSubscriptionData = async () => {
     setLoading(true);
     try {
-      const [subRes, invRes] = await Promise.all([
+      const [subRes, invRes, accRes] = await Promise.all([
         fetch("/api/account/subscription"),
         fetch("/api/account/invoices"),
+        fetch("/api/account"),
       ]);
 
       if (subRes.ok && subRes.headers.get("content-type")?.includes("application/json")) {
@@ -99,10 +112,57 @@ export function BillingPanel() {
         const invData = await invRes.json();
         setInvoices(invData.invoices || []);
       }
+
+      if (accRes.ok && accRes.headers.get("content-type")?.includes("application/json")) {
+        const accData = await accRes.json();
+        const acc = accData.account;
+        if (acc) {
+          setFiscalCpfCnpj(acc.cpf_cnpj || "");
+          setFiscalCompanyName(acc.company_name || acc.name || "");
+          setFiscalPhone(acc.phone || "");
+          setFiscalPostalCode(acc.postal_code || "");
+          setFiscalStreet(acc.address_street || "");
+          setFiscalNumber(acc.address_number || "");
+          setFiscalCity(acc.address_city || "");
+          setFiscalState(acc.address_state || "");
+        }
+      }
     } catch (err) {
       console.error("Failed to load subscription info:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveFiscal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (fiscalCpfCnpj.trim() !== "" && !isValidCpfOrCnpj(fiscalCpfCnpj)) {
+      toast.error("O CPF ou CNPJ digitado é inválido. Por favor, verifique os números e dígitos.");
+      return;
+    }
+    setSavingFiscal(true);
+    try {
+      const res = await fetch("/api/account", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cpf_cnpj: fiscalCpfCnpj,
+          company_name: fiscalCompanyName,
+          phone: fiscalPhone,
+          postal_code: fiscalPostalCode,
+          address_street: fiscalStreet,
+          address_number: fiscalNumber,
+          address_city: fiscalCity,
+          address_state: fiscalState,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Erro ao salvar dados fiscais.");
+      toast.success("Dados de faturamento (CPF/CNPJ) atualizados com sucesso!");
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao atualizar dados fiscais.");
+    } finally {
+      setSavingFiscal(false);
     }
   };
 
@@ -112,10 +172,10 @@ export function BillingPanel() {
 
   const openUpgradeModal = async () => {
     try {
-      const res = await fetch("/api/admin/plans");
+      const res = await fetch("/api/plans");
       const data = await res.json();
       if (res.ok) {
-        setAllPlans((data.plans || []).filter((p: CommercialPlan) => p.status === "active"));
+        setAllPlans(data.plans || []);
         setCheckoutModalOpen(true);
       } else {
         toast.error("Não foi possível carregar os planos disponíveis.");
@@ -463,6 +523,120 @@ export function BillingPanel() {
               </table>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Dados Fiscais e de Faturamento (CPF/CNPJ) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-bold flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-emerald-500" />
+            Dados Fiscais & Faturamento (CPF/CNPJ)
+          </CardTitle>
+          <CardDescription>
+            Mantenha seu CPF/CNPJ, telefone e endereço atualizados para emissão de faturas, registro de pagamentos no Asaas e Notas Fiscais (NFS-e).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSaveFiscal} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">CPF ou CNPJ *</label>
+                <input
+                  type="text"
+                  placeholder="000.000.000-00 ou 00.000.000/0001-00"
+                  value={fiscalCpfCnpj}
+                  onChange={(e) => setFiscalCpfCnpj(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">Razão Social / Nome Completo *</label>
+                <input
+                  type="text"
+                  placeholder="Nome Fantasia ou Nome da Empresa"
+                  value={fiscalCompanyName}
+                  onChange={(e) => setFiscalCompanyName(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">Telefone Celular (com DDD) *</label>
+                <input
+                  type="text"
+                  placeholder="(11) 99999-9999"
+                  value={fiscalPhone}
+                  onChange={(e) => setFiscalPhone(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">CEP</label>
+                <input
+                  type="text"
+                  placeholder="00000-000"
+                  value={fiscalPostalCode}
+                  onChange={(e) => setFiscalPostalCode(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">Número</label>
+                <input
+                  type="text"
+                  placeholder="123"
+                  value={fiscalNumber}
+                  onChange={(e) => setFiscalNumber(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-xs font-semibold text-foreground">Endereço (Rua/Avenida)</label>
+                <input
+                  type="text"
+                  placeholder="Av. Paulista"
+                  value={fiscalStreet}
+                  onChange={(e) => setFiscalStreet(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">Cidade / UF</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Cidade"
+                    value={fiscalCity}
+                    onChange={(e) => setFiscalCity(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <input
+                    type="text"
+                    placeholder="UF"
+                    maxLength={2}
+                    value={fiscalState}
+                    onChange={(e) => setFiscalState(e.target.value.toUpperCase())}
+                    className="w-16 rounded-md border border-input bg-background px-2 py-2 text-center text-sm uppercase focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button type="submit" disabled={savingFiscal}>
+                {savingFiscal ? "Salvando..." : "Salvar Dados Fiscais"}
+              </Button>
+            </div>
+          </form>
         </CardContent>
       </Card>
 

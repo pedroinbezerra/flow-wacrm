@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const admin = await requireSuperAdmin();
 
-    const limit = checkRateLimit(
+    const limit = await checkRateLimit(
       `admin:plans:get:${admin.userId}`,
       RATE_LIMITS.adminAction
     );
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
   try {
     const admin = await requireSuperAdmin();
 
-    const limit = checkRateLimit(
+    const limit = await checkRateLimit(
       `admin:plans:post:${admin.userId}`,
       RATE_LIMITS.adminAction
     );

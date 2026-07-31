@@ -182,7 +182,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const limit = checkRateLimit(
+    const limit = await checkRateLimit(
       `admin:inviteCreate:${ctx.userId}`,
       RATE_LIMITS.adminAction,
     );

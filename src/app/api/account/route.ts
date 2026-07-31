@@ -18,6 +18,7 @@ import {
   getCurrentAccount,
   toErrorResponse,
 } from "@/lib/auth/account";
+import { isValidCpfOrCnpj, sanitizeCpfCnpj } from "@/lib/validation/fiscal";
 import {
   checkRateLimit,
   rateLimitResponse,
@@ -40,52 +41,61 @@ const MAX_NAME_LEN = 80;
 
 export async function PATCH(request: Request) {
   try {
-    const ctx = await requireRole("admin");
+    const ctx = await requireRole("admin", { isWriteOperation: true });
 
-    // Per-user limit on admin-class mutations. Bounds accidental
-    // abuse (script run in a loop) and a compromised admin session
-    // spamming renames. Each admin endpoint keys its own bucket so
-    // one route doesn't starve another.
-    const limit = checkRateLimit(
-      `admin:rename:${ctx.userId}`,
+    const limit = await checkRateLimit(
+      `admin:account_update:${ctx.userId}`,
       RATE_LIMITS.adminAction,
     );
     if (!limit.success) return rateLimitResponse(limit);
 
-    const body = (await request.json().catch(() => null)) as
-      | { name?: unknown }
-      | null;
-    const rawName = body?.name;
-
-    if (typeof rawName !== "string") {
-      return NextResponse.json(
-        { error: "'name' must be a string" },
-        { status: 400 },
-      );
+    const body = await request.json().catch(() => ({}));
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const name = rawName.trim();
-    if (name.length === 0) {
-      return NextResponse.json(
-        { error: "Account name cannot be empty" },
-        { status: 400 },
-      );
-    }
-    if (name.length > MAX_NAME_LEN) {
-      return NextResponse.json(
-        { error: `Account name must be ${MAX_NAME_LEN} characters or fewer` },
-        { status: 400 },
-      );
+    const updates: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (typeof body.name === "string") {
+      const name = body.name.trim();
+      if (name.length === 0) {
+        return NextResponse.json({ error: "Account name cannot be empty" }, { status: 400 });
+      }
+      if (name.length > MAX_NAME_LEN) {
+        return NextResponse.json({ error: `Account name must be ${MAX_NAME_LEN} characters or fewer` }, { status: 400 });
+      }
+      updates.name = name;
     }
 
-    // RLS allows this UPDATE because accounts_update requires
-    // `is_account_member(id, 'admin')`, and requireRole already
-    // guaranteed the caller is admin+.
+    if (body.cpf_cnpj !== undefined && body.cpf_cnpj !== null && String(body.cpf_cnpj).trim() !== "") {
+      const rawCpfCnpj = String(body.cpf_cnpj).trim();
+      if (!isValidCpfOrCnpj(rawCpfCnpj)) {
+        return NextResponse.json(
+          { error: "O CPF ou CNPJ informado é inválido. Por favor, verifique os dígitos." },
+          { status: 400 }
+        );
+      }
+      updates.cpf_cnpj = sanitizeCpfCnpj(rawCpfCnpj);
+    } else if (body.cpf_cnpj === null || body.cpf_cnpj === "") {
+      updates.cpf_cnpj = null;
+    }
+    if (body.company_name !== undefined) updates.company_name = body.company_name ? String(body.company_name).trim() : null;
+    if (body.phone !== undefined) updates.phone = body.phone ? String(body.phone).trim() : null;
+    if (body.postal_code !== undefined) updates.postal_code = body.postal_code ? String(body.postal_code).trim() : null;
+    if (body.address_street !== undefined) updates.address_street = body.address_street ? String(body.address_street).trim() : null;
+    if (body.address_number !== undefined) updates.address_number = body.address_number ? String(body.address_number).trim() : null;
+    if (body.address_complement !== undefined) updates.address_complement = body.address_complement ? String(body.address_complement).trim() : null;
+    if (body.address_neighborhood !== undefined) updates.address_neighborhood = body.address_neighborhood ? String(body.address_neighborhood).trim() : null;
+    if (body.address_city !== undefined) updates.address_city = body.address_city ? String(body.address_city).trim() : null;
+    if (body.address_state !== undefined) updates.address_state = body.address_state ? String(body.address_state).trim() : null;
+
     const { data, error } = await ctx.supabase
       .from("accounts")
-      .update({ name })
+      .update(updates)
       .eq("id", ctx.accountId)
-      .select("id, name")
+      .select("*")
       .single();
 
     if (error) {

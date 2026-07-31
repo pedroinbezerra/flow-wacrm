@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentAccount } from "@/lib/auth/account";
+import { isValidCpfOrCnpj, sanitizeCpfCnpj } from "@/lib/validation/fiscal";
 import { supabaseAdmin } from "@/lib/automations/admin-client";
 import {
   getOrCreateAsaasCustomer,
@@ -74,12 +75,34 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Get or Create Asaas Customer
+    // Exigência estrita de CPF/CNPJ válido para cobranças pagas
+    if (!account.cpf_cnpj || !isValidCpfOrCnpj(account.cpf_cnpj)) {
+      return NextResponse.json(
+        { error: "É necessário cadastrar um CPF ou CNPJ válido em Configurações → Dados Fiscais antes de prosseguir com a assinatura." },
+        { status: 400 }
+      );
+    }
+
+    // 1. Get or Create Asaas Customer with complete fiscal & contact info
     const customer = await getOrCreateAsaasCustomer({
-      name: user.user_metadata?.full_name || account.name || "Cliente Flow Hub",
+      name: account.company_name || account.name || user.user_metadata?.full_name || "Cliente Flow Hub",
       email: user.email || `${account.id}@flowhub.app`,
+      cpfCnpj: account.cpf_cnpj ? account.cpf_cnpj.replace(/\D/g, "") : undefined,
+      phone: account.phone ? account.phone.replace(/\D/g, "") : undefined,
+      mobilePhone: account.phone ? account.phone.replace(/\D/g, "") : undefined,
+      postalCode: account.postal_code ? account.postal_code.replace(/\D/g, "") : undefined,
+      address: account.address_street || undefined,
+      addressNumber: account.address_number || undefined,
+      complement: account.address_complement || undefined,
+      province: account.address_neighborhood || undefined,
       externalReference: account.id,
     });
+
+    // Save asaas_customer_id back to account row for fast lookups
+    await adminClient
+      .from("accounts")
+      .update({ asaas_customer_id: customer.id })
+      .eq("id", account.id);
 
     // Calculate next due date (tomorrow for immediate payment or trial)
     const nextDueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0];

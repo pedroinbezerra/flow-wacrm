@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   try {
     const ctx = await requireRole("owner");
 
-    const limit = checkRateLimit(
+    const limit = await checkRateLimit(
       `owner:cancelAccount:${ctx.userId}`,
       RATE_LIMITS.adminAction
     );

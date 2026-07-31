@@ -78,6 +78,8 @@ export function toErrorResponse(err: unknown): NextResponse {
 // Account context
 // ------------------------------------------------------------
 
+import type { Account } from "@/types";
+
 export interface AccountContext {
   /** Supabase SSR client, RLS scoped to the calling user. */
   supabase: SupabaseClient;
@@ -87,13 +89,8 @@ export interface AccountContext {
   accountId: string;
   /** Caller's role within their account. */
   role: AccountRole;
-  /** Lightweight account meta — id + name + subscription_status + scheduled_deletion_at. */
-  account: {
-    id: string;
-    name: string;
-    subscription_status: string;
-    scheduled_deletion_at: string | null;
-  };
+  /** Account row. */
+  account: Account;
 }
 
 /**
@@ -119,15 +116,14 @@ export async function getCurrentAccount(): Promise<AccountContext> {
     throw new UnauthorizedError();
   }
 
-  // Selecting through the FK gives us the account name in one
-  // query — `account:accounts!inner(id,name,subscription_status,scheduled_deletion_at)`
+  // Selecting through the FK gives us the account in one query — `account:accounts!inner(*)`
   let { data, error } = await supabase
     .from("profiles")
-    .select("account_id, account_role, account:accounts!inner(id, name, subscription_status, scheduled_deletion_at)")
+    .select("account_id, account_role, account:accounts!inner(*)")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  // Fallback defensivo para esquemas legados sem scheduled_deletion_at
+  // Fallback defensivo para esquemas legados
   if (error) {
     const fallback = await supabase
       .from("profiles")

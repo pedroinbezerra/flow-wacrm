@@ -13,7 +13,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
     const { id } = await params;
     const admin = await requireSuperAdmin();
 
-    const limit = checkRateLimit(
+    const limit = await checkRateLimit(
       `admin:plans:get-id:${admin.userId}`,
       RATE_LIMITS.adminAction
     );
@@ -41,7 +41,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     const { id } = await params;
     const admin = await requireSuperAdmin();
 
-    const limit = checkRateLimit(
+    const limit = await checkRateLimit(
       `admin:plans:patch:${admin.userId}`,
       RATE_LIMITS.adminAction
     );
@@ -84,7 +84,7 @@ export async function DELETE(_req: Request, { params }: RouteParams) {
     const { id } = await params;
     const admin = await requireSuperAdmin();
 
-    const limit = checkRateLimit(
+    const limit = await checkRateLimit(
       `admin:plans:delete:${admin.userId}`,
       RATE_LIMITS.adminAction
     );

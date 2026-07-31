@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getSuperAdminConsumptionIntelligence } from "@/lib/consumption/engine";
+import { getUpstashRedisMetrics } from "@/lib/rate-limit";
 
 export async function GET() {
   try {
@@ -26,8 +27,9 @@ export async function GET() {
     }
 
     const intelligence = await getSuperAdminConsumptionIntelligence(supabase);
+    const redisMetrics = await getUpstashRedisMetrics();
 
-    return NextResponse.json({ success: true, intelligence });
+    return NextResponse.json({ success: true, intelligence, redisMetrics });
   } catch (error) {
     console.error("[API Admin Consumption] Erro ao buscar inteligência:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });

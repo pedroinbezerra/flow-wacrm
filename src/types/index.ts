@@ -45,7 +45,7 @@ export interface Profile {
 
 export type PlanStatus = 'active' | 'inactive';
 export type BillingPeriod = 'monthly' | 'yearly' | 'one_time' | 'none';
-export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'canceled' | 'suspended';
+export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'canceled' | 'suspended' | 'read_only';
 
 export interface PlanFeatures {
   max_users?: number;
@@ -130,15 +130,27 @@ export interface Account {
   id: string;
   name: string;
   /** auth.users.id of the immutable owner. */
-  owner_user_id: string;
+  owner_user_id?: string;
   plan_id?: string | null;
   subscription_status?: SubscriptionStatus;
+  scheduled_deletion_at?: string | null;
   trial_ends_at?: string | null;
+  cpf_cnpj?: string | null;
+  company_name?: string | null;
+  phone?: string | null;
+  postal_code?: string | null;
+  address_street?: string | null;
+  address_number?: string | null;
+  address_complement?: string | null;
+  address_neighborhood?: string | null;
+  address_city?: string | null;
+  address_state?: string | null;
+  asaas_customer_id?: string | null;
   plan?: CommercialPlan;
   subscription?: Subscription;
   addons?: AccountAddon[];
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 /**

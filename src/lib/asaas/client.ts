@@ -9,6 +9,11 @@ export interface AsaasCustomerInput {
   cpfCnpj?: string;
   phone?: string;
   mobilePhone?: string;
+  postalCode?: string;
+  address?: string;
+  addressNumber?: string;
+  complement?: string;
+  province?: string;
   externalReference?: string;
 }
 
@@ -19,6 +24,11 @@ export interface AsaasCustomerResponse {
   cpfCnpj?: string;
   phone?: string;
   mobilePhone?: string;
+  postalCode?: string;
+  address?: string;
+  addressNumber?: string;
+  complement?: string;
+  province?: string;
   externalReference?: string;
   deleted?: boolean;
 }
@@ -123,16 +133,45 @@ async function asaasFetch<T>(endpoint: string, options: RequestInit = {}): Promi
 }
 
 /**
- * Find or Create a Customer in Asaas
+ * Find or Create a Customer in Asaas (and update details if existing)
  */
 export async function getOrCreateAsaasCustomer(input: AsaasCustomerInput): Promise<AsaasCustomerResponse> {
-  // First, search by externalReference or email
-  if (input.email) {
+  let existing: AsaasCustomerResponse | null = null;
+
+  // 1. First, search by cpfCnpj if provided
+  if (input.cpfCnpj) {
+    const cleanCpfCnpj = input.cpfCnpj.replace(/\D/g, "");
+    if (cleanCpfCnpj) {
+      const searchRes = await asaasFetch<{ data: AsaasCustomerResponse[] }>(
+        `/customers?cpfCnpj=${encodeURIComponent(cleanCpfCnpj)}`
+      );
+      if (searchRes.data && searchRes.data.length > 0) {
+        existing = searchRes.data[0];
+      }
+    }
+  }
+
+  // 2. Fallback search by email
+  if (!existing && input.email) {
     const searchRes = await asaasFetch<{ data: AsaasCustomerResponse[] }>(
       `/customers?email=${encodeURIComponent(input.email)}`
     );
     if (searchRes.data && searchRes.data.length > 0) {
-      return searchRes.data[0];
+      existing = searchRes.data[0];
+    }
+  }
+
+  // If customer exists, update customer details in Asaas to keep CPF/CNPJ & address current
+  if (existing) {
+    try {
+      const updated = await asaasFetch<AsaasCustomerResponse>(`/customers/${existing.id}`, {
+        method: "PUT",
+        body: JSON.stringify(input),
+      });
+      return updated;
+    } catch (updErr) {
+      console.warn(`[Asaas Client] Could not update customer ${existing.id}, returning existing:`, updErr);
+      return existing;
     }
   }
 

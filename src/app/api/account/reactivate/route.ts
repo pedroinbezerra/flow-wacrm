@@ -15,7 +15,7 @@ export async function POST(_request: Request) {
       throw new ForbiddenError("Apenas o dono da conta pode solicitar a reativação.");
     }
 
-    const limit = checkRateLimit(
+    const limit = await checkRateLimit(
       `owner:reactivateAccount:${ctx.userId}`,
       RATE_LIMITS.adminAction
     );
