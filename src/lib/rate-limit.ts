@@ -133,7 +133,7 @@ function getRatelimitInstance(limit: number, windowMs: number): Ratelimit | null
         redis,
         limiter: Ratelimit.slidingWindow(limit, `${windowMs} ms`),
         analytics: true,
-        prefix: 'wacrm:ratelimit',
+        prefix: 'flowhub:ratelimit',
       }),
     );
   }

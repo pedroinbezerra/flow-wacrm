@@ -34,6 +34,7 @@ export async function GET(
         .from("contacts")
         .select("*")
         .eq("id", contactId)
+        .eq("account_id", accountId)
         .single();
 
       if (!contact) {
@@ -83,7 +84,7 @@ export async function POST(
 
     if (error) {
       // Fallback direct update if RPC fails/missing
-      const { error: updateError } = await supabase
+      const { data: updatedContact, error: updateError } = await supabase
         .from("contacts")
         .update({
           name: "Contato Anonimizado LGPD",
@@ -95,10 +96,13 @@ export async function POST(
           consent_status: "revoked",
           consent_updated_at: new Date().toISOString(),
         })
-        .eq("id", contactId);
+        .eq("id", contactId)
+        .eq("account_id", accountId)
+        .select()
+        .single();
 
-      if (updateError) {
-        return NextResponse.json({ error: updateError.message }, { status: 400 });
+      if (updateError || !updatedContact) {
+        return NextResponse.json({ error: updateError?.message || "Contato não encontrado" }, { status: updateError ? 400 : 404 });
       }
 
       return NextResponse.json({
@@ -127,6 +131,14 @@ export async function PATCH(
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("account_id")
+      .eq("user_id", user.id)
+      .single();
+
+    const accountId = profile?.account_id ?? user.id;
+
     const body = await request.json();
     const { opt_out } = body;
 
@@ -143,11 +155,12 @@ export async function PATCH(
         consent_updated_at: new Date().toISOString(),
       })
       .eq("id", contactId)
+      .eq("account_id", accountId)
       .select()
       .single();
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+    if (error || !data) {
+      return NextResponse.json({ error: error?.message || "Contato não encontrado" }, { status: error ? 400 : 404 });
     }
 
     return NextResponse.json({ success: true, contact: data });

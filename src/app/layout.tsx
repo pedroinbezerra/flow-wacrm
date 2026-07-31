@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { ThemedToaster } from "@/components/themed-toaster";
+import { CookieConsentProvider } from "@/components/cookies/cookie-consent-provider";
 import { I18nProvider } from "@/lib/i18n/provider";
 import {
   DEFAULT_MODE,
@@ -99,8 +100,10 @@ export default function RootLayout({
       <body className="min-h-full bg-background text-foreground font-sans">
         <I18nProvider>
           <ThemeProvider>
-            {children}
-            <ThemedToaster />
+            <CookieConsentProvider>
+              {children}
+              <ThemedToaster />
+            </CookieConsentProvider>
           </ThemeProvider>
         </I18nProvider>
       </body>

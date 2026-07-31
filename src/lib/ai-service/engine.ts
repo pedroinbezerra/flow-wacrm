@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { assertAccountOperationalAccess } from '@/lib/auth/account'
 import { decrypt } from '@/lib/whatsapp/encryption'
 import { sendTextMessage, sendMediaMessage } from '@/lib/whatsapp/meta-api'
+import { resolveSendableMediaLink } from '@/lib/storage/media-access'
 import { formatConversationPreview } from '@/lib/conversation-preview'
 import {
   createChatCompletion,
@@ -329,12 +330,13 @@ export async function processInboundWithAIService(
       if (!mediaItem) continue
 
       try {
+        const sendableLink = await resolveSendableMediaLink(mediaItem.media_url)
         const mediaSendRes = await sendMediaMessage({
           phoneNumberId: waConfig.phone_number_id,
           accessToken: decryptedAccessToken,
           to: senderPhone,
           kind: mediaItem.media_type,
-          link: mediaItem.media_url,
+          link: sendableLink,
           caption: mediaItem.title,
         })
 

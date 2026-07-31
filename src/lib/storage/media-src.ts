@@ -9,7 +9,7 @@
  */
 
 /** The only buckets this module knows how to sign for. */
-export const SIGNABLE_BUCKETS = ['chat-media', 'flow-media'] as const
+export const SIGNABLE_BUCKETS = ['chat-media', 'flow-media', 'ai-service-media'] as const
 export type SignableBucket = (typeof SIGNABLE_BUCKETS)[number]
 
 export function isSignableBucket(value: string): value is SignableBucket {

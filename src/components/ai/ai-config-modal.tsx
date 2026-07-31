@@ -9,7 +9,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,12 +16,15 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { hasMinRole } from "@/lib/auth/roles";
 
+const DEFAULT_OPENAI_URL = "https://api.openai.com/v1";
+
 const PROVIDER_PRESETS: { label: string; url: string; defaultModel: string }[] = [
-  { label: "OpenAI (Padrão)", url: "https://api.openai.com/v1", defaultModel: "gpt-4o-mini" },
+  { label: "OpenAI (Padrão)", url: DEFAULT_OPENAI_URL, defaultModel: "gpt-4o-mini" },
   { label: "OpenRouter", url: "https://openrouter.ai/api/v1", defaultModel: "anthropic/claude-3.5-sonnet" },
   { label: "Groq", url: "https://api.groq.com/openai/v1", defaultModel: "llama-3.3-70b-versatile" },
   { label: "DeepSeek", url: "https://api.deepseek.com/v1", defaultModel: "deepseek-chat" },
@@ -54,14 +56,15 @@ export function AIConfigModal({ open, onOpenChange, onSuccess }: AIConfigModalPr
   const [hasKey, setHasKey] = useState(false);
   const [maskedKey, setMaskedKey] = useState("");
   const [apiKeyInput, setApiKeyInput] = useState("");
-  const [apiUrl, setApiUrl] = useState("https://api.openai.com/v1");
+  const [apiUrl, setApiUrl] = useState(DEFAULT_OPENAI_URL);
+  const [customProviderConfirmed, setCustomProviderConfirmed] = useState(false);
   const [model, setModel] = useState("gpt-4o-mini");
   const [temperature, setTemperature] = useState(0.3);
   const [maxTokens, setMaxTokens] = useState(500);
 
-  const loadConfig = async () => {
-    if (!open) return;
-    setLoading(true);
+  const isCustomProvider = apiUrl.trim() !== DEFAULT_OPENAI_URL;
+
+  const fetchConfig = async () => {
     try {
       const res = await fetch("/api/ai-assistant/config");
       if (res.ok) {
@@ -69,7 +72,7 @@ export function AIConfigModal({ open, onOpenChange, onSuccess }: AIConfigModalPr
         if (data.config) {
           setHasKey(data.config.has_key || false);
           setMaskedKey(data.config.openai_api_key_masked || "");
-          setApiUrl(data.config.openai_api_url || "https://api.openai.com/v1");
+          setApiUrl(data.config.openai_api_url || DEFAULT_OPENAI_URL);
           setModel(data.config.openai_model || "gpt-4o-mini");
           setTemperature(Number(data.config.temperature ?? 0.3));
           setMaxTokens(Number(data.config.max_tokens ?? 500));
@@ -77,20 +80,45 @@ export function AIConfigModal({ open, onOpenChange, onSuccess }: AIConfigModalPr
       }
     } catch (err) {
       console.error("Erro ao carregar configurações de IA:", err);
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (open) {
-      loadConfig();
-    }
+    if (!open) return;
+    let isMounted = true;
+
+    fetch("/api/ai-assistant/config")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isMounted) return;
+        setCustomProviderConfirmed(false);
+        if (data?.config) {
+          setHasKey(data.config.has_key || false);
+          setMaskedKey(data.config.openai_api_key_masked || "");
+          setApiUrl(data.config.openai_api_url || DEFAULT_OPENAI_URL);
+          setModel(data.config.openai_model || "gpt-4o-mini");
+          setTemperature(Number(data.config.temperature ?? 0.3));
+          setMaxTokens(Number(data.config.max_tokens ?? 500));
+        }
+      })
+      .catch((err) => {
+        console.error("Erro ao carregar configurações de IA:", err);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [open]);
 
   const handleSelectPreset = (url: string) => {
     if (!url) return;
     setApiUrl(url);
+    setCustomProviderConfirmed(false);
     const preset = PROVIDER_PRESETS.find((p) => p.url === url);
     if (preset && preset.defaultModel !== "custom") {
       setModel(preset.defaultModel);
@@ -118,7 +146,7 @@ export function AIConfigModal({ open, onOpenChange, onSuccess }: AIConfigModalPr
         const data = await res.json();
         toast.error(data.error || "Falha ao validar conexão com o provedor de IA.");
       }
-    } catch (err) {
+    } catch {
       toast.error("Erro ao testar conexão de IA.");
     } finally {
       setTesting(false);
@@ -128,6 +156,11 @@ export function AIConfigModal({ open, onOpenChange, onSuccess }: AIConfigModalPr
   const handleSave = async (silent = false) => {
     if (!canManageAI) {
       toast.error("Apenas Administradores ou Super Admins podem salvar a configuração de IA.");
+      return;
+    }
+
+    if (isCustomProvider && !customProviderConfirmed) {
+      toast.error("É necessário confirmar a responsabilidade pelo provedor de IA customizado.");
       return;
     }
 
@@ -157,12 +190,12 @@ export function AIConfigModal({ open, onOpenChange, onSuccess }: AIConfigModalPr
           onOpenChange(false);
         }
         setApiKeyInput("");
-        await loadConfig();
+        await fetchConfig();
       } else {
         const data = await res.json();
         toast.error(data.error || "Erro ao salvar configurações de IA.");
       }
-    } catch (err) {
+    } catch {
       toast.error("Erro na comunicação com o servidor.");
     } finally {
       setSaving(false);
@@ -228,11 +261,37 @@ export function AIConfigModal({ open, onOpenChange, onSuccess }: AIConfigModalPr
               <Label className="text-xs font-semibold">Base URL (Endpoint API)</Label>
               <Input
                 value={apiUrl}
-                onChange={(e) => setApiUrl(e.target.value)}
+                onChange={(e) => {
+                  setApiUrl(e.target.value);
+                  setCustomProviderConfirmed(false);
+                }}
                 placeholder="https://api.openai.com/v1"
                 className="text-xs font-mono"
               />
             </div>
+
+            {/* Aviso de Provedor Customizado / Externo */}
+            {isCustomProvider && (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 space-y-2.5 text-xs">
+                <div className="flex items-start gap-2 font-semibold text-amber-800 dark:text-amber-300">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                  <span>Provedor de IA Externo / Customizado</span>
+                </div>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Você está usando um provedor de IA diferente da OpenAI oficial. A Flow Hub não tem relação contratual nem visibilidade sobre esse fornecedor — a responsabilidade pela contratação, segurança e uso dos dados enviados a ele é sua.
+                </p>
+                <div className="flex items-center gap-2 pt-1 border-t border-amber-500/20">
+                  <Checkbox
+                    id="modal-confirm-custom-provider"
+                    checked={customProviderConfirmed}
+                    onCheckedChange={(checked) => setCustomProviderConfirmed(Boolean(checked))}
+                  />
+                  <Label htmlFor="modal-confirm-custom-provider" className="text-xs font-medium cursor-pointer text-foreground">
+                    Estou ciente e assumo a responsabilidade por este provedor externo
+                  </Label>
+                </div>
+              </div>
+            )}
 
             {/* API Key Input */}
             <div className="space-y-1.5">
@@ -397,7 +456,7 @@ export function AIConfigModal({ open, onOpenChange, onSuccess }: AIConfigModalPr
                 type="button"
                 size="sm"
                 onClick={() => handleSave(false)}
-                disabled={saving || loading}
+                disabled={saving || loading || (isCustomProvider && !customProviderConfirmed)}
                 className="text-xs bg-primary"
               >
                 {saving ? "Salvando..." : "Salvar Configurações"}

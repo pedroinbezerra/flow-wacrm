@@ -9,6 +9,7 @@ import {
   sanitizePhoneForMeta,
   isValidE164,
   phoneVariants,
+  phonesMatch,
   isRecipientNotAllowedError,
 } from '@/lib/whatsapp/phone-utils'
 import {
@@ -182,6 +183,35 @@ export async function POST(request: Request) {
     }
     const templateRow = rawTemplateRow ?? null
 
+    // Load opted-out contacts for this account to prevent sending campaigns to them
+    const { data: optOutContacts } = await supabase
+      .from('contacts')
+      .select('phone')
+      .eq('account_id', accountId)
+      .eq('opt_out', true)
+
+    const optOutSet = new Set<string>()
+    if (optOutContacts) {
+      for (const c of optOutContacts) {
+        if (!c.phone) continue
+        const s = sanitizePhoneForMeta(c.phone)
+        if (s) {
+          optOutSet.add(s)
+          for (const variant of phoneVariants(s)) {
+            optOutSet.add(variant)
+          }
+        }
+      }
+    }
+
+    const isOptedOut = (recipientPhone: string, sanitizedPhone: string): boolean => {
+      if (!optOutContacts || optOutContacts.length === 0) return false
+      if (optOutSet.has(sanitizedPhone)) return true
+      const recipientVars = phoneVariants(sanitizedPhone)
+      if (recipientVars.some((v) => optOutSet.has(v))) return true
+      return optOutContacts.some((c) => c.phone && phonesMatch(recipientPhone, c.phone))
+    }
+
     const results: BroadcastResult[] = []
     let sentCount = 0
     let failedCount = 0
@@ -194,6 +224,16 @@ export async function POST(request: Request) {
           phone: recipient.phone,
           status: 'failed',
           error: 'Invalid phone number format',
+        })
+        failedCount++
+        continue
+      }
+
+      if (isOptedOut(recipient.phone, sanitized)) {
+        results.push({
+          phone: recipient.phone,
+          status: 'failed',
+          error: 'Contato optou por não receber mensagens (opt-out)',
         })
         failedCount++
         continue

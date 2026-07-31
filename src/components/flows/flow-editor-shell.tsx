@@ -38,7 +38,7 @@ const MOBILE_BREAKPOINT = "(max-width: 767px)";
 
 type View = "canvas" | "list";
 
-const STORAGE_KEY = "wacrm.flowEditor.view";
+const STORAGE_KEY = "flowhub.flowEditor.view";
 
 interface Props {
   initialFlow: FlowRow;

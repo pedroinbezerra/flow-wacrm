@@ -1,10 +1,42 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Script from "next/script";
+import { getCookiePreferences, COOKIE_CONSENT_EVENT_NAME, CookiePreferences } from "@/lib/cookies/consent";
 
 export function ExternalAnalytics() {
   const clarityId = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
   const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
+  const [analyticsAllowed, setAnalyticsAllowed] = useState(false);
+
+  useEffect(() => {
+    // Verificar consentimento inicial
+    const prefs = getCookiePreferences();
+    if (prefs?.analytics) {
+      setAnalyticsAllowed(true);
+    }
+
+    // Escutar atualizações dinâmicas de consentimento
+    const handleConsentUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<CookiePreferences>;
+      if (customEvent.detail?.analytics) {
+        setAnalyticsAllowed(true);
+      } else {
+        setAnalyticsAllowed(false);
+      }
+    };
+
+    window.addEventListener(COOKIE_CONSENT_EVENT_NAME, handleConsentUpdate);
+    return () => {
+      window.removeEventListener(COOKIE_CONSENT_EVENT_NAME, handleConsentUpdate);
+    };
+  }, []);
+
+  // LGPD: Nenhuma ferramenta opcional de rastreamento é carregada antes do consentimento
+  if (!analyticsAllowed) {
+    return null;
+  }
 
   return (
     <>

@@ -146,6 +146,41 @@ export function TourTriggerButton() {
           },
         },
       ], "broadcasts");
+    } else if (pathname.startsWith("/faq")) {
+      startTour([
+        {
+          element: "#tour-faq-header",
+          popover: {
+            title: t("onboarding.tour.faq.headerTitle"),
+            description: t("onboarding.tour.faq.headerDesc"),
+            side: "bottom",
+          },
+        },
+        {
+          element: "#tour-faq-search",
+          popover: {
+            title: t("onboarding.tour.faq.searchTitle"),
+            description: t("onboarding.tour.faq.searchDesc"),
+            side: "bottom",
+          },
+        },
+        {
+          element: "#tour-faq-categories",
+          popover: {
+            title: t("onboarding.tour.faq.categoriesTitle"),
+            description: t("onboarding.tour.faq.categoriesDesc"),
+            side: "bottom",
+          },
+        },
+        {
+          element: "#tour-faq-accordion",
+          popover: {
+            title: t("onboarding.tour.faq.listTitle"),
+            description: t("onboarding.tour.faq.listDesc"),
+            side: "top",
+          },
+        },
+      ], "faq");
     } else if (pathname.startsWith("/pipelines")) {
       startTour([
         {

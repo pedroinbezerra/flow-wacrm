@@ -4,7 +4,7 @@ This is a **template repository**, not a collaborative product. The
 expected flow is:
 
 1. **Fork** it to your own GitHub account or organisation.
-2. **Deploy** the fork — see [`docs/`](./docs/README.md).
+2. **Deploy** the fork.
 3. **Customise** your fork. Rebrand, add the features you need, remove
    the ones you don't, swap hosting, change the schema.
 
@@ -16,25 +16,24 @@ opinions become yours.
 ## Fork and run
 
 ```bash
-# 1. Fork on GitHub: https://github.com/ArnasDon/wacrm → Fork
+# 1. Fork on GitHub: https://github.com/pedroinbezerra/flow-wacrm → Fork
 # 2. Clone your fork
-git clone https://github.com/<your-username>/wacrm.git
-cd wacrm
+git clone https://github.com/<your-username>/flowhub.git
+cd flowhub
 
 cp .env.local.example .env.local   # fill in Supabase + Meta creds
 npm install
 npm run dev
 ```
 
-Full setup (Supabase migrations, WhatsApp Business API, deploy) lives in
-[`docs/`](./docs/README.md).
+Full setup (Supabase migrations, WhatsApp Business API, deploy) lives in the codebase.
 
 ## Keeping your fork up to date
 
 Pull in upstream bug fixes and security patches periodically:
 
 ```bash
-git remote add upstream https://github.com/ArnasDon/wacrm.git  # once
+git remote add upstream https://github.com/pedroinbezerra/flow-wacrm.git  # once
 git fetch upstream
 git checkout main
 git merge upstream/main     # or: git rebase upstream/main
@@ -50,7 +49,7 @@ updating on your schedule is a valid alternative.
 
 If you find a bug in the upstream code — not one you introduced in your
 fork — please file it using the
-[bug report](https://github.com/ArnasDon/wacrm/issues/new?template=bug_report.yml)
+[bug report](https://github.com/pedroinbezerra/flow-wacrm/issues/new?template=bug_report.yml)
 template. Including the commit SHA, the runtime (Hostinger / Vercel /
 local / other), and logs will get to a fix fastest.
 
@@ -95,9 +94,7 @@ closed — open the issue first to align.
 
 ## If you maintain a public fork
 
-- Rebrand. The "CRM Template for WhatsApp" name, favicon, and
-  `wacrm.tech` URL belong to the upstream project; please swap them
-  for your own before putting your deployment in front of users.
+- Rebrand. The "CRM Template for WhatsApp" name and favicon belong to the upstream project; please swap them for your own before putting your deployment in front of users.
 - Keep the MIT [`LICENSE`](./LICENSE) file — that's how the template's
   permissions travel with the code. Attribution in a `README` section
   is appreciated but not required.

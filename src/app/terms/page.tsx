@@ -1,11 +1,13 @@
 import React from "react";
 import Link from "next/link";
 import { FlowLogo } from "@/components/layout/flow-logo";
-import { FileText, ShieldAlert, CheckCircle2, Scale } from "lucide-react";
+import { FileText, ShieldAlert, CheckCircle2, Scale, Cpu, Building2 } from "lucide-react";
+import { PublicHeaderNav } from "@/components/layout/public-header-nav";
+import { PublicFooter } from "@/components/layout/public-footer";
 
 export const metadata = {
-  title: "Termos de Uso | Flow WACRM",
-  description: "Termos e Condições de Uso da plataforma Flow WACRM.",
+  title: "Termos de Uso | Flow Hub",
+  description: "Termos e Condições de Uso da plataforma Flow Hub (FLOW SYSTEMS LTDA - CNPJ 62.479.299/0001-66).",
 };
 
 export default function TermsPage() {
@@ -17,17 +19,7 @@ export default function TermsPage() {
           <Link href="/" className="flex items-center gap-2">
             <FlowLogo height={32} />
           </Link>
-          <div className="flex items-center gap-4 text-sm">
-            <Link href="/login" className="text-muted-foreground hover:text-foreground transition-colors">
-              Entrar
-            </Link>
-            <Link
-              href="/signup"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-4 py-2 rounded-lg text-xs transition-colors"
-            >
-              Criar Conta
-            </Link>
-          </div>
+          <PublicHeaderNav />
         </div>
       </header>
 
@@ -37,14 +29,14 @@ export default function TermsPage() {
         <div className="space-y-4 text-center md:text-left border-b border-border/50 pb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
             <Scale className="size-4" />
-            Contrato de Licença de Uso de Software
+            Contrato de Licença de Uso de Software (SaaS)
           </div>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
             Termos e Condições de Uso
           </h1>
           <p className="text-muted-foreground text-sm max-w-2xl">
-            Última atualização: {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}.
-            Ao criar uma conta ou utilizar o Flow WACRM, você concorda com estes termos.
+            Última atualização: {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}.<br />
+            Estes Termos regem a contratação da plataforma Flow Hub, operada por <strong>FLOW SYSTEMS LTDA</strong> (CNPJ 62.479.299/0001-66).
           </p>
         </div>
 
@@ -52,57 +44,75 @@ export default function TermsPage() {
         <div className="space-y-8 text-sm text-muted-foreground leading-relaxed">
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <CheckCircle2 className="size-5 text-primary" /> 1. Aceitação dos Termos
+              <CheckCircle2 className="size-5 text-primary" /> 1. Aceitação dos Termos & Objeto
             </h2>
             <p>
-              Estes Termos regem o acesso e a utilização dos serviços fornecidos pelo Flow WACRM. Caso você não concorde com qualquer disposição destes Termos, não deverá utilizar a plataforma.
+              O Flow Hub é uma plataforma SaaS para gestão de relacionamento com clientes (CRM), centralização de atendimentos no WhatsApp, automações e assistente de Inteligência Artificial. Ao criar uma conta ou utilizar o serviço, você declara ter lido, compreendido e aceito estes Termos de Uso e a{" "}
+              <Link href="/privacy" className="text-primary underline font-medium">
+                Política de Privacidade
+              </Link>.
             </p>
           </section>
 
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <FileText className="size-5 text-blue-500" /> 2. Descrição do Serviço & Responsabilidade do Usuário
+              <Cpu className="size-5 text-purple-500" /> 2. Modelo "Traga sua Própria Credencial" (BYOK / BYOA)
             </h2>
             <p>
-              O Flow WACRM é uma plataforma SaaS para gestão de relacionamentos com clientes, atendimentos centralizados no WhatsApp, automações e inteligência artificial. O Usuário é inteiramente responsável por:
+              A plataforma funciona sob o modelo BYOK (*Bring Your Own Key*) para a Meta WhatsApp Cloud API e BYOA (*Bring Your Own Agent*) para provedores de Inteligência Artificial. O Cliente é o único responsável por obter, configurar e manter a validade das credenciais e chaves de API junto a essas terceiras partes, bem como por arcar com eventuais custos de infraestrutura cobrados diretamente pela Meta ou provedores de IA.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <FileText className="size-5 text-blue-500" /> 3. Responsabilidade do Usuário & Uso Aceitável
+            </h2>
+            <p>
+              O Cliente compromete-se a utilizar a plataforma estritamente em conformidade com a legislação brasileira. É expressamente proibido:
             </p>
             <ul className="list-disc pl-6 space-y-1.5 text-xs">
-              <li>Obter o consentimento prévio e válido dos contatos importados para a plataforma;</li>
-              <li>Respeitar as políticas comerciais e anticorrupção da Meta e do WhatsApp Cloud API;</li>
-              <li>Não utilizar o serviço para envio de SPAM, conteúdos ilegais ou abusivos.</li>
+              <li>Realizar envio de mensagens não solicitadas (SPAM) ou violar os termos de política comercial do WhatsApp / Meta;</li>
+              <li>Importar ou cadastrar dados pessoais de contatos sem a devida base legal prevista na LGPD;</li>
+              <li>Transmitir conteúdos ilegais, difamatórios, discriminatórios ou que violem direitos de terceiros.</li>
             </ul>
           </section>
 
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <ShieldAlert className="size-5 text-amber-500" /> 3. Conformidade com a LGPD
+              <ShieldAlert className="size-5 text-amber-500" /> 4. Conformidade com a LGPD e DPA
             </h2>
             <p>
-              O contratante atua na condição de **Controlador** dos dados de seus clientes finais, cabendo ao Flow WACRM a condição de **Operador**. O Flow WACRM disponibiliza ferramentas para cumprimento das obrigações legais da LGPD, como exportação e anonimização de dados.
+              Nas operações de tratamento de dados dos contatos do WhatsApp do Cliente, o Cliente atua na condição de <strong>Controlador</strong> e a Flow Hub como <strong>Operadora</strong>. As regras detalhadas dessa relação estão dispostas no nosso{" "}
+              <Link href="/dpa" className="text-primary underline font-medium">
+                Acordo de Tratamento de Dados (DPA)
+              </Link>.
             </p>
           </section>
 
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <Scale className="size-5 text-purple-500" /> 4. Cancelamento e Encerramento
+              <Building2 className="size-5 text-emerald-500" /> 5. Cancelamento, Inadimplência e Foro
             </h2>
             <p>
-              O Usuário pode cancelar sua assinatura a qualquer momento através do painel de configurações da conta. Após o encerramento, os dados serão mantidos conforme a Política de Privacidade ou até solicitação formal de exclusão.
+              O cancelamento pode ser efetuado pelo painel da conta. Em caso de encerramento, aplica-se o período de carência de 90 (noventa) dias corridos para guarda de dados antes da eliminação definitiva. Este contrato é regido pelas leis brasileiras, sendo eleito o foro da Comarca de <strong>Fortaleza - CE</strong>.
             </p>
           </section>
         </div>
+
+        {/* Contact DPO */}
+        <section className="p-5 rounded-2xl border border-border bg-muted/20 text-xs text-muted-foreground space-y-1">
+          <p className="font-semibold text-foreground">Dúvidas sobre os Termos ou Contratação?</p>
+          <p>
+            Encarregado de Dados (DPO):{" "}
+            <a href="mailto:flowsystems@flowofc.com.br" className="text-primary underline font-medium">
+              flowsystems@flowofc.com.br
+            </a>
+          </p>
+        </section>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-6 text-center text-xs text-muted-foreground">
-        <div className="max-w-5xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p>© {new Date().getFullYear()} Flow WACRM. Todos os direitos reservados.</p>
-          <div className="flex gap-4">
-            <Link href="/terms" className="text-primary font-medium">Termos de Uso</Link>
-            <Link href="/privacy" className="hover:text-foreground transition-colors">Política de Privacidade</Link>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

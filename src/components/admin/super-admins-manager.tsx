@@ -120,7 +120,7 @@ export function SuperAdminsManager() {
             Operadores da Plataforma (Super Admins)
           </h2>
           <p className="text-sm text-muted-foreground">
-            Gerencie os administradores gerais do Flow WACRM com acesso irrestrito às métricas globais e planos.
+            Gerencie os administradores gerais do Flow Hub com acesso irrestrito às métricas globais e planos.
           </p>
         </div>
         <div className="flex items-center gap-2">

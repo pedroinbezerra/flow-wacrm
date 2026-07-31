@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/hooks/use-translation";
-import { LogOut, Menu, Settings as SettingsIcon, User } from "lucide-react";
+import { HelpCircle, LogOut, Menu, Settings as SettingsIcon, User, Cookie, Sparkles } from "lucide-react";
+import { CookiePreferencesTrigger } from "@/components/cookies/cookie-preferences-trigger";
 import {
   Avatar,
   AvatarFallback,
@@ -28,7 +29,11 @@ const pageTitles: Record<string, string> = {
   "/broadcasts": "navigation.broadcasts",
   "/automations": "navigation.automations",
   "/flows": "navigation.flows",
+  "/ai-assistant": "navigation.aiAssistant",
+  "/welcome": "navigation.welcome",
+  "/faq": "navigation.faq",
   "/settings": "navigation.settings",
+  "/admin/support": "navigation.adminSupport",
   "/admin/plans": "navigation.adminPlans",
   "/admin/analytics": "navigation.adminAnalytics",
   "/admin/onboarding": "navigation.adminOnboarding",
@@ -138,6 +143,36 @@ export function Header({ onOpenSidebar }: HeaderProps) {
           >
             <SettingsIcon className="size-4" />
             {t("navigation.settings")}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            render={
+              <Link
+                href="/welcome"
+                className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
+              />
+            }
+          >
+            <Sparkles className="size-4" />
+            {t("navigation.welcome")}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            render={
+              <Link
+                href="/faq"
+                className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
+              />
+            }
+          >
+            <HelpCircle className="size-4" />
+            {t("navigation.faq")}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            render={
+              <CookiePreferencesTrigger className="flex w-full items-center gap-2 text-popover-foreground focus:bg-accent focus:text-accent-foreground" />
+            }
+          >
+            <Cookie className="size-4" />
+            Preferências de Cookies
           </DropdownMenuItem>
           <DropdownMenuSeparator className="bg-border" />
           <DropdownMenuItem

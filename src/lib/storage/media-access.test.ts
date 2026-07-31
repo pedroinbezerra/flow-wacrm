@@ -49,11 +49,11 @@ describe('toProxyPath', () => {
 })
 
 describe('isSignableBucket', () => {
-  it('accepts only the known conversation-media buckets', () => {
+  it('accepts known private media buckets', () => {
     expect(isSignableBucket('chat-media')).toBe(true)
     expect(isSignableBucket('flow-media')).toBe(true)
+    expect(isSignableBucket('ai-service-media')).toBe(true)
     expect(isSignableBucket('avatars')).toBe(false)
-    expect(isSignableBucket('ai-service-media')).toBe(false)
   })
 })
 
@@ -64,11 +64,20 @@ describe('normalizeMediaSrc', () => {
         'https://abcd1234.supabase.co/storage/v1/object/public/chat-media/account-123/167-photo.png',
       ),
     ).toBe('/api/media/chat-media/account-123/167-photo.png')
+
+    expect(
+      normalizeMediaSrc(
+        'https://abcd1234.supabase.co/storage/v1/object/public/ai-service-media/account-123/167-doc.pdf',
+      ),
+    ).toBe('/api/media/ai-service-media/account-123/167-doc.pdf')
   })
 
   it('passes an already-proxied path through unchanged', () => {
     expect(normalizeMediaSrc('/api/media/flow-media/account-123/167-file.pdf')).toBe(
       '/api/media/flow-media/account-123/167-file.pdf',
+    )
+    expect(normalizeMediaSrc('/api/media/ai-service-media/account-123/167-doc.pdf')).toBe(
+      '/api/media/ai-service-media/account-123/167-doc.pdf',
     )
   })
 

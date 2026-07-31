@@ -1,4 +1,4 @@
-# wacrm — CRM Template for WhatsApp
+# FlowHub — CRM Template for WhatsApp
 
 > Self-hostable CRM template for WhatsApp® — shared inbox, contacts,
 > sales pipelines, broadcasts, and no-code automations. Fork it, brand
@@ -11,15 +11,10 @@
 </p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-violet.svg)](./LICENSE)
-[![CI](https://github.com/ArnasDon/wacrm/actions/workflows/ci.yml/badge.svg)](https://github.com/ArnasDon/wacrm/actions/workflows/ci.yml)
+[![CI](https://github.com/pedroinbezerra/flow-wacrm/actions/workflows/ci.yml/badge.svg)](https://github.com/pedroinbezerra/flow-wacrm/actions/workflows/ci.yml)
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs)](https://nextjs.org)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20Auth-3ecf8e?logo=supabase)](https://supabase.com)
-[![Stars](https://img.shields.io/github/stars/ArnasDon/wacrm?style=social)](https://github.com/ArnasDon/wacrm/stargazers)
-
-The marketing site and self-host docs live in a separate repo:
-[ArnasDon/wacrm-site](https://github.com/ArnasDon/wacrm-site)
-([wacrm.tech](https://wacrm.tech)). This repo is the product —
-clone or fork it to run your own CRM.
+[![Stars](https://img.shields.io/github/stars/pedroinbezerra/flow-wacrm?style=social)](https://github.com/pedroinbezerra/flow-wacrm/stargazers)
 
 ## What you get out of the box
 
@@ -38,25 +33,10 @@ clone or fork it to run your own CRM.
 - **Team accounts** — invite teammates by link, role-based access
   (owner / admin / agent / viewer), ownership transfer. Every install
   is account-scoped, so one shared inbox can be staffed by a whole
-  team. Solo use stays single-user with zero setup.
-- **Account management** — email, password, avatar, global sign-out.
-
-## Why fork this?
-
-This is a **template**, not a product. Forking means you get:
-
-- **Full ownership** — your code, your Supabase project, your domain,
-  your data. No SaaS lock-in, no seat pricing, no trust dance.
-- **Full customisation** — add the fields your team needs, remove the
-  modules you don't, redesign anything. The stack is boring on
-  purpose (Next.js + Supabase + Tailwind) so the learning curve is
-  short.
-- **Zero ops to start** — [Hostinger](https://www.hostinger.com/web-apps-hosting)
-  Managed Node.js deploys a fork in a few clicks. No Docker, no
-  Kubernetes, no infra team needed.
-  ([See below ↓](#-deploy-on-hostinger-recommended))
-- **Real security primitives** — token encryption (AES-256-GCM), RLS
-  on every table, HMAC-verified webhooks, CSP, rate limiting, CI
+  team.
+- **Strict multi-tenancy + RLS** — account_id on every domain table,
+  Row Level Security policies enforced in Supabase.
+- **Automated test suite + CI** — Vitest unit tests, typecheck, lint,
   typecheck/build on every PR.
 
 Not a framework. Not an SDK. A concrete, working CRM you can stand up
@@ -65,9 +45,9 @@ in an afternoon and make yours.
 ## Quick start
 
 ```bash
-# Fork on GitHub first: https://github.com/ArnasDon/wacrm → Fork
-git clone https://github.com/<your-username>/wacrm.git
-cd wacrm
+# Clone or Fork on GitHub: https://github.com/pedroinbezerra/flow-wacrm
+git clone https://github.com/pedroinbezerra/flow-wacrm.git
+cd flow-wacrm
 npm install
 cp .env.local.example .env.local   # fill in Supabase + Meta creds
 npm run dev
@@ -83,13 +63,8 @@ Open <http://localhost:3000>. You'll be redirected to `/login` (or
     <img src="./.github/assets/hostinger-deploy.png" alt="Ship your Node.js app in one click — Deploy to Hostinger" width="1000">
   </a>
 </p>
-<p align="center">
-  <a href="https://wacrm.tech/docs/deployment-hostinger">
-    <img src="https://img.shields.io/badge/Step--by--step_guide-wacrm.tech%2Fdocs-111?style=for-the-badge" alt="Step-by-step guide" height="44">
-  </a>
-</p>
 
-**wacrm is built to run on [Hostinger](https://www.hostinger.com/web-apps-hosting).**
+**FlowHub is built to run on [Hostinger](https://www.hostinger.com/web-apps-hosting).**
 It's the path we test, document, and recommend — and the fastest way
 to get a production-grade CRM live without owning a VPS or a
 Kubernetes cluster.
@@ -109,34 +84,15 @@ Kubernetes cluster.
 
 ### The 60-second version
 
-1. **Fork** this repo on GitHub.
+1. **Fork or Clone** this repo on GitHub (`pedroinbezerra/flow-wacrm`).
 2. In **hPanel → Websites → Create**, pick **Node.js** and connect
-   your fork.
+   your repository.
 3. Paste your Supabase + Meta env vars into hPanel.
 4. Push to `main`. Hostinger builds and serves it. Done.
 
-Full walkthrough with screenshots:
-**[wacrm.tech/docs/deployment-hostinger](https://wacrm.tech/docs/deployment-hostinger)**.
-
-> _Note: wacrm is MIT-licensed and runs anywhere Node.js does
+> _Note: FlowHub is MIT-licensed and runs anywhere Node.js does
 > (Vercel, Railway, your own VPS). Hostinger is recommended, not
 > required._
-
-## Documentation
-
-Full self-host documentation — Supabase migrations, WhatsApp Business
-API config, and production deploy — lives at
-**[wacrm.tech/docs](https://wacrm.tech/docs)**
-(source: [ArnasDon/wacrm-site](https://github.com/ArnasDon/wacrm-site)).
-
-Key pages:
-- [Getting started](https://wacrm.tech/docs/getting-started)
-- [Supabase setup](https://wacrm.tech/docs/supabase-setup)
-- [WhatsApp setup](https://wacrm.tech/docs/whatsapp-setup)
-- [Environment variables](https://wacrm.tech/docs/environment-variables)
-- [Deploy on Hostinger](https://wacrm.tech/docs/deployment-hostinger)
-- [Architecture](https://wacrm.tech/docs/architecture)
-- [Troubleshooting](https://wacrm.tech/docs/troubleshooting)
 
 ## Stack
 

@@ -11,6 +11,7 @@ import { SettingsOverview } from '@/components/settings/settings-overview';
 import { ProfileForm } from '@/components/settings/profile-form';
 import { SecurityPanel } from '@/components/settings/security-panel';
 import { AppearancePanel } from '@/components/settings/appearance-panel';
+import { PrivacyPanel } from '@/components/settings/privacy-panel';
 import { BillingPanel } from '@/components/settings/billing-panel';
 import { WhatsAppConfig } from '@/components/settings/whatsapp-config';
 import { AIConfigPanel } from '@/components/settings/ai-config-panel';
@@ -58,6 +59,7 @@ export default function SettingsPage() {
     profile: <ProfileForm />,
     security: <SecurityPanel />,
     appearance: <AppearancePanel />,
+    privacy: <PrivacyPanel />,
     billing: <BillingPanel />,
     whatsapp: <WhatsAppConfig />,
     ai: <AIConfigPanel />,

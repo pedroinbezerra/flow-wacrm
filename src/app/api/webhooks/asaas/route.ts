@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/automations/admin-client";
+import { getAsaasSubscription } from "@/lib/asaas/client";
 
 function isValidAccessToken(suppliedToken: string | null, expectedToken: string | undefined): boolean {
   if (!expectedToken || !suppliedToken) return false;
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
 
     if (event === "PAYMENT_RECEIVED" || event === "PAYMENT_CONFIRMED") {
       // Find subscription by asaas_subscription_id or account_id
-      let query = supabase.from("subscriptions").select("id, account_id, plan_id");
+      let query = supabase.from("subscriptions").select("id, account_id, plan_id, asaas_subscription_id");
       if (asaasSubscriptionId) {
         query = query.eq("asaas_subscription_id", asaasSubscriptionId);
       } else if (accountId) {
@@ -54,8 +55,43 @@ export async function POST(req: Request) {
       const { data: sub } = await query.maybeSingle();
 
       if (sub) {
-        // Calculate new period end (default +30 days)
-        const nextPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        let nextPeriodEnd: string | null = null;
+        const subAsaasId = asaasSubscriptionId || sub.asaas_subscription_id;
+
+        // Opção 1 (Preferencial): Buscar dados da assinatura diretamente no Asaas (nextDueDate)
+        if (subAsaasId) {
+          try {
+            const asaasSub = await getAsaasSubscription(subAsaasId);
+            if (asaasSub?.nextDueDate) {
+              const dueDateStr = asaasSub.nextDueDate.includes("T")
+                ? asaasSub.nextDueDate
+                : `${asaasSub.nextDueDate}T23:59:59.000Z`;
+              const dueDateObj = new Date(dueDateStr);
+              if (!isNaN(dueDateObj.getTime())) {
+                nextPeriodEnd = dueDateObj.toISOString();
+              }
+            }
+          } catch (err) {
+            console.warn("[Asaas Webhook] Erro ao buscar assinatura no Asaas, usando fallback por plano:", err);
+          }
+        }
+
+        // Opção 2 (Fallback): Calcular a partir do billing_period do plano
+        if (!nextPeriodEnd) {
+          const { data: plan } = await supabase
+            .from("plans")
+            .select("billing_period")
+            .eq("id", sub.plan_id)
+            .maybeSingle();
+
+          const now = new Date();
+          if (plan?.billing_period === "yearly") {
+            now.setFullYear(now.getFullYear() + 1);
+          } else {
+            now.setMonth(now.getMonth() + 1);
+          }
+          nextPeriodEnd = now.toISOString();
+        }
 
         await supabase
           .from("subscriptions")
@@ -158,6 +194,131 @@ export async function POST(req: Request) {
             .update({ subscription_status: "canceled" })
             .eq("id", sub.account_id);
         }
+      }
+    } else if (event === "PAYMENT_REFUNDED" || event === "PAYMENT_CHARGEBACK_DISPUTE") {
+      // 1. Atualiza status da fatura para 'refunded'
+      if (payment.id) {
+        const { data: existingInv } = await supabase
+          .from("invoices")
+          .select("id, account_id, subscription_id")
+          .eq("asaas_payment_id", payment.id)
+          .maybeSingle();
+
+        if (existingInv) {
+          await supabase
+            .from("invoices")
+            .update({ status: "refunded" })
+            .eq("id", existingInv.id);
+        }
+      }
+
+      // 2. Rebaixa conta e assinatura diretamente para 'suspended'
+      let query = supabase.from("subscriptions").select("id, account_id");
+      if (asaasSubscriptionId) {
+        query = query.eq("asaas_subscription_id", asaasSubscriptionId);
+      } else if (accountId) {
+        query = query.eq("account_id", accountId);
+      }
+
+      const { data: sub } = await query.maybeSingle();
+      const targetSubId = sub?.id;
+      const targetAccountId = sub?.account_id || accountId;
+
+      if (targetSubId) {
+        await supabase
+          .from("subscriptions")
+          .update({
+            status: "suspended",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", targetSubId);
+      }
+
+      if (targetAccountId) {
+        await supabase
+          .from("accounts")
+          .update({
+            subscription_status: "suspended",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", targetAccountId);
+      }
+    } else if (event === "PAYMENT_CHARGEBACK_REQUESTED") {
+      // Mantém fatura como 'paid', mantém acesso da conta e apenas registra log de auditoria
+      const targetAccountId = accountId || (
+        asaasSubscriptionId
+          ? (await supabase.from("subscriptions").select("account_id").eq("asaas_subscription_id", asaasSubscriptionId).maybeSingle()).data?.account_id
+          : null
+      );
+
+      let accountName = "Conta Hub";
+      if (targetAccountId) {
+        const { data: acc } = await supabase
+          .from("accounts")
+          .select("name, company_name")
+          .eq("id", targetAccountId)
+          .maybeSingle();
+
+        if (acc) {
+          accountName = acc.company_name || acc.name || accountName;
+        }
+      }
+
+      await supabase.from("account_deletion_audit_logs").insert({
+        account_id: targetAccountId || null,
+        account_name: accountName,
+        owner_email: null,
+        purged_at: new Date().toISOString(),
+        details: {
+          event: "PAYMENT_CHARGEBACK_REQUESTED",
+          payment_id: payment.id,
+          amount: payment.value,
+          message: "Contestação de pagamento (chargeback) solicitada e em análise no Asaas.",
+        },
+      });
+    } else if (event === "PAYMENT_DELETED") {
+      // 1. Marca fatura como 'canceled'
+      if (payment.id) {
+        const { data: existingInv } = await supabase
+          .from("invoices")
+          .select("id, account_id, subscription_id")
+          .eq("asaas_payment_id", payment.id)
+          .maybeSingle();
+
+        if (existingInv) {
+          await supabase
+            .from("invoices")
+            .update({ status: "canceled" })
+            .eq("id", existingInv.id);
+        }
+      }
+
+      // 2. Se a assinatura estava ativa por essa cobrança, trata como PAYMENT_OVERDUE
+      let query = supabase.from("subscriptions").select("id, account_id, status");
+      if (asaasSubscriptionId) {
+        query = query.eq("asaas_subscription_id", asaasSubscriptionId);
+      } else if (accountId) {
+        query = query.eq("account_id", accountId);
+      }
+
+      const { data: sub } = await query.maybeSingle();
+
+      if (sub && sub.status === "active") {
+        await supabase
+          .from("subscriptions")
+          .update({
+            status: "past_due",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", sub.id);
+
+        await supabase
+          .from("accounts")
+          .update({
+            subscription_status: "past_due",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", sub.account_id);
       }
     }
 

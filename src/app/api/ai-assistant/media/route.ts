@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { toProxyPath } from '@/lib/storage/media-src'
 
 async function requireAccountUser() {
   const supabase = await createClient()
@@ -90,11 +91,7 @@ export async function POST(request: Request) {
         )
       }
 
-      const { data: publicUrlData } = supabase.storage
-        .from('ai-service-media')
-        .getPublicUrl(uploadData.path)
-
-      finalMediaUrl = publicUrlData.publicUrl
+      finalMediaUrl = toProxyPath('ai-service-media', uploadData.path)
     } else {
       if (['image', 'video', 'document'].includes(mediaTypeInput)) {
         detectedType = mediaTypeInput as 'image' | 'video' | 'document'

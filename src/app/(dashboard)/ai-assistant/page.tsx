@@ -30,6 +30,7 @@ import {
   AlertTriangle,
   UserCheck,
 } from 'lucide-react'
+import { normalizeMediaSrc } from '@/lib/storage/media-src'
 import { useTranslation } from '@/hooks/use-translation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -1084,7 +1085,7 @@ export default function AIAssistantPage() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="rounded-md border bg-muted/30 p-2 text-xs font-mono truncate">
-                      <a href={item.media_url} target="_blank" rel="noreferrer" className="text-primary hover:underline flex items-center gap-1">
+                      <a href={normalizeMediaSrc(item.media_url) ?? item.media_url} target="_blank" rel="noreferrer" className="text-primary hover:underline flex items-center gap-1">
                         <Eye className="h-3.5 w-3.5" /> {t('aiAssistant.media.viewMedia')}
                       </a>
                     </div>
@@ -1250,7 +1251,7 @@ export default function AIAssistantPage() {
                           <div key={m.id} className="flex items-center gap-2 rounded border bg-background/50 p-2 text-xs">
                             <FileText className="h-4 w-4 text-primary" />
                             <span className="font-medium truncate">{m.title}</span>
-                            <a href={m.media_url} target="_blank" rel="noreferrer" className="ml-auto text-primary hover:underline">
+                            <a href={normalizeMediaSrc(m.media_url) ?? m.media_url} target="_blank" rel="noreferrer" className="ml-auto text-primary hover:underline">
                               {t('aiAssistant.playground.open')}
                             </a>
                           </div>

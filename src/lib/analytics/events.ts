@@ -1,4 +1,5 @@
 import type { UserEventPayload } from "@/types";
+import { getCookiePreferences } from "@/lib/cookies/consent";
 
 declare global {
   interface Window {
@@ -9,7 +10,7 @@ declare global {
 
 /**
  * Dispara um evento para a Camada Própria de Eventos do Flow Hub
- * e retransmite para Microsoft Clarity / Google Analytics 4 se configurados.
+ * e retransmite para Microsoft Clarity / Google Analytics 4 caso o consentimento de cookies esteja concedido.
  */
 export async function trackEvent(
   eventName: string,
@@ -35,14 +36,18 @@ export async function trackEvent(
       // Ignorar erros de rede em telemetria não crítica
     }
 
-    // 2) Retransmitir para Google Analytics 4 (se gtag estiver carregado)
-    if (typeof window.gtag === "function") {
-      window.gtag("event", eventName, eventData);
-    }
+    // Verificar se o usuário consentiu com os cookies de análise antes de transmitir para GA4 e Clarity
+    const consent = getCookiePreferences();
+    if (consent?.analytics) {
+      // 2) Retransmitir para Google Analytics 4 (se gtag estiver carregado)
+      if (typeof window.gtag === "function") {
+        window.gtag("event", eventName, eventData);
+      }
 
-    // 3) Retransmitir marcação para Microsoft Clarity (se clarity estiver carregado)
-    if (typeof window.clarity === "function") {
-      window.clarity("set", eventName, JSON.stringify(eventData));
+      // 3) Retransmitir marcação para Microsoft Clarity (se clarity estiver carregado)
+      if (typeof window.clarity === "function") {
+        window.clarity("set", eventName, JSON.stringify(eventData));
+      }
     }
   }
 }

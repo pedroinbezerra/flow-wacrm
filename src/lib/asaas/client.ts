@@ -193,6 +193,13 @@ export async function createAsaasSubscription(input: AsaasSubscriptionInput): Pr
 }
 
 /**
+ * Fetch details of a specific Subscription in Asaas
+ */
+export async function getAsaasSubscription(subscriptionId: string): Promise<AsaasSubscriptionResponse> {
+  return asaasFetch<AsaasSubscriptionResponse>(`/subscriptions/${subscriptionId}`);
+}
+
+/**
  * Cancel a Subscription in Asaas
  */
 export async function cancelAsaasSubscription(subscriptionId: string): Promise<{ id: string; deleted: boolean }> {

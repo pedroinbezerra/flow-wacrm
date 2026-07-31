@@ -1,6 +1,6 @@
 # Automações e Agendamento de Crons (Automations & Cron Jobs)
 
-Este documento especifica a arquitetura, segurança e agendamento das rotinas em segundo plano no **Flow WACRM**, incluindo a estratégia híbrida para **Vercel Hobby (Zero Custo)** e o procedimento de migração simplificado para **Vercel Pro**.
+Este documento especifica a arquitetura, segurança e agendamento das rotinas em segundo plano no **Flow Hub**, incluindo a estratégia híbrida para **Vercel Hobby (Zero Custo)** e o procedimento de migração simplificado para **Vercel Pro**.
 
 ---
 
@@ -44,13 +44,13 @@ Para `automations/cron` e `flows/cron`, utilize o serviço gratuito [cron-job.or
 
 1. Crie uma conta gratuita em [cron-job.org](https://cron-job.org).
 2. Adicione **Job 1 (Automations)**:
-   - **Title**: `Flow WACRM - Automations Cron`
+   - **Title**: `Flow Hub - Automations Cron`
    - **URL**: `https://seu-dominio.vercel.app/api/automations/cron`
    - **Schedule**: A cada 1 minuto
    - **HTTP Headers**:
      - `x-cron-secret`: `<SEU_AUTOMATION_CRON_SECRET>` *(ou `Authorization: Bearer <SEU_AUTOMATION_CRON_SECRET>`)*
 3. Adicione **Job 2 (Flows Sweep)**:
-   - **Title**: `Flow WACRM - Flows Stale Sweep`
+   - **Title**: `Flow Hub - Flows Stale Sweep`
    - **URL**: `https://seu-dominio.vercel.app/api/flows/cron`
    - **Schedule**: A cada 5 ou 15 minutos
    - **HTTP Headers**:

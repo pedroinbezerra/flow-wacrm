@@ -12,6 +12,8 @@ import { ExternalAnalytics } from "@/components/analytics/external-analytics";
 
 import { DunningBanner } from "@/components/account/dunning-banner";
 import { AccountSuspendedModal } from "@/components/account/account-suspended-modal";
+import { WelcomeRedirector } from "@/components/onboarding/welcome-redirector";
+import { SupportFloatingWidget } from "@/components/support/support-floating-widget";
 
 // Auth-gated dashboard shell. Extracted from the layout so the layout
 // itself can stay a server component and export metadata (noindex) —
@@ -50,6 +52,10 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
     <div id="tour-welcome" className="flex h-screen overflow-hidden bg-background">
       {/* Telemetria e Analytics Externos (Clarity + GA4) */}
       <ExternalAnalytics />
+      {/* Redirecionador automático para o 1º acesso de novos usuários */}
+      <WelcomeRedirector />
+      {/* Widget Flutuante de Suporte ao Cliente em Tempo Real (FAB) */}
+      <SupportFloatingWidget />
       {/* Tour Guiado Interativo (Driver.js) */}
       <GuidedTour />
       {/* Modal de bloqueio por suspensão ou carência de exclusão */}

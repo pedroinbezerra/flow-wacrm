@@ -7,6 +7,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { MODES, THEMES, type Mode, type ThemeId } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 import { SettingsPanelHead } from "./settings-panel-head";
+import { CookiePreferencesTrigger } from "@/components/cookies/cookie-preferences-trigger";
 
 /**
  * Appearance panel — light/dark mode + accent-color picker.
@@ -71,6 +72,18 @@ export function AppearancePanel() {
             />
           ))}
         </div>
+      </div>
+
+      <div className="mt-10 pt-6 border-t border-border/60 space-y-3">
+        <h3 className="text-sm font-semibold text-foreground">
+          Privacidade e Cookies (LGPD)
+        </h3>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Gerencie o consentimento para a utilização de cookies e ferramentas de análise (Google Analytics 4 e Microsoft Clarity).
+        </p>
+        <CookiePreferencesTrigger variant="button" className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-colors">
+          Configurar Preferências de Cookies
+        </CookiePreferencesTrigger>
       </div>
     </section>
   );

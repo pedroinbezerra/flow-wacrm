@@ -219,10 +219,13 @@
     "templates": "Modelos",
     "betaFeatures": "Recursos Beta",
     "adminPlans": "Planos Comerciais",
+    "adminSupport": "Suporte a Clientes",
     "adminAnalytics": "Inteligência Comercial",
     "adminConsumption": "Telemetria & Consumo",
     "adminOnboarding": "Inteligência & Onboarding",
     "aiConfig": "Configuração de IA",
+    "faq": "Central de Ajuda & FAQ",
+    "welcome": "Boas-vindas",
     "signOut": "Sair",
     "beta": "Beta",
     "openMenu": "Abrir menu",
@@ -1288,6 +1291,7 @@
       "yourProfile": "Seu perfil",
       "loginSecurity": "Login e segurança",
       "appearance": "Aparência",
+      "privacy": "Privacidade e cookies",
       "billing": "Plano e Assinatura",
       "whatsapp": "WhatsApp",
       "templates": "Modelos",
@@ -1608,8 +1612,8 @@
       },
       "deleteDialog": {
         "title": "Excluir modelo?",
-        "metaAndLocalDescription": "\"{name}\" será excluído da Meta e do wacrm. Transmissões ativas que usam esse modelo começarão a falhar no próximo envio. Essa ação não pode ser desfeita.",
-        "localOnlyDescription": "\"{name}\" será excluído do wacrm. Este modelo nunca foi enviado à Meta, então não há limpeza remota necessária.",
+        "metaAndLocalDescription": "\"{name}\" será excluído da Meta e do flowhub. Transmissões ativas que usam esse modelo começarão a falhar no próximo envio. Essa ação não pode ser desfeita.",
+        "localOnlyDescription": "\"{name}\" será excluído do flowhub. Este modelo nunca foi enviado à Meta, então não há limpeza remota necessária.",
         "deleting": "Excluindo...",
         "delete": "Excluir"
       },
@@ -1816,6 +1820,16 @@
         "newDesc": "Monte sua campanha escolhendo o modelo da Meta, público-alvo e agendamento.",
         "statsTitle": "Relatórios e Entregas 📊",
         "statsDesc": "Acompanhe métricas em tempo real de mensagens enviadas, entregues e lidas."
+      },
+      "faq": {
+        "headerTitle": "Central de Conhecimento 📚",
+        "headerDesc": "Tire suas dúvidas e aprenda a usar todas as funcionalidades do Flow Hub.",
+        "searchTitle": "Busca Inteligente & 'Você quis dizer?' 🔍",
+        "searchDesc": "Pesquise qualquer palavra ou termo. O sistema sugere correções por trigramas se houver erros de digitação.",
+        "categoriesTitle": "Navegação por Categorias 🏷️",
+        "categoriesDesc": "Filtre os tópicos por módulos do sistema: WhatsApp, Pipelines, Transmissões, Automações e IA.",
+        "listTitle": "Respostas & Atalhos 💡",
+        "listDesc": "Expanda qualquer pergunta para ver os passos detalhados e utilizar o botão de atalho direto para a tela da funcionalidade."
       },
       "pipelines": {
         "headerTitle": "Funil de Vendas (CRM) 📊",

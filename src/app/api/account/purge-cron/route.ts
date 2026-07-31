@@ -56,8 +56,31 @@ async function handlePurgeCron(request: Request) {
     purgedAccountsCount: 0,
     preservedInvoicesCount: 0,
     deletedUsersCount: 0,
+    aiLogsScrubbedCount: 0,
     errors: [] as string[],
   };
+
+  // Expurgo de texto dos logs de execução da IA com mais de 180 dias (minimização de dados)
+  try {
+    const cutoff180DaysAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: scrubbedLogs, error: scrubErr } = await supabase
+      .from("ai_execution_logs")
+      .update({ inbound_message_text: null, outbound_text: null })
+      .lt("created_at", cutoff180DaysAgo)
+      .or("inbound_message_text.not.is.null,outbound_text.not.is.null")
+      .select("id");
+
+    if (scrubErr) {
+      console.error("[purge-cron] failed to scrub AI execution logs:", scrubErr);
+      results.errors.push(`AI logs scrub failed: ${scrubErr.message}`);
+    } else {
+      results.aiLogsScrubbedCount = scrubbedLogs?.length ?? 0;
+    }
+  } catch (scrubException: unknown) {
+    const msg = scrubException instanceof Error ? scrubException.message : "Unknown error";
+    console.error("[purge-cron] exception during AI execution logs scrub:", scrubException);
+    results.errors.push(`AI logs scrub exception: ${msg}`);
+  }
 
   const accountStorageBuckets = ["chat-media", "flow-media", "ai-service-media"];
 
@@ -146,9 +169,10 @@ async function handlePurgeCron(request: Request) {
       }
 
       results.purgedAccountsCount++;
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
       console.error(`[purge-cron] error purging account ${account.id}:`, err);
-      results.errors.push(`Account ${account.id}: ${err?.message || "Unknown error"}`);
+      results.errors.push(`Account ${account.id}: ${msg}`);
     }
   }
 

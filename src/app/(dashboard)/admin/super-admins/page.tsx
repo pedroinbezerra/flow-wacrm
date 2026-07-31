@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { SuperAdminsManager } from "@/components/admin/super-admins-manager";
 
 export const metadata: Metadata = {
-  title: "Operadores da Plataforma | Flow WACRM Admin",
+  title: "Operadores da Plataforma | Flow Hub Admin",
   description: "Gerenciamento global de operadores e Super Admins do sistema.",
 };
 
