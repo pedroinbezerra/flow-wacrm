@@ -941,7 +941,7 @@ export function BillingPanel() {
               Cadastro de CPF ou CNPJ Obrigatório
             </DialogTitle>
             <DialogDescription>
-              Para a emissão oficial da Nota Fiscal (NF-e) e liberação da cobrança pelo Asaas, por favor informe o seu CPF ou CNPJ abaixo.
+              Para a emissão oficial da Nota Fiscal (NF-e) e liberação da cobrança pelo provedor de pagamento, por favor informe o seu CPF ou CNPJ abaixo.
             </DialogDescription>
           </DialogHeader>
 
@@ -961,7 +961,7 @@ export function BillingPanel() {
                 className="w-full rounded-xl border border-border bg-background p-2.5 text-sm text-foreground focus:border-primary focus:outline-none"
               />
               <p className="text-xs text-muted-foreground">
-                Esse dado será salvo de forma segura em sua conta para autorizar o pagamento no Asaas.
+                Esse dado será salvo de forma segura em sua conta para autorizar o pagamento.
               </p>
             </div>
 

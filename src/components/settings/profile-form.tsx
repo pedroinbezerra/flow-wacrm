@@ -342,7 +342,7 @@ export function ProfileForm() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="profile-cpf-cnpj" className="text-foreground font-medium">
-                CPF ou CNPJ (Dados Fiscais / Nota Fiscal Asaas)
+                CPF ou CNPJ (Dados Fiscais / Nota Fiscal)
               </Label>
               <span className="text-[11px] text-muted-foreground">Obrigatório para Emissão de Nota Fiscal</span>
             </div>
