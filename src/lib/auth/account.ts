@@ -150,12 +150,7 @@ export async function getCurrentAccount(): Promise<AccountContext> {
 
   const accountRaw = Array.isArray(data.account)
     ? data.account[0]
-    : (data.account as {
-        id: string;
-        name: string;
-        subscription_status?: string | null;
-        scheduled_deletion_at?: string | null;
-      });
+    : (data.account as Record<string, any>);
 
   return {
     supabase,
@@ -165,8 +160,24 @@ export async function getCurrentAccount(): Promise<AccountContext> {
     account: {
       id: accountRaw.id,
       name: accountRaw.name,
+      owner_user_id: accountRaw.owner_user_id,
+      plan_id: accountRaw.plan_id ?? null,
       subscription_status: accountRaw.subscription_status ?? "active",
       scheduled_deletion_at: accountRaw.scheduled_deletion_at ?? null,
+      trial_ends_at: accountRaw.trial_ends_at ?? null,
+      cpf_cnpj: accountRaw.cpf_cnpj ?? null,
+      company_name: accountRaw.company_name ?? null,
+      phone: accountRaw.phone ?? null,
+      postal_code: accountRaw.postal_code ?? null,
+      address_street: accountRaw.address_street ?? null,
+      address_number: accountRaw.address_number ?? null,
+      address_complement: accountRaw.address_complement ?? null,
+      address_neighborhood: accountRaw.address_neighborhood ?? null,
+      address_city: accountRaw.address_city ?? null,
+      address_state: accountRaw.address_state ?? null,
+      asaas_customer_id: accountRaw.asaas_customer_id ?? null,
+      created_at: accountRaw.created_at,
+      updated_at: accountRaw.updated_at,
     },
   };
 }

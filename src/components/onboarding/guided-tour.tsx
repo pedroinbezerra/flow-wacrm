@@ -39,6 +39,9 @@ export function GuidedTour() {
   }, [user?.id]);
 
   useEffect(() => {
+    // A página de boas-vindas (/welcome) não utiliza tour guiado
+    if (pathname.startsWith("/welcome")) return;
+
     // Aguarda o carregamento do perfil/sessão antes de decidir exibir o tour
     if (profileLoading || completedTours === null) return;
 

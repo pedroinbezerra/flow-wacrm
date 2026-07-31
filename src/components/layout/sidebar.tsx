@@ -46,28 +46,28 @@ const ROLE_CHIP: Record<
     labelKey: "roles.owner",
     // Amber: scarce, immutable, "the boss" — gets visual emphasis.
     className:
-      "border-amber-500/40 bg-amber-500/10 text-amber-300",
+      "border-amber-500/30 bg-amber-500/10 text-amber-400 dark:text-amber-300 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5",
   },
   admin: {
     icon: Shield,
     labelKey: "roles.admin",
     // Primary-tinted: significant but not as scarce as owner.
     className:
-      "border-primary/40 bg-primary/10 text-primary",
+      "border-primary/30 bg-primary/10 text-primary text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5",
   },
   agent: {
     icon: UserCog,
     labelKey: "roles.agent",
     // Neutral slate: the operational default.
     className:
-      "border-border bg-muted text-foreground",
+      "border-border bg-muted/60 text-muted-foreground text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5",
   },
   viewer: {
     icon: User,
     labelKey: "roles.viewer",
     // Muted slate: read-only role; visually quieter than agent.
     className:
-      "border-border bg-card text-muted-foreground",
+      "border-border/60 bg-card text-muted-foreground/80 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5",
   },
 };
 import {
@@ -216,9 +216,9 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                     href={item.href}
                     className={cn(
                       // Taller on mobile so fingers can hit the row reliably (≥44px).
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:py-2",
+                      "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 lg:py-2",
                       isActive
-                        ? "bg-primary/10 text-primary"
+                        ? "bg-primary/10 text-primary font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-r-full before:bg-primary"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
@@ -250,9 +250,9 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                     id={`tour-nav-${item.href.replace("/", "")}`}
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:py-2",
+                      "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 lg:py-2",
                       isActive
-                        ? "bg-primary/10 text-primary"
+                        ? "bg-primary/10 text-primary font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-r-full before:bg-primary"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >

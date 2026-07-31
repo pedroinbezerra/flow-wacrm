@@ -123,7 +123,7 @@ export function BillingPanel() {
         const accData = await accRes.json();
         const acc = accData.account;
         if (acc) {
-          setFiscalCpfCnpj(acc.cpf_cnpj || "");
+          setFiscalCpfCnpj(formatCpfCnpj(acc.cpf_cnpj || ""));
           setFiscalCompanyName(acc.company_name || acc.name || "");
           setFiscalPhone(acc.phone || "");
           setFiscalPostalCode(acc.postal_code || "");
@@ -165,6 +165,9 @@ export function BillingPanel() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Erro ao salvar dados fiscais.");
       toast.success("Dados de faturamento (CPF/CNPJ) atualizados com sucesso!");
+      if (data.account?.cpf_cnpj) {
+        setFiscalCpfCnpj(formatCpfCnpj(data.account.cpf_cnpj));
+      }
     } catch (err: any) {
       toast.error(err.message || "Erro ao atualizar dados fiscais.");
     } finally {

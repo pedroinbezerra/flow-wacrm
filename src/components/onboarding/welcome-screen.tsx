@@ -7,7 +7,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { createClient } from "@/lib/supabase/client";
 import { saveTourCompletion } from "@/lib/onboarding/user-tours";
 import { FlowLogo } from "@/components/layout/flow-logo";
-import { TourTriggerButton } from "@/components/onboarding/tour-trigger-button";
 import {
   Sparkles,
   ArrowRight,
@@ -161,28 +160,28 @@ export function WelcomeScreen() {
         </div>
       </div>
 
-      {/* Card de Recursos e Tour Guiado */}
+      {/* Card de Recursos e Direcionamento ao Dashboard */}
       <div className="flex flex-col items-center justify-between gap-6 rounded-2xl border border-border bg-card p-6 sm:flex-row shadow-xs">
         <div className="space-y-1 text-center sm:text-left">
           <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary mb-1">
             <CheckCircle2 className="size-4" />
-            Primeiros passos guiados
+            Primeiros passos na plataforma
           </div>
-          <h3 className="text-base font-semibold text-foreground">Quer conhecer a plataforma na prática?</h3>
+          <h3 className="text-base font-semibold text-foreground">Tudo pronto para começar!</h3>
           <p className="text-xs text-muted-foreground max-w-lg">
-            Você pode iniciar o Tour Guiado contextual a qualquer momento para aprender a usar os recursos de cada tela.
+            Acesse o Dashboard para visualizar o resumo do seu atendimento e explorar todos os recursos em tempo real.
           </p>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          <TourTriggerButton />
           <button
             type="button"
             disabled={submitting}
             onClick={() => completeWelcome("/dashboard")}
-            className="rounded-xl border border-border bg-muted px-4 py-2 text-xs font-medium text-foreground hover:bg-accent transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
           >
-            Pular para o sistema
+            Acessar o Dashboard
+            <ArrowRight className="size-3.5" />
           </button>
         </div>
       </div>

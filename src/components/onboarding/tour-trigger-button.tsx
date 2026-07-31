@@ -324,7 +324,7 @@ export function TourTriggerButton() {
           },
         },
       ], "ai_assistant");
-    } else {
+    } else if (pathname === "/dashboard" || pathname === "/") {
       // Default: Dashboard Overview
       startTour([
         {
@@ -378,6 +378,8 @@ export function TourTriggerButton() {
       ], "dashboard_overview");
     }
   }, [pathname, startTour, t]);
+
+  if (pathname.startsWith("/welcome")) return null;
 
   return (
     <button
