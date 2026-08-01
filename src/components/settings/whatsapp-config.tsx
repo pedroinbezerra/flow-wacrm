@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Script from 'next/script';
 import { toast } from 'sonner';
 import {
   Eye,
@@ -39,6 +40,8 @@ declare global {
   interface Window {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     FB?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    fbAsyncInit?: any;
   }
 }
 
@@ -404,31 +407,95 @@ export function WhatsAppConfig() {
 
     setConnectingEmbedded(true);
     try {
-      if (typeof window !== 'undefined' && !window.FB) {
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://connect.facebook.net/en_US/sdk.js';
-          script.async = true;
-          script.defer = true;
-          script.onload = () => {
-            window.FB?.init({
+      if (typeof window !== 'undefined') {
+        if (!window.FB) {
+          await new Promise<void>((resolve, reject) => {
+            window.fbAsyncInit = function () {
+              try {
+                window.FB?.init({
+                  appId,
+                  autoLogAppEvents: true,
+                  xfbml: true,
+                  version: 'v21.0',
+                });
+                resolve();
+              } catch (e) {
+                reject(e);
+              }
+            };
+
+            const existing = document.getElementById('facebook-jssdk');
+            if (!existing) {
+              const script = document.createElement('script');
+              script.id = 'facebook-jssdk';
+              script.src = 'https://connect.facebook.net/pt_BR/sdk.js';
+              script.async = true;
+              script.onload = () => {
+                if (window.FB) {
+                  try {
+                    window.FB.init({
+                      appId,
+                      autoLogAppEvents: true,
+                      xfbml: true,
+                      version: 'v21.0',
+                    });
+                  } catch {
+                    /* keep existing init */
+                  }
+                  resolve();
+                }
+              };
+              script.onerror = () =>
+                reject(new Error('Não foi possível carregar o script da Meta. Verifique sua conexão.'));
+              document.body.appendChild(script);
+            } else {
+              let elapsed = 0;
+              const interval = setInterval(() => {
+                elapsed += 100;
+                if (window.FB) {
+                  clearInterval(interval);
+                  try {
+                    window.FB.init({
+                      appId,
+                      autoLogAppEvents: true,
+                      xfbml: true,
+                      version: 'v21.0',
+                    });
+                  } catch {
+                    /* keep existing init */
+                  }
+                  resolve();
+                } else if (elapsed >= 3000) {
+                  clearInterval(interval);
+                  reject(new Error('SDK da Meta não respondeu a tempo. Tente a Auto-Detecção por Token abaixo.'));
+                }
+              }, 100);
+            }
+          });
+        } else {
+          try {
+            window.FB.init({
               appId,
               autoLogAppEvents: true,
               xfbml: true,
               version: 'v21.0',
             });
-            resolve();
-          };
-          script.onerror = () =>
-            reject(new Error('Falha ao carregar o SDK da Meta.'));
-          document.body.appendChild(script);
-        });
+          } catch {
+            /* Keep existing init */
+          }
+        }
       }
 
-      window.FB?.login(
+      if (!window.FB?.login) {
+        toast.error('O SDK da Meta não pôde ser iniciado neste navegador.');
+        setConnectingEmbedded(false);
+        return;
+      }
+
+      window.FB.login(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (response: any) => {
-          if (response.authResponse?.code) {
+          if (response?.authResponse?.code) {
             fetch('/api/whatsapp/embedded-signup', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -445,10 +512,11 @@ export function WhatsAppConfig() {
               })
               .catch((err) => {
                 console.error('Embedded signup POST failed:', err);
-                toast.error('Erro de conexão ao salvar.');
+                toast.error('Erro de conexão ao salvar no servidor.');
               })
               .finally(() => setConnectingEmbedded(false));
           } else {
+            console.warn('[Meta FB.login] User closed or canceled login popup:', response);
             setConnectingEmbedded(false);
           }
         },
@@ -462,11 +530,13 @@ export function WhatsAppConfig() {
         }
       );
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       console.error('Meta SDK init error:', err);
-      toast.error('Não foi possível iniciar o pop-up da Meta. Tente novamente ou utilize a auto-detecção.');
+      toast.error(`Falha no pop-up da Meta: ${msg}`);
       setConnectingEmbedded(false);
     }
   }
+
 
   async function handleDiscoverAccounts() {
     if (!accessToken.trim() || accessToken === MASKED_TOKEN) {
@@ -1119,6 +1189,27 @@ export function WhatsAppConfig() {
         </Card>
       </div>
     </div>
+    <Script
+      id="facebook-jssdk"
+      src="https://connect.facebook.net/pt_BR/sdk.js"
+      strategy="afterInteractive"
+      onLoad={() => {
+        const appId = process.env.NEXT_PUBLIC_META_APP_ID;
+        if (typeof window !== 'undefined' && window.FB && appId) {
+          try {
+            window.FB.init({
+              appId,
+              autoLogAppEvents: true,
+              xfbml: true,
+              version: 'v21.0',
+            });
+          } catch (err) {
+            console.error('Meta FB.init error:', err);
+          }
+        }
+      }}
+    />
     </section>
   );
 }
+
