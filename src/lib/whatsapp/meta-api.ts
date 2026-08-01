@@ -66,6 +66,103 @@ export async function verifyPhoneNumber(
 }
 
 // ============================================================
+// Embedded Signup & Auto-Discovery
+// ============================================================
+
+export interface ExchangeCodeForAccessTokenArgs {
+  code: string
+  appId?: string
+  appSecret?: string
+}
+
+export interface ExchangeCodeResult {
+  accessToken: string
+}
+
+/**
+ * Exchange an OAuth code returned by Meta Embedded Signup for a long-lived access token.
+ */
+export async function exchangeCodeForAccessToken(
+  args: ExchangeCodeForAccessTokenArgs
+): Promise<ExchangeCodeResult> {
+  const { code } = args
+  const appId = args.appId || process.env.NEXT_PUBLIC_META_APP_ID || process.env.META_APP_ID
+  const appSecret = args.appSecret || process.env.META_APP_SECRET
+
+  if (!appId || !appSecret) {
+    throw new Error(
+      'Meta App ID (META_APP_ID / NEXT_PUBLIC_META_APP_ID) and App Secret (META_APP_SECRET) must be set in environment variables to use Embedded Signup.'
+    )
+  }
+
+  const url = `${META_API_BASE}/oauth/access_token?client_id=${encodeURIComponent(appId)}&client_secret=${encodeURIComponent(appSecret)}&code=${encodeURIComponent(code)}`
+  const response = await fetch(url)
+  if (!response.ok) {
+    await throwMetaError(response, `Meta token exchange failed: ${response.status}`)
+  }
+  const data = (await response.json()) as { access_token?: string }
+  if (!data.access_token) {
+    throw new Error('Meta OAuth endpoint did not return an access_token.')
+  }
+  return { accessToken: data.access_token }
+}
+
+export interface DiscoveredPhone {
+  id: string
+  display_phone_number: string
+  verified_name?: string
+  quality_rating?: string
+}
+
+export interface DiscoveredWaba {
+  id: string
+  name: string
+  phone_numbers: DiscoveredPhone[]
+}
+
+export interface DiscoverWhatsAppAccountsArgs {
+  accessToken: string
+}
+
+/**
+ * Discover WABAs and Phone Numbers associated with the given access token via Meta Graph API.
+ */
+export async function discoverWhatsAppAccounts(
+  args: DiscoverWhatsAppAccountsArgs
+): Promise<DiscoveredWaba[]> {
+  const { accessToken } = args
+  const url = `${META_API_BASE}/me/whatsapp_business_accounts?fields=id,name,phone_numbers{id,display_phone_number,verified_name,quality_rating}`
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!response.ok) {
+    await throwMetaError(response, `Meta API error fetching accounts: ${response.status}`)
+  }
+  const data = (await response.json()) as {
+    data?: Array<{
+      id: string
+      name?: string
+      phone_numbers?: {
+        data?: DiscoveredPhone[]
+      }
+    }>
+  }
+
+  const result: DiscoveredWaba[] = []
+  if (Array.isArray(data.data)) {
+    for (const item of data.data) {
+      result.push({
+        id: item.id,
+        name: item.name || `WABA ${item.id}`,
+        phone_numbers: item.phone_numbers?.data || [],
+      })
+    }
+  }
+  return result
+}
+
+
+// ============================================================
 // Cloud API registration (subscription for inbound webhooks)
 // ============================================================
 //

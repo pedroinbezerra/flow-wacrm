@@ -13,6 +13,10 @@ import {
   Zap,
   AlertTriangle,
   RotateCcw,
+  Sparkles,
+  Search,
+  Building2,
+  Smartphone,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
@@ -31,6 +35,13 @@ import {
 } from '@/components/ui/accordion';
 import type { WhatsAppConfig as WhatsAppConfigType } from '@/types';
 
+declare global {
+  interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    FB?: any;
+  }
+}
+
 const MASKED_TOKEN = '••••••••••••••••';
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'unknown';
@@ -39,11 +50,6 @@ type ResetReason = 'token_corrupted' | 'meta_api_error' | null;
 export function WhatsAppConfig() {
   const supabase = createClient();
   const { t } = useTranslation();
-  // After multi-user, whatsapp_config is one-row-per-account, not
-  // one-row-per-user. We pull `accountId` straight off the auth
-  // context and key every read off it — so a teammate who just
-  // joined an account sees the inviter's saved config without
-  // having to re-enter anything.
   const { user, accountId, loading: authLoading, profileLoading } = useAuth();
 
   const [loading, setLoading] = useState(true);
@@ -62,6 +68,23 @@ export function WhatsAppConfig() {
   const [verifyToken, setVerifyToken] = useState('');
   const [pin, setPin] = useState('');
   const [tokenEdited, setTokenEdited] = useState(false);
+
+  // Auto-Discovery state
+  const [discovering, setDiscovering] = useState(false);
+  const [discoveredAccounts, setDiscoveredAccounts] = useState<
+    Array<{
+      id: string;
+      name: string;
+      phone_numbers: Array<{
+        id: string;
+        display_phone_number: string;
+        verified_name?: string;
+      }>;
+    }>
+  >([]);
+  const [selectedWabaId, setSelectedWabaId] = useState('');
+  const [connectingEmbedded, setConnectingEmbedded] = useState(false);
+
 
   // True once /register has succeeded on Meta's side (timestamp set
   // in the row). When false, the saved config is metadata-only and
@@ -367,6 +390,127 @@ export function WhatsAppConfig() {
     toast.success(t('settings.whatsappConfig.webhookCopied'));
   }
 
+  async function handleLaunchEmbeddedSignup() {
+    const appId = process.env.NEXT_PUBLIC_META_APP_ID;
+    const configId = process.env.NEXT_PUBLIC_META_CONFIG_ID;
+
+    if (!appId || !configId) {
+      toast.error(
+        'Para utilizar o cadastro de 1 clique, configure as variáveis NEXT_PUBLIC_META_APP_ID e NEXT_PUBLIC_META_CONFIG_ID no seu arquivo .env.',
+        { duration: 8000 }
+      );
+      return;
+    }
+
+    setConnectingEmbedded(true);
+    try {
+      if (typeof window !== 'undefined' && !window.FB) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://connect.facebook.net/en_US/sdk.js';
+          script.async = true;
+          script.defer = true;
+          script.onload = () => {
+            window.FB?.init({
+              appId,
+              autoLogAppEvents: true,
+              xfbml: true,
+              version: 'v21.0',
+            });
+            resolve();
+          };
+          script.onerror = () =>
+            reject(new Error('Falha ao carregar o SDK da Meta.'));
+          document.body.appendChild(script);
+        });
+      }
+
+      window.FB?.login(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (response: any) => {
+          if (response.authResponse?.code) {
+            fetch('/api/whatsapp/embedded-signup', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code: response.authResponse.code }),
+            })
+              .then((res) => res.json())
+              .then((data) => {
+                if (data.success) {
+                  toast.success('WhatsApp conectado com sucesso via Embedded Signup!');
+                  if (accountId) fetchConfig(accountId);
+                } else {
+                  toast.error(data.error || 'Falha ao processar Embedded Signup');
+                }
+              })
+              .catch((err) => {
+                console.error('Embedded signup POST failed:', err);
+                toast.error('Erro de conexão ao salvar.');
+              })
+              .finally(() => setConnectingEmbedded(false));
+          } else {
+            setConnectingEmbedded(false);
+          }
+        },
+        {
+          config_id: configId,
+          response_type: 'code',
+          override_default_response_type: true,
+          extras: {
+            setup: {},
+          },
+        }
+      );
+    } catch (err) {
+      console.error('Meta SDK init error:', err);
+      toast.error('Não foi possível iniciar o pop-up da Meta. Tente novamente ou utilize a auto-detecção.');
+      setConnectingEmbedded(false);
+    }
+  }
+
+  async function handleDiscoverAccounts() {
+    if (!accessToken.trim() || accessToken === MASKED_TOKEN) {
+      toast.error(t('settings.whatsappConfig.accessTokenRequired'));
+      return;
+    }
+
+    setDiscovering(true);
+    try {
+      const res = await fetch('/api/whatsapp/config/discover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: accessToken.trim() }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        toast.error(data.error || 'Falha na busca de contas da Meta.');
+        return;
+      }
+
+      if (!data.accounts || data.accounts.length === 0) {
+        toast.error('Nenhuma Conta Comercial do WhatsApp (WABA) foi encontrada para este token.');
+        return;
+      }
+
+      setDiscoveredAccounts(data.accounts);
+      toast.success(`${data.accounts.length} conta(s) encontrada(s)! Selecione seu WABA e número abaixo.`);
+
+      const firstWaba = data.accounts[0];
+      setSelectedWabaId(firstWaba.id);
+      setWabaId(firstWaba.id);
+      if (firstWaba.phone_numbers && firstWaba.phone_numbers.length > 0) {
+        setPhoneNumberId(firstWaba.phone_numbers[0].id);
+      }
+    } catch (err) {
+      console.error('Discover error:', err);
+      toast.error('Erro ao buscar contas na Meta API.');
+    } finally {
+      setDiscovering(false);
+    }
+  }
+
+
   if (loading) {
     return (
       <section className="animate-in fade-in-50 duration-200">
@@ -566,61 +710,101 @@ export function WhatsAppConfig() {
           </Alert>
         )}
 
-        {/* API Credentials */}
-        <Card id="tour-whatsapp-credentials">
+        {/* Mode 1: 1-Click Embedded Signup */}
+        <Card className="border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/20">
           <CardHeader>
-            <CardTitle className="text-foreground">{t('settings.whatsappConfig.apiCredentialsTitle')}</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-foreground flex items-center gap-2">
+                <Sparkles className="size-5 text-emerald-600 dark:text-emerald-400" />
+                {t('settings.whatsappConfig.quickConnectTitle')}
+              </CardTitle>
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                Recomendado
+              </span>
+            </div>
             <CardDescription className="text-muted-foreground">
-              {t('settings.whatsappConfig.apiCredentialsDescription')}
+              {t('settings.whatsappConfig.quickConnectDescription')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              onClick={handleLaunchEmbeddedSignup}
+              disabled={connectingEmbedded}
+              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-medium gap-2 text-sm h-10 px-5 shadow-sm"
+            >
+              {connectingEmbedded ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Conectando com a Meta...
+                </>
+              ) : (
+                <>
+                  <Smartphone className="size-4" />
+                  {t('settings.whatsappConfig.connectWithWhatsApp')}
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Mode 2: Auto-Discovery via Access Token */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <Search className="size-5 text-primary" />
+              {t('settings.whatsappConfig.autoDiscoverTitle')}
+            </CardTitle>
+            <CardDescription className="text-muted-foreground">
+              {t('settings.whatsappConfig.autoDiscoverDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-muted-foreground">{t('settings.whatsappConfig.phoneNumberId')}</Label>
-              <Input
-                placeholder={t('settings.whatsappConfig.phoneNumberIdPlaceholder')}
-                value={phoneNumberId}
-                onChange={(e) => setPhoneNumberId(e.target.value)}
-                className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">{t('settings.whatsappConfig.businessAccountId')}</Label>
-              <Input
-                placeholder={t('settings.whatsappConfig.businessAccountIdPlaceholder')}
-                value={wabaId}
-                onChange={(e) => setWabaId(e.target.value)}
-                className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label className="text-muted-foreground">{t('settings.whatsappConfig.accessToken')}</Label>
-              <div className="relative">
-                <Input
-                  type={showToken ? 'text' : 'password'}
-                  placeholder={t('settings.whatsappConfig.accessTokenPlaceholder')}
-                  value={accessToken}
-                  onChange={(e) => {
-                    setAccessToken(e.target.value);
-                    setTokenEdited(true);
-                  }}
-                  onFocus={() => {
-                    if (accessToken === MASKED_TOKEN) {
-                      setAccessToken('');
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    type={showToken ? 'text' : 'password'}
+                    placeholder={t('settings.whatsappConfig.accessTokenPlaceholder')}
+                    value={accessToken}
+                    onChange={(e) => {
+                      setAccessToken(e.target.value);
                       setTokenEdited(true);
-                    }
-                  }}
-                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowToken(!showToken)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    }}
+                    onFocus={() => {
+                      if (accessToken === MASKED_TOKEN) {
+                        setAccessToken('');
+                        setTokenEdited(true);
+                      }
+                    }}
+                    className="bg-muted border-border text-foreground placeholder:text-muted-foreground pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowToken(!showToken)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showToken ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+                <Button
+                  onClick={handleDiscoverAccounts}
+                  disabled={discovering || !accessToken.trim() || accessToken === MASKED_TOKEN}
+                  variant="secondary"
+                  className="shrink-0 gap-2"
                 >
-                  {showToken ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                </button>
+                  {discovering ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      {t('settings.whatsappConfig.discovering')}
+                    </>
+                  ) : (
+                    <>
+                      <Search className="size-4" />
+                      {t('settings.whatsappConfig.autoDiscoverButton')}
+                    </>
+                  )}
+                </Button>
               </div>
               {config && !tokenEdited && (
                 <p className="text-xs text-muted-foreground">
@@ -629,41 +813,129 @@ export function WhatsAppConfig() {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">{t('settings.whatsappConfig.verifyToken')}</Label>
-              <Input
-                placeholder={t('settings.whatsappConfig.verifyTokenPlaceholder')}
-                value={verifyToken}
-                onChange={(e) => setVerifyToken(e.target.value)}
-                className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
-              />
-              <p className="text-xs text-muted-foreground">
-                {t('settings.whatsappConfig.verifyTokenHelp')}
-              </p>
-            </div>
+            {discoveredAccounts.length > 0 && (
+              <div className="space-y-4 pt-2 border-t border-border animate-in fade-in-50">
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground flex items-center gap-1.5">
+                    <Building2 className="size-4 text-primary" />
+                    {t('settings.whatsappConfig.selectAccount')}
+                  </Label>
+                  <select
+                    value={selectedWabaId}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      setSelectedWabaId(id);
+                      setWabaId(id);
+                      const acc = discoveredAccounts.find((a) => a.id === id);
+                      if (acc?.phone_numbers && acc.phone_numbers.length > 0) {
+                        setPhoneNumberId(acc.phone_numbers[0].id);
+                      }
+                    }}
+                    className="w-full h-10 px-3 rounded-md border border-border bg-muted text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    {discoveredAccounts.map((acc) => (
+                      <option key={acc.id} value={acc.id}>
+                        {acc.name} (ID: {acc.id})
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">
-                {t('settings.whatsappConfig.twoStepPin')}
-                <span className="ml-1 text-muted-foreground">{t('settings.whatsappConfig.optional')}</span>
-              </Label>
-              <Input
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder={t('settings.whatsappConfig.pinPlaceholder')}
-                value={pin}
-                onChange={(e) =>
-                  setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
-                }
-                className="bg-muted border-border text-foreground placeholder:text-muted-foreground tracking-widest"
-              />
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {t('settings.whatsappConfig.pinHelp')}
-              </p>
-            </div>
+                {selectedWabaId && (
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground flex items-center gap-1.5">
+                      <Smartphone className="size-4 text-primary" />
+                      {t('settings.whatsappConfig.selectPhone')}
+                    </Label>
+                    <select
+                      value={phoneNumberId}
+                      onChange={(e) => setPhoneNumberId(e.target.value)}
+                      className="w-full h-10 px-3 rounded-md border border-border bg-muted text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      {discoveredAccounts
+                        .find((a) => a.id === selectedWabaId)
+                        ?.phone_numbers.map((phone) => (
+                          <option key={phone.id} value={phone.id}>
+                            {phone.display_phone_number} {phone.verified_name ? `(${phone.verified_name})` : ''} - ID: {phone.id}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* Mode 3: Manual API Credentials (Advanced) */}
+        <Accordion className="w-full border border-border rounded-lg bg-card px-4">
+          <AccordionItem value="manual-config" className="border-none">
+            <AccordionTrigger className="text-foreground hover:no-underline text-base font-semibold py-4">
+              <span className="flex items-center gap-2">
+                {t('settings.whatsappConfig.manualConfigTitle')}
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-2 pb-4">
+              <p className="text-xs text-muted-foreground mb-4">
+                {t('settings.whatsappConfig.manualConfigDescription')}
+              </p>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">{t('settings.whatsappConfig.phoneNumberId')}</Label>
+                <Input
+                  placeholder={t('settings.whatsappConfig.phoneNumberIdPlaceholder')}
+                  value={phoneNumberId}
+                  onChange={(e) => setPhoneNumberId(e.target.value)}
+                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">{t('settings.whatsappConfig.businessAccountId')}</Label>
+                <Input
+                  placeholder={t('settings.whatsappConfig.businessAccountIdPlaceholder')}
+                  value={wabaId}
+                  onChange={(e) => setWabaId(e.target.value)}
+                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">{t('settings.whatsappConfig.verifyToken')}</Label>
+                <Input
+                  placeholder={t('settings.whatsappConfig.verifyTokenPlaceholder')}
+                  value={verifyToken}
+                  onChange={(e) => setVerifyToken(e.target.value)}
+                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t('settings.whatsappConfig.verifyTokenHelp')}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">
+                  {t('settings.whatsappConfig.twoStepPin')}
+                  <span className="ml-1 text-muted-foreground">{t('settings.whatsappConfig.optional')}</span>
+                </Label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder={t('settings.whatsappConfig.pinPlaceholder')}
+                  value={pin}
+                  onChange={(e) =>
+                    setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
+                  }
+                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground tracking-widest"
+                />
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t('settings.whatsappConfig.pinHelp')}
+                </p>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+
 
         {/* Webhook URL */}
         <Card id="tour-whatsapp-webhook">
