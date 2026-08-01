@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import Script from "next/script";
 import { getCookiePreferences, COOKIE_CONSENT_EVENT_NAME, CookiePreferences } from "@/lib/cookies/consent";
+import { useAuth } from "@/hooks/use-auth";
 
 export function ExternalAnalytics() {
   const clarityId = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
   const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
   const [analyticsAllowed, setAnalyticsAllowed] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     // Verificar consentimento inicial
@@ -33,6 +35,42 @@ export function ExternalAnalytics() {
     };
   }, []);
 
+  // Injeção garantida do script do Microsoft Clarity no DOM quando o consentimento é fornecido
+  useEffect(() => {
+    if (!analyticsAllowed) return;
+
+    if (!clarityId) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[Clarity] Variável NEXT_PUBLIC_CLARITY_PROJECT_ID não definida. O rastreamento do Clarity está desativado.");
+      }
+      return;
+    }
+
+    if (typeof window === "undefined") return;
+
+    // Inicializa objeto window.clarity se ainda não existir
+    const win = window as any;
+    win.clarity = win.clarity || function () {
+      (win.clarity.q = win.clarity.q || []).push(arguments);
+    };
+
+    // Identifica o usuário logado no Clarity para vincular gravações de sessão
+    if (user?.id) {
+      try {
+        win.clarity("identify", user.id);
+      } catch (_e) {}
+    }
+
+    // Garante que a tag do script exista no head
+    if (!document.getElementById("microsoft-clarity-script")) {
+      const script = document.createElement("script");
+      script.id = "microsoft-clarity-script";
+      script.async = true;
+      script.src = `https://www.clarity.ms/tag/${clarityId}`;
+      document.head.appendChild(script);
+    }
+  }, [analyticsAllowed, clarityId, user?.id]);
+
   // LGPD: Nenhuma ferramenta opcional de rastreamento é carregada antes do consentimento
   if (!analyticsAllowed) {
     return null;
@@ -40,23 +78,6 @@ export function ExternalAnalytics() {
 
   return (
     <>
-      {/* Microsoft Clarity Script */}
-      {clarityId && (
-        <Script
-          id="microsoft-clarity-init"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function(c,l,a,r,i,t,y){
-                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-              })(window, document, "clarity", "script", "${clarityId}");
-            `,
-          }}
-        />
-      )}
-
       {/* Google Analytics 4 (GA4) Script */}
       {gaId && (
         <>
