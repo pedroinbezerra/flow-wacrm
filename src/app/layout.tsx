@@ -80,6 +80,32 @@ const THEME_BOOT_SCRIPT = `
 })();
 `;
 
+const META_SDK_BOOT_SCRIPT = `
+window.fbAsyncInit = function() {
+  if (typeof FB !== 'undefined') {
+    FB.init({
+      appId      : ${JSON.stringify(process.env.NEXT_PUBLIC_META_APP_ID || '')},
+      cookie     : true,
+      xfbml      : true,
+      version    : 'v21.0'
+    });
+  }
+};
+
+(function(d, s, id){
+   var js, fjs = d.getElementsByTagName(s)[0];
+   if (d.getElementById(id)) {return;}
+   js = d.createElement(s); js.id = id;
+   js.src = "https://connect.facebook.net/pt_BR/sdk.js";
+   if (fjs && fjs.parentNode) {
+     fjs.parentNode.insertBefore(js, fjs);
+   } else {
+     d.body.appendChild(js);
+   }
+ }(document, 'script', 'facebook-jssdk'));
+`;
+
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -99,6 +125,13 @@ export default function RootLayout({
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }}
         />
+        {process.env.NEXT_PUBLIC_META_APP_ID && (
+          <Script
+            id="facebook-sdk-boot"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{ __html: META_SDK_BOOT_SCRIPT }}
+          />
+        )}
       </head>
       <body className="min-h-full bg-background text-foreground font-sans">
         <I18nProvider>
