@@ -151,8 +151,10 @@ export function WhatsAppConfig() {
       }
       // Clear any stale probe result when reloading the row.
       setRegistrationProbe(null);
+      // Turn off full-page loading spinner immediately so the UI displays instantly!
+      setLoading(false);
 
-      // Then verify health via the API (decrypts token + pings Meta)
+      // Then verify health asynchronously via Meta API without blocking UI rendering
       if (data) {
         try {
           const res = await fetch('/api/whatsapp/config', { method: 'GET' });
@@ -182,7 +184,8 @@ export function WhatsAppConfig() {
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, [supabase, t]);
+
 
   useEffect(() => {
     // Need both the auth session (`!authLoading`) AND the profile
