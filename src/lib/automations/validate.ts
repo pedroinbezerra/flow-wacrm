@@ -77,6 +77,11 @@ function validateOne(step: StepLike, path: string, issues: ValidationIssue[]): v
         })
       }
       break
+    case 'assign_board':
+      if (!nonEmpty(c.board_id)) {
+        issues.push({ path: `${path}.board_id`, message: 'board is required' })
+      }
+      break
     case 'update_contact_field':
       if (!nonEmpty(c.field)) {
         issues.push({ path: `${path}.field`, message: 'field name is required' })

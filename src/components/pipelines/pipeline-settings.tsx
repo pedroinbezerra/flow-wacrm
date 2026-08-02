@@ -18,7 +18,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
 import { useTranslation } from "@/hooks/use-translation";
-import type { Pipeline, PipelineStage } from "@/types";
+import type { AccountMember, Pipeline, PipelineStage } from "@/types";
 import {
   Dialog,
   DialogContent,
@@ -79,17 +79,36 @@ export function PipelineSettings({
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [accountMembers, setAccountMembers] = useState<AccountMember[]>([]);
+  const [pipelineUserIds, setPipelineUserIds] = useState<string[]>([]);
 
-  // Reset form state when the dialog opens or its prop inputs change
-  // — legitimate prop-driven sync.
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    if (!open) return;
+    if (!open || !pipeline.id) return;
     setName(pipeline.name);
     setLocalStages([...stages].sort((a, b) => a.position - b.position));
     setShowDeleteConfirm(false);
-  }, [open, pipeline, stages]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [mRes, pmRes] = await Promise.all([
+          fetch("/api/account/members", { cache: "no-store" }),
+          fetch(`/api/pipelines/${pipeline.id}/members`, { cache: "no-store" }),
+        ]);
+        const mJson = await mRes.json().catch(() => ({}));
+        const pmJson = await pmRes.json().catch(() => ({}));
+        if (cancelled) return;
+        setAccountMembers(mJson.members ?? []);
+        setPipelineUserIds((pmJson.members ?? []).map((m: { user_id: string }) => m.user_id));
+      } catch {
+        // ignore
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, pipeline.id, pipeline.name, stages]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -105,11 +124,9 @@ export function PipelineSettings({
   }
 
   async function handleSave() {
+    if (!name.trim()) return;
     setSaving(true);
 
-    // One upsert for all stages — batches N stage writes into a single
-    // round-trip. Previous implementation did N sequential UPDATEs which
-    // latency-scaled linearly with stage count.
     const stageRows = localStages.map((s, i) => ({
       id: s.id,
       pipeline_id: s.pipeline_id,
@@ -124,6 +141,11 @@ export function PipelineSettings({
         .update({ name: name.trim() })
         .eq("id", pipeline.id),
       supabase.from("pipeline_stages").upsert(stageRows, { onConflict: "id" }),
+      fetch(`/api/pipelines/${pipeline.id}/members`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userIds: pipelineUserIds }),
+      }),
     ]);
 
     setSaving(false);
@@ -332,6 +354,38 @@ export function PipelineSettings({
                 <Plus className="mr-1 h-3 w-3" />
                 {t("pipelines.createNewPipeline")}
               </Button>
+
+              <div className="grid gap-2 border-t border-border pt-3">
+                <Label className="text-muted-foreground">Membros com acesso a este Funil</Label>
+                <p className="text-xs text-muted-foreground">
+                  Se nenhum membro for selecionado, todos na conta têm acesso por padrão.
+                </p>
+                <div className="max-h-36 space-y-1.5 overflow-y-auto pr-1">
+                  {accountMembers.map((member) => (
+                    <label
+                      key={member.user_id}
+                      className="flex cursor-pointer items-center justify-between rounded-md border border-border bg-muted/40 p-2 text-xs hover:bg-muted"
+                    >
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={pipelineUserIds.includes(member.user_id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setPipelineUserIds((prev) => [...prev, member.user_id]);
+                            } else {
+                              setPipelineUserIds((prev) => prev.filter((id) => id !== member.user_id));
+                            }
+                          }}
+                          className="h-3.5 w-3.5 rounded border-border text-primary"
+                        />
+                        <span className="font-medium text-foreground">{member.full_name || member.email}</span>
+                      </div>
+                      <span className="capitalize text-[10px] text-muted-foreground">{member.role}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <DialogFooter className="border-border bg-popover/50">

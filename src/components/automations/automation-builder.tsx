@@ -30,6 +30,7 @@ import {
   Loader2,
   ArrowDown,
   ArrowUp,
+  FolderKanban,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -46,9 +47,12 @@ import type {
   AccountMember,
   AutomationStepType,
   AutomationTriggerType,
+  ConversationBoard,
   CustomField,
   KeywordMatchTriggerConfig,
   MessageTemplate,
+  Pipeline,
+  PipelineStage,
   Tag as TagRecord,
 } from "@/types"
 import { createClient } from "@/lib/supabase/client"
@@ -96,6 +100,7 @@ function getStepMeta(t: (key: string) => string, type: AutomationStepType): Step
     add_tag: { label: t("automations.addTag"), icon: Tag, border: "border-l-primary" },
     remove_tag: { label: t("automations.removeTag"), icon: TagIcon, border: "border-l-primary" },
     assign_conversation: { label: t("automations.assignConversation"), icon: UserCheck, border: "border-l-primary" },
+    assign_board: { label: t("automations.assignBoard"), icon: FolderKanban, border: "border-l-primary" },
     update_contact_field: { label: t("automations.updateContactField"), icon: PencilLine, border: "border-l-primary" },
     create_deal: { label: t("automations.createDeal"), icon: Briefcase, border: "border-l-primary" },
     wait: { label: t("automations.wait"), icon: Hourglass, border: "border-l-border" },
@@ -112,6 +117,7 @@ const ADDABLE_STEPS: AutomationStepType[] = [
   "add_tag",
   "remove_tag",
   "assign_conversation",
+  "assign_board",
   "update_contact_field",
   "create_deal",
   "wait",
@@ -156,6 +162,8 @@ function blankConfig(type: AutomationStepType): Record<string, unknown> {
       return { tag_id: "" }
     case "assign_conversation":
       return { mode: "round_robin" }
+    case "assign_board":
+      return { board_id: "", lane_id: "" }
     case "update_contact_field":
       return { field: "name", value: "" }
     case "create_deal":
@@ -183,11 +191,15 @@ function blankConfig(type: AutomationStepType): Record<string, unknown> {
 // an older deployment), so an automation is always authorable.
 // ------------------------------------------------------------
 
+export type PipelineWithStages = Pipeline & { stages?: PipelineStage[] }
+
 interface AutomationResources {
   tags: TagRecord[]
   members: AccountMember[]
   templates: MessageTemplate[]
   customFields: CustomField[]
+  boards: ConversationBoard[]
+  pipelines: PipelineWithStages[]
 }
 
 const ResourcesContext = createContext<AutomationResources>({
@@ -195,6 +207,8 @@ const ResourcesContext = createContext<AutomationResources>({
   members: [],
   templates: [],
   customFields: [],
+  boards: [],
+  pipelines: [],
 })
 
 function useResources(): AutomationResources {
@@ -206,17 +220,15 @@ function ResourcesProvider({ children }: { children: ReactNode }) {
   const [members, setMembers] = useState<AccountMember[]>([])
   const [templates, setTemplates] = useState<MessageTemplate[]>([])
   const [customFields, setCustomFields] = useState<CustomField[]>([])
+  const [boards, setBoards] = useState<ConversationBoard[]>([])
+  const [pipelines, setPipelines] = useState<PipelineWithStages[]>([])
 
   useEffect(() => {
     let cancelled = false
     const supabase = createClient()
 
-    // Tags, templates and custom fields come straight from the DB — RLS
-    // scopes them to the caller's account. Only APPROVED templates can
-    // actually be sent (anything else 400s at send time), matching the
-    // broadcast picker.
     void (async () => {
-      const [tagsRes, templatesRes, customFieldsRes] = await Promise.all([
+      const [tagsRes, templatesRes, customFieldsRes, boardsRes, pipelinesRes] = await Promise.all([
         supabase.from("tags").select("*").order("name"),
         supabase
           .from("message_templates")
@@ -224,16 +236,17 @@ function ResourcesProvider({ children }: { children: ReactNode }) {
           .eq("status", "APPROVED")
           .order("name"),
         supabase.from("custom_fields").select("*").order("field_name"),
+        supabase.from("conversation_boards").select("*, lanes:conversation_board_lanes(*)").order("name"),
+        supabase.from("pipelines").select("*, stages:pipeline_stages(*)").order("name"),
       ])
       if (cancelled) return
       setTags((tagsRes.data as TagRecord[] | null) ?? [])
       setTemplates((templatesRes.data as MessageTemplate[] | null) ?? [])
       setCustomFields((customFieldsRes.data as CustomField[] | null) ?? [])
+      setBoards((boardsRes.data as ConversationBoard[] | null) ?? [])
+      setPipelines((pipelinesRes.data as PipelineWithStages[] | null) ?? [])
     })()
 
-    // Members go through the API so we inherit its email-visibility
-    // rules (agents/viewers don't see emails). Unreachable on older
-    // deployments → pickers fall back to a raw agent-id input.
     void (async () => {
       try {
         const res = await fetch("/api/account/members", { cache: "no-store" })
@@ -251,7 +264,7 @@ function ResourcesProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <ResourcesContext.Provider value={{ tags, members, templates, customFields }}>
+    <ResourcesContext.Provider value={{ tags, members, templates, customFields, boards, pipelines }}>
       {children}
     </ResourcesContext.Provider>
   )
@@ -1073,6 +1086,7 @@ function StepEditor({
   onChange: (s: BuilderStep) => void
 }) {
   const { t } = useTranslation()
+  const resources = useResources()
   const cfg = step.step_config
   const set = (patch: Record<string, unknown>) =>
     onChange({ ...step, step_config: { ...cfg, ...patch } })
@@ -1153,22 +1167,108 @@ function StepEditor({
           </FieldBlock>
         </>
       )
-    case "create_deal":
+    case "assign_board": {
+      const selectedBoard = resources.boards.find((b) => b.id === cfg.board_id)
+      const lanes = selectedBoard?.lanes ?? []
+      return (
+        <>
+          <FieldBlock label={t("automations.board")}>
+            {resources.boards.length > 0 ? (
+              <select
+                value={(cfg.board_id as string) ?? ""}
+                onChange={(e) => set({ board_id: e.target.value, lane_id: "" })}
+                className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+              >
+                <option value="">{t("automations.selectBoard")}</option>
+                {resources.boards.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <Input
+                value={(cfg.board_id as string) ?? ""}
+                onChange={(e) => set({ board_id: e.target.value })}
+                placeholder="ID do Board"
+                className="bg-muted text-foreground"
+              />
+            )}
+          </FieldBlock>
+          <FieldBlock label={t("automations.lane")}>
+            {lanes.length > 0 ? (
+              <select
+                value={(cfg.lane_id as string) ?? ""}
+                onChange={(e) => set({ lane_id: e.target.value })}
+                className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+              >
+                <option value="">{t("automations.selectLane")}</option>
+                {lanes.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <Input
+                value={(cfg.lane_id as string) ?? (cfg.lane_key as string) ?? ""}
+                onChange={(e) => set({ lane_id: e.target.value })}
+                placeholder="ID ou Chave da Raia (opcional)"
+                className="bg-muted text-foreground"
+              />
+            )}
+          </FieldBlock>
+        </>
+      )
+    }
+    case "create_deal": {
+      const selectedPipeline = resources.pipelines.find((p) => p.id === cfg.pipeline_id)
+      const stages = selectedPipeline?.stages ?? []
       return (
         <>
           <FieldBlock label={t("automations.pipelineId")}>
-            <Input
-              value={(cfg.pipeline_id as string) ?? ""}
-              onChange={(e) => set({ pipeline_id: e.target.value })}
-              className="bg-muted text-foreground"
-            />
+            {resources.pipelines.length > 0 ? (
+              <select
+                value={(cfg.pipeline_id as string) ?? ""}
+                onChange={(e) => set({ pipeline_id: e.target.value, stage_id: "" })}
+                className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+              >
+                <option value="">{t("automations.pipelineId")}</option>
+                {resources.pipelines.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <Input
+                value={(cfg.pipeline_id as string) ?? ""}
+                onChange={(e) => set({ pipeline_id: e.target.value })}
+                className="bg-muted text-foreground"
+              />
+            )}
           </FieldBlock>
           <FieldBlock label={t("automations.stageId")}>
-            <Input
-              value={(cfg.stage_id as string) ?? ""}
-              onChange={(e) => set({ stage_id: e.target.value })}
-              className="bg-muted text-foreground"
-            />
+            {stages.length > 0 ? (
+              <select
+                value={(cfg.stage_id as string) ?? ""}
+                onChange={(e) => set({ stage_id: e.target.value })}
+                className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+              >
+                <option value="">{t("automations.stageId")}</option>
+                {stages.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <Input
+                value={(cfg.stage_id as string) ?? ""}
+                onChange={(e) => set({ stage_id: e.target.value })}
+                className="bg-muted text-foreground"
+              />
+            )}
           </FieldBlock>
           <FieldBlock label={t("automations.title")}>
             <Input
@@ -1187,6 +1287,7 @@ function StepEditor({
           </FieldBlock>
         </>
       )
+    }
     case "wait":
       return (
         <div className="grid grid-cols-2 gap-2">

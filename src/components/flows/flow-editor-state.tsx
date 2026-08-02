@@ -344,12 +344,12 @@ export function FlowEditorProvider({
       });
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
-        throw new Error(json.error ?? `Save failed: ${res.status}`);
+        throw new Error(json.error ?? `Falha ao salvar: ${res.status}`);
       }
       setDirty(false);
-      toast.success("Saved.");
+      toast.success("Fluxo salvo com sucesso.");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Save failed";
+      const msg = err instanceof Error ? err.message : "Falha ao salvar";
       toast.error(msg);
     } finally {
       setSaving(false);
@@ -360,7 +360,7 @@ export function FlowEditorProvider({
   const setStatus = useCallback(
     async (next: BuilderState["status"]) => {
       if (next === "active" && !canActivate) {
-        toast.error("Fix the issues below before activating.");
+        toast.error("Corrija os problemas indicados abaixo antes de ativar.");
         return;
       }
       setActivating(true);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, useTransition, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -27,6 +27,7 @@ import {
 export default function SettingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
   const { defaultCurrency } = useAuth();
   const { t } = useTranslation();
   const { mode } = useTheme();
@@ -40,7 +41,9 @@ export default function SettingsPage() {
   const go = (next: SettingsSection) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', next);
-    router.replace(`/settings?${params.toString()}`, { scroll: false });
+    startTransition(() => {
+      router.replace(`/settings?${params.toString()}`, { scroll: false });
+    });
   };
 
   // Cheap, fetch-free rail hints. The Overview landing carries the

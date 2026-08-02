@@ -327,7 +327,7 @@ export function MessageComposer({
     } catch {
       void recorderRef.current?.stop().catch(() => {});
       recorderRef.current = null;
-      toast.error("Microphone access denied or unavailable.");
+      toast.error("Acesso ao microfone negado ou indisponível.");
     }
   }, [inputsDisabled, busy, recording, finalizeRecording]);
 

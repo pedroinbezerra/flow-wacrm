@@ -845,7 +845,7 @@ export function MessageThread({
         return;
       }
       if (messageId.startsWith("temp-")) {
-        toast.error("Wait for the message to finish sending");
+        toast.error("Aguarde a mensagem terminar de ser enviada");
         return;
       }
 

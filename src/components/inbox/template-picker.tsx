@@ -316,11 +316,11 @@ export function TemplatePicker({
                       [slot.index]: e.target.value,
                     }))
                   }
-                  placeholder="URL suffix value"
+                  placeholder="Valor do sufixo da URL"
                   className="border-border bg-muted text-foreground placeholder:text-muted-foreground"
                 />
                 <p className="text-[10px] text-muted-foreground break-all">
-                  Final URL: {slot.url.replace(/\{\{1\}\}/g, buttonParams[slot.index] || "{{1}}")}
+                  URL final: {slot.url.replace(/\{\{1\}\}/g, buttonParams[slot.index] || "{{1}}")}
                 </p>
               </div>
             ))}

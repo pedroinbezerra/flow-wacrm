@@ -1,6 +1,6 @@
 'use client'
 
-import { useContext } from 'react'
+import { useContext, useCallback } from 'react'
 import { I18nContext } from '@/lib/i18n/provider'
 
 type DictPath = 'common' | 'metadata' | 'auth' | 'navigation' | 'dashboard' | 'contacts' | 'broadcasts' | 'pipelines' | 'flows' | 'inbox' | 'settings' | 'errors' | 'time'
@@ -28,11 +28,14 @@ export function useTranslation(): UseTranslationReturn {
     throw new Error('useTranslation must be used within I18nProvider')
   }
 
-  const t = (key: string, params?: Record<string, string | number>, defaultValue: string = key): string => {
-    const value = getNestedValue(context.messages, key)
-    const text = typeof value === 'string' ? value : defaultValue
-    return interpolate(text, params)
-  }
+  const t = useCallback(
+    (key: string, params?: Record<string, string | number>, defaultValue: string = key): string => {
+      const value = getNestedValue(context.messages, key)
+      const text = typeof value === 'string' ? value : defaultValue
+      return interpolate(text, params)
+    },
+    [context.messages],
+  )
 
   return { t, locale: context.locale }
 }

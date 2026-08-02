@@ -79,7 +79,7 @@ function FunnelChart({ steps }: { steps: FunnelStep[] }) {
   const max = Math.max(...steps.map((s) => s.value), 1);
   return (
     <div className="rounded-xl border border-border bg-card p-4">
-      <h3 className="mb-4 text-sm font-medium text-foreground">Funnel</h3>
+      <h3 className="mb-4 text-sm font-medium text-foreground">Funil de Vendas</h3>
       <div className="space-y-2">
         {steps.map((step) => {
           const pctOfMax = Math.max(5, Math.round((step.value / max) * 100));
@@ -472,13 +472,13 @@ export default function BroadcastDetailPage() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="text-muted-foreground">Contact</TableHead>
-                  <TableHead className="text-muted-foreground">Phone</TableHead>
+                  <TableHead className="text-muted-foreground">Contato</TableHead>
+                  <TableHead className="text-muted-foreground">Telefone</TableHead>
                   <TableHead className="text-muted-foreground">Status</TableHead>
-                  <TableHead className="text-muted-foreground">Sent</TableHead>
-                  <TableHead className="text-muted-foreground">Delivered</TableHead>
-                  <TableHead className="text-muted-foreground">Read</TableHead>
-                  <TableHead className="text-muted-foreground">Error</TableHead>
+                  <TableHead className="text-muted-foreground">Enviado</TableHead>
+                  <TableHead className="text-muted-foreground">Entregue</TableHead>
+                  <TableHead className="text-muted-foreground">Lido</TableHead>
+                  <TableHead className="text-muted-foreground">Erro</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

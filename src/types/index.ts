@@ -463,6 +463,22 @@ export interface ConversationBoardGroup {
   updated_at: string;
 }
 
+export interface PipelineMember {
+  id: string;
+  account_id: string;
+  pipeline_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+export interface ConversationBoardMember {
+  id: string;
+  account_id: string;
+  board_id: string;
+  user_id: string;
+  created_at: string;
+}
+
 export interface ConversationBoard {
   id: string;
   account_id: string;
@@ -477,6 +493,7 @@ export interface ConversationBoard {
   updated_at: string;
   group?: ConversationBoardGroup | null;
   lanes?: ConversationBoardLaneConfig[];
+  members?: ConversationBoardMember[];
 }
 
 export interface ConversationBoardItem {
@@ -607,6 +624,7 @@ export type AutomationStepType =
   | 'add_tag'
   | 'remove_tag'
   | 'assign_conversation'
+  | 'assign_board'
   | 'update_contact_field'
   | 'create_deal'
   | 'wait'
@@ -703,11 +721,18 @@ export interface SendWebhookStepConfig {
   body_template?: string;
 }
 
+export interface AssignBoardStepConfig {
+  board_id: string;
+  lane_id?: string;
+  lane_key?: string;
+}
+
 export type AutomationStepConfig =
   | SendMessageStepConfig
   | SendTemplateStepConfig
   | TagStepConfig
   | AssignConversationStepConfig
+  | AssignBoardStepConfig
   | UpdateContactFieldStepConfig
   | CreateDealStepConfig
   | WaitStepConfig

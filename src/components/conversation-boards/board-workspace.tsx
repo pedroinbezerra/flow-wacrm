@@ -21,6 +21,7 @@ import { normalizeConversationPreview } from "@/lib/conversation-preview";
 import { useRealtime } from "@/hooks/use-realtime";
 import { listConversationBoards, listConversationBoardGroups, listConversationBoardItems } from "@/lib/conversation-boards/queries";
 import type {
+  AccountMember,
   Contact,
   Conversation,
   ConversationBoard,
@@ -61,6 +62,7 @@ import {
   Trash2,
   UsersRound,
   MessageSquare,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MessageThread } from "@/components/inbox/message-thread";
@@ -746,6 +748,52 @@ export function BoardWorkspace() {
     }
   }, [editableLanes, refreshBoards, refreshItems, saveLanesErrorText, selectedBoardId, t]);
 
+  const [manageMembersOpen, setManageMembersOpen] = useState(false);
+  const [accountMembers, setAccountMembers] = useState<AccountMember[]>([]);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+
+  const openMemberManager = useCallback(async () => {
+    if (!selectedBoardId) return;
+    setManageMembersOpen(true);
+    setLoadingMembers(true);
+    try {
+      const [membersRes, boardMembersRes] = await Promise.all([
+        fetch("/api/account/members", { cache: "no-store" }),
+        fetch(`/api/conversation-boards/${selectedBoardId}/members`, { cache: "no-store" }),
+      ]);
+      const membersJson = await membersRes.json().catch(() => ({}));
+      const boardMembersJson = await boardMembersRes.json().catch(() => ({}));
+
+      setAccountMembers(membersJson.members ?? []);
+      const assignedIds = (boardMembersJson.members ?? []).map((m: { user_id: string }) => m.user_id);
+      setSelectedUserIds(assignedIds);
+    } catch (err) {
+      console.error("Failed to load board members:", err);
+    } finally {
+      setLoadingMembers(false);
+    }
+  }, [selectedBoardId]);
+
+  const saveBoardMembers = useCallback(async () => {
+    if (!selectedBoardId) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/conversation-boards/${selectedBoardId}/members`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userIds: selectedUserIds }),
+      });
+      if (!res.ok) throw new Error("Failed to save permissions");
+      toast.success("Permissões do board salvas com sucesso!");
+      setManageMembersOpen(false);
+    } catch (err) {
+      toast.error("Falha ao salvar permissões do board");
+    } finally {
+      setSaving(false);
+    }
+  }, [selectedBoardId, selectedUserIds]);
+
   return (
     <div className="space-y-4">
       <div id="tour-boards-header" className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -775,10 +823,16 @@ export function BoardWorkspace() {
                 {t("boards.newBoard", {}, "Novo board")}
               </Button>
               {selectedBoardId && (
-                <Button variant="outline" onClick={openLaneManager}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  {t("boards.manageLanes", {}, "Gerenciar raias")}
-                </Button>
+                <>
+                  <Button variant="outline" onClick={openMemberManager}>
+                    <ShieldCheck className="mr-2 h-4 w-4" />
+                    Permissões
+                  </Button>
+                  <Button variant="outline" onClick={openLaneManager}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    {t("boards.manageLanes", {}, "Gerenciar raias")}
+                  </Button>
+                </>
               )}
             </>
           )}
@@ -1265,6 +1319,70 @@ export function BoardWorkspace() {
             </Button>
             <Button onClick={() => void saveEditableLanes()} disabled={saving}>
               {saving ? t("common.saving", {}, "Salvando...") : t("common.save", {}, "Salvar")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={manageMembersOpen} onOpenChange={setManageMembersOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Permissões de Acesso ao Board</DialogTitle>
+            <DialogDescription>
+              Selecione quais usuários têm permissão para visualizar este Board. Se nenhum for selecionado, todos os membros da conta têm acesso por padrão.
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingMembers ? (
+            <div className="flex items-center justify-center py-6">
+              <RefreshCw className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="max-h-60 space-y-2 overflow-y-auto pr-1">
+              {accountMembers.length === 0 ? (
+                <p className="py-4 text-center text-xs text-muted-foreground">Nenhum membro encontrado.</p>
+              ) : (
+                accountMembers.map((member) => {
+                  const checked = selectedUserIds.includes(member.user_id);
+                  return (
+                    <label
+                      key={member.user_id}
+                      className="flex cursor-pointer items-center justify-between rounded-lg border border-border bg-muted/40 p-2.5 hover:bg-muted"
+                    >
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedUserIds((prev) => [...prev, member.user_id]);
+                            } else {
+                              setSelectedUserIds((prev) => prev.filter((id) => id !== member.user_id));
+                            }
+                          }}
+                          className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                        />
+                        <div>
+                          <div className="text-sm font-medium text-foreground">{member.full_name || member.email}</div>
+                          {member.email && <div className="text-xs text-muted-foreground">{member.email}</div>}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="capitalize text-[10px]">
+                        {member.role}
+                      </Badge>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManageMembersOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => void saveBoardMembers()} disabled={saving}>
+              {saving ? "Salvando..." : "Salvar Permissões"}
             </Button>
           </DialogFooter>
         </DialogContent>

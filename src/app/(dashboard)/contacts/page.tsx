@@ -303,9 +303,9 @@ export default function ContactsPage() {
     const { error } = await supabase.from('contacts').delete().in('id', ids);
 
     if (error) {
-      toast.error('Failed to delete contacts');
+      toast.error('Falha ao excluir contatos');
     } else {
-      toast.success(`${ids.length} contact${ids.length === 1 ? '' : 's'} deleted`);
+      toast.success(`${ids.length} ${ids.length === 1 ? 'contato excluído' : 'contatos excluídos'}`);
       setSelected(new Set());
       fetchContacts();
     }
@@ -539,7 +539,7 @@ export default function ContactsPage() {
                   indeterminate={!allOnPageSelected && someOnPageSelected}
                   onCheckedChange={toggleSelectAll}
                   disabled={contacts.length === 0}
-                  aria-label="Select all contacts on this page"
+                  aria-label="Selecionar todos os contatos desta página"
                 />
               </TableHead>
               <TableHead className="text-muted-foreground">{t("contacts.table.name")}</TableHead>

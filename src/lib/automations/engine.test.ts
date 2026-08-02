@@ -24,6 +24,9 @@ vi.mock("./admin-client", () => {
     filters: [string, string, unknown][];
   }) {
     const { table, type } = ops;
+    if (table === "accounts") {
+      return { data: { subscription_status: "active", scheduled_deletion_at: null, trial_ends_at: null }, error: null };
+    }
     if (table === "contacts") {
       if (type === "update") {
         state.updateCalls.push({ table, filters: ops.filters });
@@ -36,7 +39,7 @@ vi.mock("./admin-client", () => {
       // account-scoped ownership lookup for a custom field definition
       return { data: state.ownedCustomField, error: null };
     }
-    if (table === "contact_custom_values") {
+    if (table === "contact_custom_values" || table === "conversation_board_items") {
       if (type === "upsert") {
         state.upsertCalls.push({ table, payload: ops.payload });
         return { data: null, error: null };
@@ -221,6 +224,35 @@ describe("update_contact_field — custom fields", () => {
 
     expect(h.state.upsertCalls).toHaveLength(0);
     expect(h.state.updateCalls).toHaveLength(0);
+  });
+
+  it("executes assign_board step and upserts conversation_board_items", async () => {
+    h.state.owned = { id: "c1" };
+    h.state.automations = [automationWithUpdateStep()];
+    h.state.steps = [{
+      id: "s1",
+      automation_id: "a1",
+      step_type: "assign_board",
+      position: 0,
+      parent_step_id: null,
+      step_config: { board_id: "board-1", lane_id: "lane-1" },
+    }];
+
+    await runAutomationsForTrigger({
+      accountId: ACCOUNT,
+      triggerType: "new_message_received",
+      contactId: "c1",
+      context: { conversation_id: "conv-1" },
+    });
+
+    expect(h.state.upsertCalls).toHaveLength(1);
+    expect(h.state.upsertCalls[0].table).toBe("conversation_board_items");
+    expect(h.state.upsertCalls[0].payload).toMatchObject({
+      account_id: ACCOUNT,
+      board_id: "board-1",
+      conversation_id: "conv-1",
+      lane_id: "lane-1",
+    });
   });
 });
 

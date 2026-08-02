@@ -13,6 +13,7 @@ import type {
   WaitStepConfig,
   CreateDealStepConfig,
   AssignConversationStepConfig,
+  AssignBoardStepConfig,
 } from '@/types'
 import { supabaseAdmin } from './admin-client'
 import { engineSendText, engineSendTemplate } from './meta-send'
@@ -538,6 +539,40 @@ async function runStep(step: AutomationStep, args: ExecuteArgs): Promise<string>
         status: 'open',
       })
       return 'deal created'
+    }
+
+    case 'assign_board': {
+      const cfg = step.step_config as AssignBoardStepConfig
+      if (!cfg.board_id) throw new Error('assign_board needs board_id')
+      const conversationId = await resolveConversationId(args)
+
+      let laneId: string | null = cfg.lane_id ?? null
+      if (!laneId && cfg.lane_key) {
+        const { data: lane } = await db
+          .from('conversation_board_lanes')
+          .select('id')
+          .eq('board_id', cfg.board_id)
+          .eq('lane_key', cfg.lane_key)
+          .maybeSingle()
+        if (lane?.id) laneId = lane.id
+      }
+
+      const itemPayload: Record<string, unknown> = {
+        account_id: args.automation.account_id,
+        board_id: cfg.board_id,
+        conversation_id: conversationId,
+        updated_at: new Date().toISOString(),
+      }
+      if (laneId) itemPayload.lane_id = laneId
+
+      const { error: upsertErr } = await db
+        .from('conversation_board_items')
+        .upsert(itemPayload, { onConflict: 'board_id,conversation_id' })
+
+      if (upsertErr) {
+        throw new Error(`failed to assign conversation to board: ${upsertErr.message}`)
+      }
+      return `assigned to board (${cfg.board_id})`
     }
 
     case 'send_webhook': {

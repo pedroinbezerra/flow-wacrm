@@ -79,7 +79,7 @@ export function TagManager() {
       setTags(data || []);
     } catch (err) {
       console.error('Failed to fetch tags:', err);
-      toast.error('Failed to load tags');
+      toast.error('Falha ao carregar tags');
     } finally {
       setLoading(false);
     }
@@ -87,14 +87,14 @@ export function TagManager() {
 
   async function handleCreate() {
     if (!newTagName.trim()) {
-      toast.error('Tag name is required');
+      toast.error('O nome da tag é obrigatório');
       return;
     }
 
     try {
       setSaving(true);
       if (!user || !accountId) {
-        toast.error('Not authenticated');
+        toast.error('Sessão não autenticada');
         return;
       }
 
@@ -109,13 +109,13 @@ export function TagManager() {
 
       if (error) throw error;
 
-      toast.success('Tag created');
+      toast.success('Tag criada com sucesso');
       setNewTagName('');
       setSelectedColor(PRESET_COLORS[3].value);
       await fetchTags(user.id);
     } catch (err) {
       console.error('Create error:', err);
-      toast.error('Failed to create tag');
+      toast.error('Falha ao criar tag');
     } finally {
       setSaving(false);
     }
@@ -205,7 +205,7 @@ export function TagManager() {
             {/* Inline create row */}
             <div className="flex flex-wrap items-center gap-2.5">
               <Input
-                placeholder="e.g. Newsletter"
+                placeholder="ex: Novidades, VIP"
                 value={newTagName}
                 onChange={(e) => setNewTagName(e.target.value)}
                 onKeyDown={(e) => {

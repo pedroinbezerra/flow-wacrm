@@ -200,8 +200,8 @@ export function ProfileForm() {
         });
         if (emailError) {
           // Partial success: name/avatar saved but email didn't.
-          toast.success('Profile saved');
-          toast.error(`Email change failed: ${emailError.message}`);
+          toast.success('Perfil atualizado com sucesso');
+          toast.error(`Falha ao alterar e-mail: ${emailError.message}`);
           setSaving(false);
           await refreshProfile();
           return;

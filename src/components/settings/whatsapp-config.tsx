@@ -180,11 +180,10 @@ export function WhatsAppConfig() {
       }
     } catch (err) {
       console.error('fetchConfig error:', err);
-      toast.error(t('settings.whatsappConfig.failedLoad'));
     } finally {
       setLoading(false);
     }
-  }, [supabase, t]);
+  }, [supabase]);
 
 
   useEffect(() => {
