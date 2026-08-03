@@ -327,6 +327,8 @@ export interface WhatsAppConfig {
   waba_id?: string;
   access_token: string;
   verify_token?: string;
+  label?: string;
+  is_default?: boolean;
   status: 'connected' | 'disconnected';
   connected_at?: string;
   /**

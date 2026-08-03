@@ -8,6 +8,7 @@ import {
   verifyPhoneNumber,
 } from '@/lib/whatsapp/meta-api'
 import { encrypt } from '@/lib/whatsapp/encryption'
+import { checkAccountLimit } from '@/lib/plans/limits'
 
 async function resolveAccountId(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -192,15 +193,40 @@ export async function POST(request: Request) {
 
     const { data: existing } = await supabase
       .from('whatsapp_config')
-      .select('id')
+      .select('id, is_default')
       .eq('account_id', accountId)
+      .eq('phone_number_id', phone_number_id)
       .maybeSingle()
+
+    if (!existing) {
+      const limitCheck = await checkAccountLimit(supabase, accountId, 'max_whatsapp_connections')
+      if (!limitCheck.allowed) {
+        return NextResponse.json(
+          { error: limitCheck.reason || 'Limite de conexões de WhatsApp atingido para a conta.' },
+          { status: 403 }
+        )
+      }
+    }
+
+    const { count: existingCount } = await supabase
+      .from('whatsapp_config')
+      .select('id', { count: 'exact', head: true })
+      .eq('account_id', accountId)
+
+    const isDefault = existing ? existing.is_default : (existingCount === 0)
+    const label = phoneInfo?.display_phone_number ? `WhatsApp (${phoneInfo.display_phone_number})` : 'Conexão Meta'
+
+    const baseRowWithMeta = {
+      ...baseRow,
+      label,
+      is_default: isDefault,
+    }
 
     if (existing) {
       const { error: updateError } = await supabase
         .from('whatsapp_config')
-        .update(baseRow)
-        .eq('account_id', accountId)
+        .update(baseRowWithMeta)
+        .eq('id', existing.id)
 
       if (updateError) {
         console.error('Error updating whatsapp_config:', updateError)
@@ -212,7 +238,7 @@ export async function POST(request: Request) {
         .insert({
           account_id: accountId,
           user_id: user.id,
-          ...baseRow,
+          ...baseRowWithMeta,
         })
 
       if (insertError) {

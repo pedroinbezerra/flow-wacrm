@@ -87,7 +87,9 @@ async function sendViaMeta(input: SendInput): Promise<{ whatsapp_message_id: str
     .from('whatsapp_config')
     .select('*')
     .eq('account_id', input.accountId)
-    .single()
+    .order('is_default', { ascending: false })
+    .limit(1)
+    .maybeSingle()
   if (configErr || !config) {
     throw new Error('WhatsApp not configured for this account')
   }

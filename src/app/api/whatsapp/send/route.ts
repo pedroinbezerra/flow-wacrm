@@ -176,12 +176,14 @@ export async function POST(request: Request) {
       )
     }
 
-    // Fetch and decrypt WhatsApp config
+    // Fetch and decrypt WhatsApp config (defaults to primary number if multiple exist)
     const { data: config, error: configError } = await supabase
       .from('whatsapp_config')
       .select('*')
       .eq('account_id', accountId)
-      .single()
+      .order('is_default', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
     if (configError || !config) {
       return NextResponse.json(
