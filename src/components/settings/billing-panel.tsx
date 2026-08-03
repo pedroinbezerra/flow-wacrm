@@ -38,6 +38,7 @@ export function BillingPanel() {
   const [checkoutData, setCheckoutData] = useState<NativeCheckoutData | null>(null);
   const [copiedPix, setCopiedPix] = useState(false);
   const [allPlans, setAllPlans] = useState<CommercialPlan[]>([]);
+  const [selectedCycle, setSelectedCycle] = useState<"monthly" | "yearly">("monthly");
   const [processingCheckout, setProcessingCheckout] = useState(false);
 
   // Modal de captura urgente de CPF/CNPJ para Checkout
@@ -200,7 +201,7 @@ export function BillingPanel() {
       const res = await fetch("/api/account/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan_id: selectedPlanId }),
+        body: JSON.stringify({ plan_id: selectedPlanId, billing_cycle: selectedCycle }),
       });
 
       const data = await res.json();
@@ -687,40 +688,120 @@ export function BillingPanel() {
 
       {/* Modal: Upgrade / Trocar de Plano */}
       <Dialog open={checkoutModalOpen} onOpenChange={setCheckoutModalOpen}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Escolha o seu Plano Comercial</DialogTitle>
             <DialogDescription>
-              Selecione o plano ideal para a sua empresa. O pagamento recorrente será processado com segurança pelo Asaas.
+              Selecione a modalidade de pagamento e o plano ideal para a sua empresa. O pagamento recorrente será processado com segurança pelo Asaas.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4 md:grid-cols-2">
+          {/* Seletor de Ciclo: Mensal vs Anual */}
+          <div className="flex justify-center pt-2">
+            <div className="inline-flex rounded-lg border border-border p-1 bg-muted/40">
+              <button
+                type="button"
+                onClick={() => setSelectedCycle("monthly")}
+                className={`px-5 py-2 text-xs font-semibold rounded-md transition-all ${
+                  selectedCycle === "monthly"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Cobrança Mensal
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCycle("yearly")}
+                className={`px-5 py-2 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${
+                  selectedCycle === "yearly"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <span>Cobrança Anual</span>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-emerald-500/20 text-emerald-400 font-bold border-0">
+                  Desconto
+                </Badge>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid gap-4 py-4 md:grid-cols-3">
             {allPlans.map((p) => {
-              const isCurrent = plan?.id === p.id;
+              const isCurrent = plan?.id === p.id && (subscription?.billing_cycle || "monthly") === selectedCycle;
+              const f = p.features || {};
+              const displayPrice = selectedCycle === "yearly"
+                ? (Number(p.price_yearly) > 0 ? Number(p.price_yearly) : Number(p.price) * 12)
+                : (Number(p.price_monthly) > 0 ? Number(p.price_monthly) : Number(p.price));
+
               return (
                 <Card key={p.id} className={`flex flex-col justify-between border ${isCurrent ? "border-primary bg-primary/5" : "border-border"}`}>
-                  <CardHeader>
+                  <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg font-bold">{p.name}</CardTitle>
                       {isCurrent && <Badge variant="default">Plano Atual</Badge>}
                     </div>
-                    <CardDescription className="text-xs">{p.description}</CardDescription>
-                    <div className="pt-2 text-2xl font-extrabold text-primary">
-                      R$ {Number(p.price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      <span className="text-xs font-normal text-muted-foreground"> / {p.billing_period === "yearly" ? "Anual" : "Mensal"}</span>
+                    <CardDescription className="text-xs min-h-[32px]">{p.description || "Acesso completo aos recursos do Flow."}</CardDescription>
+                    <div className="pt-2">
+                      <div className="text-2xl font-extrabold text-primary">
+                        R$ {displayPrice.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        <span className="text-xs font-normal text-muted-foreground"> / {selectedCycle === "yearly" ? "ano" : "mês"}</span>
+                      </div>
+                      {selectedCycle === "yearly" && (
+                        <p className="text-[11px] text-emerald-500 font-medium pt-0.5">
+                          ~ R$ {(displayPrice / 12).toLocaleString("pt-BR", { minimumFractionDigits: 2 })} / mês no plano anual
+                        </p>
+                      )}
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-0">
-                    <Button
-                      disabled={isCurrent || processingCheckout}
-                      onClick={() => handleSelectPlanForCheckout(p.id)}
-                      className="w-full gap-2"
-                      variant={isCurrent ? "outline" : "default"}
-                    >
-                      {isCurrent ? "Plano Selecionado" : processingCheckout ? "Gerando Cobrança..." : "Assinar"}
-                      {!isCurrent && <ExternalLink className="h-3.5 w-3.5" />}
-                    </Button>
+
+                  <CardContent className="space-y-3 pt-0">
+                    <div className="border-t border-border pt-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Recursos inclusos:</p>
+                      <ul className="space-y-1.5 text-xs">
+                        <li className="flex items-center gap-1.5 font-medium text-foreground">
+                          <span className="text-primary">✓</span>
+                          <span>{f.max_whatsapp_connections ?? 1} conexão(ões) WABA API</span>
+                        </li>
+                        <li className="flex items-center gap-1.5 text-muted-foreground">
+                          <span className="text-primary">✓</span>
+                          <span>Até {f.max_contacts ? Number(f.max_contacts).toLocaleString("pt-BR") : "ilimitados"} contatos</span>
+                        </li>
+                        <li className="flex items-center gap-1.5 text-muted-foreground">
+                          <span className="text-primary">✓</span>
+                          <span>Até {f.max_users ?? "ilimitados"} membros de equipe</span>
+                        </li>
+                        <li className="flex items-center gap-1.5 text-muted-foreground">
+                          <span className="text-primary">✓</span>
+                          <span>{f.max_kanban_funnels ?? "Ilimitados"} funis Kanban</span>
+                        </li>
+                        {f.allow_ai_agent !== false && (
+                          <li className="flex items-center gap-1.5 text-primary font-semibold">
+                            <span>🤖</span>
+                            <span>Atendimento por IA Ativado</span>
+                          </li>
+                        )}
+                        {f.allow_canvas_automations !== false && (
+                          <li className="flex items-center gap-1.5 text-foreground">
+                            <span>⚡</span>
+                            <span>Automações com Canvas</span>
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+
+                    <div className="pt-2">
+                      <Button
+                        disabled={isCurrent || processingCheckout}
+                        onClick={() => handleSelectPlanForCheckout(p.id)}
+                        className="w-full gap-2"
+                        variant={isCurrent ? "outline" : "default"}
+                      >
+                        {isCurrent ? "Plano Selecionado" : processingCheckout ? "Gerando Cobrança..." : "Assinar Agora"}
+                        {!isCurrent && <ExternalLink className="h-3.5 w-3.5" />}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               );

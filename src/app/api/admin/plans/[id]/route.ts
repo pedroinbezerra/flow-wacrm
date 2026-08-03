@@ -48,13 +48,20 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     if (!limit.success) return rateLimitResponse(limit);
 
     const body = await req.json();
-    const { name, description, price, billing_period, trial_days, status, features } = body;
+    const { name, description, price, price_monthly, price_yearly, billing_period, trial_days, status, features } = body;
 
     const updateData: Record<string, unknown> = {};
 
     if (name !== undefined) updateData.name = String(name).trim();
     if (description !== undefined) updateData.description = description ? String(description).trim() : null;
-    if (price !== undefined) updateData.price = Number(price);
+    if (price_monthly !== undefined) {
+      updateData.price_monthly = Number(price_monthly);
+      updateData.price = Number(price_monthly);
+    } else if (price !== undefined) {
+      updateData.price = Number(price);
+      updateData.price_monthly = Number(price);
+    }
+    if (price_yearly !== undefined) updateData.price_yearly = Number(price_yearly);
     if (billing_period !== undefined) updateData.billing_period = billing_period;
     if (trial_days !== undefined) updateData.trial_days = Number(trial_days);
     if (status !== undefined) updateData.status = status;

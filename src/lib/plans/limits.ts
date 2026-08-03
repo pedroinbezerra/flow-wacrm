@@ -222,6 +222,13 @@ async function getFeatureCurrentCount(
         .eq("account_id", accountId);
       return count || 0;
     }
+    case "max_whatsapp_connections": {
+      const { count } = await supabase
+        .from("whatsapp_config")
+        .select("id", { count: "exact", head: true })
+        .eq("account_id", accountId);
+      return count || 0;
+    }
     default:
       return 0;
   }
@@ -234,12 +241,13 @@ export async function getAllAccountUsage(
   supabase: SupabaseClient,
   accountId: string
 ): Promise<Record<string, number>> {
-  const [users, contacts, flows, kanbanFunnels, boards] = await Promise.all([
+  const [users, contacts, flows, kanbanFunnels, boards, whatsappConnections] = await Promise.all([
     getFeatureCurrentCount(supabase, accountId, "max_users"),
     getFeatureCurrentCount(supabase, accountId, "max_contacts"),
     getFeatureCurrentCount(supabase, accountId, "max_flows"),
     getFeatureCurrentCount(supabase, accountId, "max_kanban_funnels"),
     getFeatureCurrentCount(supabase, accountId, "max_boards"),
+    getFeatureCurrentCount(supabase, accountId, "max_whatsapp_connections"),
   ]);
 
   return {
@@ -248,5 +256,6 @@ export async function getAllAccountUsage(
     max_flows: flows,
     max_kanban_funnels: kanbanFunnels,
     max_boards: boards,
+    max_whatsapp_connections: whatsappConnections,
   };
 }

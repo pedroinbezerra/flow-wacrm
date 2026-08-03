@@ -42,11 +42,14 @@ export async function POST(req: Request) {
     if (!limit.success) return rateLimitResponse(limit);
 
     const body = await req.json();
-    const { name, description, price, billing_period, trial_days, status, features } = body;
+    const { name, description, price, price_monthly, price_yearly, billing_period, trial_days, status, features } = body;
 
     if (!name || typeof name !== "string" || !name.trim()) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
+
+    const finalPriceMonthly = typeof price_monthly === "number" ? price_monthly : (typeof price === "number" ? price : 0);
+    const finalPriceYearly = typeof price_yearly === "number" ? price_yearly : 0;
 
     const supabase = await createClient();
     const { data: plan, error } = await supabase
@@ -54,7 +57,9 @@ export async function POST(req: Request) {
       .insert({
         name: name.trim(),
         description: description ? String(description).trim() : null,
-        price: typeof price === "number" ? price : 0,
+        price: finalPriceMonthly,
+        price_monthly: finalPriceMonthly,
+        price_yearly: finalPriceYearly,
         billing_period: billing_period || "monthly",
         trial_days: typeof trial_days === "number" ? trial_days : 0,
         status: status || "active",

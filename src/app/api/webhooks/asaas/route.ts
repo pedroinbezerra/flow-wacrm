@@ -43,7 +43,7 @@ export async function POST(req: Request) {
 
     if (event === "PAYMENT_RECEIVED" || event === "PAYMENT_CONFIRMED") {
       // Find subscription by asaas_subscription_id or account_id
-      let query = supabase.from("subscriptions").select("id, account_id, plan_id, asaas_subscription_id");
+      let query = supabase.from("subscriptions").select("id, account_id, plan_id, asaas_subscription_id, billing_cycle");
       if (asaasSubscriptionId) {
         query = query.eq("asaas_subscription_id", asaasSubscriptionId);
       } else if (accountId) {
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
           }
         }
 
-        // Opção 2 (Fallback): Calcular a partir do billing_period do plano
+        // Opção 2 (Fallback): Calcular a partir do billing_cycle da assinatura ou billing_period do plano
         if (!nextPeriodEnd) {
           const { data: plan } = await supabase
             .from("plans")
@@ -85,7 +85,8 @@ export async function POST(req: Request) {
             .maybeSingle();
 
           const now = new Date();
-          if (plan?.billing_period === "yearly") {
+          const isYearly = sub.billing_cycle === "yearly" || plan?.billing_period === "yearly";
+          if (isYearly) {
             now.setFullYear(now.getFullYear() + 1);
           } else {
             now.setMonth(now.getMonth() + 1);

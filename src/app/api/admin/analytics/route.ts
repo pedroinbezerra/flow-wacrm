@@ -22,11 +22,13 @@ export async function GET() {
     activeSubs.forEach((s) => {
       const plan = Array.isArray(s.plan) ? s.plan[0] : s.plan;
       if (plan) {
-        const price = Number(plan.price || 0);
-        if (plan.billing_period === "yearly") {
-          mrr += price / 12;
-        } else if (plan.billing_period === "monthly") {
-          mrr += price;
+        const isYearly = s.billing_cycle === "yearly" || plan.billing_period === "yearly";
+        if (isYearly) {
+          const yearlyPrice = Number(plan.price_yearly) > 0 ? Number(plan.price_yearly) : Number(plan.price) * 12;
+          mrr += yearlyPrice / 12;
+        } else {
+          const monthlyPrice = Number(plan.price_monthly) > 0 ? Number(plan.price_monthly) : Number(plan.price);
+          mrr += monthlyPrice;
         }
       }
     });

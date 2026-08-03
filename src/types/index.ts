@@ -55,9 +55,12 @@ export interface PlanFeatures {
   max_kanban_funnels?: number;
   max_boards?: number;
   max_broadcasts_per_campaign?: number;
+  max_whatsapp_connections?: number;
   allow_scheduling?: boolean;
   allow_reports?: boolean;
   allow_webhooks?: boolean;
+  allow_ai_agent?: boolean;
+  allow_canvas_automations?: boolean;
   [key: string]: unknown;
 }
 
@@ -66,6 +69,8 @@ export interface CommercialPlan {
   name: string;
   description?: string | null;
   price: number;
+  price_monthly?: number;
+  price_yearly?: number;
   billing_period: BillingPeriod;
   trial_days: number;
   status: PlanStatus;
@@ -80,6 +85,7 @@ export interface Subscription {
   account_id: string;
   plan_id: string;
   status: SubscriptionStatus;
+  billing_cycle?: 'monthly' | 'yearly';
   trial_ends_at?: string | null;
   current_period_start?: string | null;
   current_period_end?: string | null;

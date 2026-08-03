@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { plan_id, billing_type = "UNDEFINED" } = body || {};
+    const { plan_id, billing_type = "UNDEFINED", billing_cycle = "monthly" } = body || {};
 
     if (!plan_id) {
       return NextResponse.json({ error: "O ID do plano é obrigatório." }, { status: 400 });
@@ -36,10 +36,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Plano comercial não encontrado." }, { status: 404 });
     }
 
+    const isYearly = billing_cycle === "yearly";
+    const selectedPrice = isYearly
+      ? (Number(plan.price_yearly) > 0 ? Number(plan.price_yearly) : Number(plan.price) * 12)
+      : (Number(plan.price_monthly) > 0 ? Number(plan.price_monthly) : Number(plan.price));
+
     const adminClient = supabaseAdmin();
 
     // If the plan is free (R$ 0,00), activate directly without financial charge
-    if (Number(plan.price) === 0) {
+    if (selectedPrice === 0) {
       const { data: sub } = await adminClient
         .from("subscriptions")
         .upsert(
@@ -47,6 +52,7 @@ export async function POST(req: Request) {
             account_id: account.id,
             plan_id: plan.id,
             status: "active",
+            billing_cycle: isYearly ? "yearly" : "monthly",
             current_period_start: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },
@@ -68,7 +74,7 @@ export async function POST(req: Request) {
       });
     }
 
-    if (Number(plan.price) < 5) {
+    if (selectedPrice < 5) {
       return NextResponse.json(
         { error: "O Asaas exige um valor mínimo de R$ 5,00 para gerar cobranças recorrentes no sistema." },
         { status: 400 }
@@ -111,10 +117,10 @@ export async function POST(req: Request) {
     const asaasSub = await createAsaasSubscription({
       customer: customer.id,
       billingType: billing_type, // 'PIX', 'CREDIT_CARD', 'BOLETO' or 'UNDEFINED' for Asaas Payment Page
-      value: Number(plan.price),
+      value: selectedPrice,
       nextDueDate,
-      cycle: plan.billing_period === "yearly" ? "YEARLY" : "MONTHLY",
-      description: `Assinatura Flow Hub - Plano ${plan.name}`,
+      cycle: isYearly ? "YEARLY" : "MONTHLY",
+      description: `Assinatura Flow Hub - Plano ${plan.name} (${isYearly ? "Anual" : "Mensal"})`,
       externalReference: account.id,
     });
 
@@ -131,6 +137,7 @@ export async function POST(req: Request) {
           account_id: account.id,
           plan_id: plan.id,
           status: "past_due",
+          billing_cycle: isYearly ? "yearly" : "monthly",
           current_period_start: new Date().toISOString(),
           asaas_subscription_id: asaasSub.id,
           asaas_customer_id: customer.id,
