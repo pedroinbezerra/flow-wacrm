@@ -164,8 +164,7 @@ function validateTrigger(
         severity: "error",
         scope: "trigger",
         field: "trigger_config.keywords",
-        // Tradução de mensagem de erro para pt-BR
-        message: "Triggers de palavra-chave precisam de pelo menos uma palavra-chave.",
+        message: "Keyword triggers need at least one keyword.",
       });
     } else {
       // Empty / whitespace-only keywords are silent no-ops at match
@@ -175,13 +174,12 @@ function validateTrigger(
         (k) => typeof k !== "string" || !k.trim(),
       ).length;
       if (blanks > 0) {
-        // Mensagem de aviso traduzida e com plural adequado
         issues.push({
           severity: "warning",
           scope: "trigger",
           field: "trigger_config.keywords",
           message:
-            `${blanks} palavra-chave${blanks === 1 ? "" : "s"} em branco — elas não corresponderão a nada.`,
+            `${blanks} blank keyword${blanks === 1 ? "" : "s"} — they won't match anything.`,
         });
       }
     }

@@ -1412,6 +1412,10 @@ function previewFor(step: BuilderStep, t: (key: string) => string): string {
       return `when ${step.step_config.subject ?? "?"}`
     case "send_webhook":
       return (step.step_config.url as string) || t("automations.noUrl")
+    case "assign_board": {
+      const boardId = step.step_config.board_id as string | undefined
+      return boardId ? `Quadro: ${boardId}` : t("automations.selectBoard")
+    }
     default:
       return ""
   }
@@ -1432,11 +1436,33 @@ function insertAt(
     copy.splice(index, 0, node)
     return copy
   }
+  return insertIntoTree(steps, parent.parentCid, parent.branch, index, node)
+}
+
+function insertIntoTree(
+  steps: BuilderStep[],
+  targetCid: string,
+  branch: "yes" | "no",
+  index: number,
+  node: BuilderStep,
+): BuilderStep[] {
   return steps.map((s) => {
-    if (s.cid !== parent.parentCid || !s.branches) return s
-    const list = [...s.branches[parent.branch]]
-    list.splice(index, 0, node)
-    return { ...s, branches: { ...s.branches, [parent.branch]: list } }
+    if (s.cid === targetCid) {
+      const branches = s.branches ?? { yes: [], no: [] }
+      const list = [...(branches[branch] ?? [])]
+      list.splice(index, 0, node)
+      return { ...s, branches: { ...branches, [branch]: list } }
+    }
+    if (s.branches) {
+      return {
+        ...s,
+        branches: {
+          yes: insertIntoTree(s.branches.yes ?? [], targetCid, branch, index, node),
+          no: insertIntoTree(s.branches.no ?? [], targetCid, branch, index, node),
+        },
+      }
+    }
+    return s
   })
 }
 
@@ -1454,84 +1480,114 @@ function mapAtPath(
       if (i !== head.index) return s
       return rest.length === 0
         ? updater(s)
-        : { ...s, branches: walkBranches(s.branches, rest, updater) }
+        : {
+            ...s,
+            branches: s.branches
+              ? {
+                  yes: mapAtPath(s.branches.yes ?? [], rest, updater),
+                  no: mapAtPath(s.branches.no ?? [], rest, updater),
+                }
+              : s.branches,
+          }
     })
   }
+
   return steps.map((s) => {
-    if (s.cid !== head.parentCid || !s.branches) return s
-    const bucket = s.branches[head.branch]
-    const updated = bucket.map((child, i) => {
+    if (s.cid !== head.parentCid) {
+      if (s.branches) {
+        return {
+          ...s,
+          branches: {
+            yes: mapAtPath(s.branches.yes ?? [], path, updater),
+            no: mapAtPath(s.branches.no ?? [], path, updater),
+          },
+        }
+      }
+      return s
+    }
+
+    const branches = s.branches ?? { yes: [], no: [] }
+    const bucket = branches[head.branch] ?? []
+    const updatedBucket = bucket.map((child, i) => {
       if (i !== head.index) return child
       return rest.length === 0
         ? updater(child)
-        : { ...child, branches: walkBranches(child.branches, rest, updater) }
+        : {
+            ...child,
+            branches: child.branches
+              ? {
+                  yes: mapAtPath(child.branches.yes ?? [], rest, updater),
+                  no: mapAtPath(child.branches.no ?? [], rest, updater),
+                }
+              : child.branches,
+          }
     })
-    return { ...s, branches: { ...s.branches, [head.branch]: updated } }
-  })
-}
 
-function walkBranches(
-  branches: BuilderStep["branches"],
-  path: StepPath,
-  updater: (s: BuilderStep) => BuilderStep,
-): BuilderStep["branches"] {
-  if (!branches) return branches
-  const head = path[0]
-  if (head.kind !== "branch") return branches
-  const bucket = branches[head.branch]
-  const rest = path.slice(1)
-  const updated = bucket.map((child, i) => {
-    if (i !== head.index) return child
-    return rest.length === 0
-      ? updater(child)
-      : { ...child, branches: walkBranches(child.branches, rest, updater) }
+    return {
+      ...s,
+      branches: { ...branches, [head.branch]: updatedBucket },
+    }
   })
-  return { ...branches, [head.branch]: updated }
 }
 
 function removeAt(steps: BuilderStep[], path: StepPath): BuilderStep[] {
   if (path.length === 0) return steps
   const head = path[0]
   const rest = path.slice(1)
+
   if (head.kind === "root") {
     if (rest.length === 0) return steps.filter((_, i) => i !== head.index)
-    return steps.map((s, i) =>
-      i !== head.index ? s : { ...s, branches: removeFromBranches(s.branches, rest) },
-    )
+    return steps.map((s, i) => {
+      if (i !== head.index) return s
+      return {
+        ...s,
+        branches: s.branches
+          ? {
+              yes: removeAt(s.branches.yes ?? [], rest),
+              no: removeAt(s.branches.no ?? [], rest),
+            }
+          : s.branches,
+      }
+    })
   }
+
   return steps.map((s) => {
-    if (s.cid !== head.parentCid || !s.branches) return s
-    const bucket = s.branches[head.branch]
-    const next =
+    if (s.cid !== head.parentCid) {
+      if (s.branches) {
+        return {
+          ...s,
+          branches: {
+            yes: removeAt(s.branches.yes ?? [], path),
+            no: removeAt(s.branches.no ?? [], path),
+          },
+        }
+      }
+      return s
+    }
+
+    const branches = s.branches ?? { yes: [], no: [] }
+    const bucket = branches[head.branch] ?? []
+    const nextBucket =
       rest.length === 0
         ? bucket.filter((_, i) => i !== head.index)
-        : bucket.map((child, i) =>
-            i !== head.index
-              ? child
-              : { ...child, branches: removeFromBranches(child.branches, rest) },
-          )
-    return { ...s, branches: { ...s.branches, [head.branch]: next } }
-  })
-}
+        : bucket.map((child, i) => {
+            if (i !== head.index) return child
+            return {
+              ...child,
+              branches: child.branches
+                ? {
+                    yes: removeAt(child.branches.yes ?? [], rest),
+                    no: removeAt(child.branches.no ?? [], rest),
+                  }
+                : child.branches,
+            }
+          })
 
-function removeFromBranches(
-  branches: BuilderStep["branches"],
-  path: StepPath,
-): BuilderStep["branches"] {
-  if (!branches) return branches
-  const head = path[0]
-  if (head.kind !== "branch") return branches
-  const rest = path.slice(1)
-  const bucket = branches[head.branch]
-  const next =
-    rest.length === 0
-      ? bucket.filter((_, i) => i !== head.index)
-      : bucket.map((child, i) =>
-          i !== head.index
-            ? child
-            : { ...child, branches: removeFromBranches(child.branches, rest) },
-        )
-  return { ...branches, [head.branch]: next }
+    return {
+      ...s,
+      branches: { ...branches, [head.branch]: nextBucket },
+    }
+  })
 }
 
 function moveAt(
@@ -1542,6 +1598,7 @@ function moveAt(
   if (path.length === 0) return steps
   const head = path[0]
   const rest = path.slice(1)
+
   const swap = <T,>(arr: T[], i: number) => {
     const j = i + direction
     if (j < 0 || j >= arr.length) return arr
@@ -1549,39 +1606,60 @@ function moveAt(
     ;[copy[i], copy[j]] = [copy[j], copy[i]]
     return copy
   }
+
   if (head.kind === "root") {
     if (rest.length === 0) return swap(steps, head.index)
-    return steps.map((s, i) =>
-      i !== head.index ? s : { ...s, branches: moveInBranches(s.branches, rest, direction) },
-    )
+    return steps.map((s, i) => {
+      if (i !== head.index) return s
+      return {
+        ...s,
+        branches: s.branches
+          ? {
+              yes: moveAt(s.branches.yes ?? [], rest, direction),
+              no: moveAt(s.branches.no ?? [], rest, direction),
+            }
+          : s.branches,
+      }
+    })
   }
-  return steps.map((s) => {
-    if (s.cid !== head.parentCid || !s.branches) return s
-    const bucket = s.branches[head.branch]
-    const next = rest.length === 0 ? swap(bucket, head.index) : bucket
-    return { ...s, branches: { ...s.branches, [head.branch]: next } }
-  })
-}
 
-function moveInBranches(
-  branches: BuilderStep["branches"],
-  path: StepPath,
-  direction: -1 | 1,
-): BuilderStep["branches"] {
-  if (!branches) return branches
-  const head = path[0]
-  if (head.kind !== "branch") return branches
-  const rest = path.slice(1)
-  const bucket = branches[head.branch]
-  const swap = <T,>(arr: T[], i: number) => {
-    const j = i + direction
-    if (j < 0 || j >= arr.length) return arr
-    const copy = [...arr]
-    ;[copy[i], copy[j]] = [copy[j], copy[i]]
-    return copy
-  }
-  const next = rest.length === 0 ? swap(bucket, head.index) : bucket
-  return { ...branches, [head.branch]: next }
+  return steps.map((s) => {
+    if (s.cid !== head.parentCid) {
+      if (s.branches) {
+        return {
+          ...s,
+          branches: {
+            yes: moveAt(s.branches.yes ?? [], path, direction),
+            no: moveAt(s.branches.no ?? [], path, direction),
+          },
+        }
+      }
+      return s
+    }
+
+    const branches = s.branches ?? { yes: [], no: [] }
+    const bucket = branches[head.branch] ?? []
+    const nextBucket =
+      rest.length === 0
+        ? swap(bucket, head.index)
+        : bucket.map((child, i) => {
+            if (i !== head.index) return child
+            return {
+              ...child,
+              branches: child.branches
+                ? {
+                    yes: moveAt(child.branches.yes ?? [], rest, direction),
+                    no: moveAt(child.branches.no ?? [], rest, direction),
+                  }
+                : child.branches,
+            }
+          })
+
+    return {
+      ...s,
+      branches: { ...branches, [head.branch]: nextBucket },
+    }
+  })
 }
 
 // ------------------------------------------------------------
