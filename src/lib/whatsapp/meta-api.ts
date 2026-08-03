@@ -126,39 +126,117 @@ export interface DiscoverWhatsAppAccountsArgs {
 
 /**
  * Discover WABAs and Phone Numbers associated with the given access token via Meta Graph API.
+ * Uses /me/businesses + /debug_token granular scopes as fallback.
  */
 export async function discoverWhatsAppAccounts(
   args: DiscoverWhatsAppAccountsArgs
 ): Promise<DiscoveredWaba[]> {
   const { accessToken } = args
-  const url = `${META_API_BASE}/me/whatsapp_business_accounts?fields=id,name,phone_numbers{id,display_phone_number,verified_name,quality_rating}`
-  const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
-  if (!response.ok) {
-    await throwMetaError(response, `Meta API error fetching accounts: ${response.status}`)
-  }
-  const data = (await response.json()) as {
-    data?: Array<{
-      id: string
-      name?: string
-      phone_numbers?: {
-        data?: DiscoveredPhone[]
-      }
-    }>
-  }
+  const wabaMap = new Map<string, DiscoveredWaba>()
 
-  const result: DiscoveredWaba[] = []
-  if (Array.isArray(data.data)) {
-    for (const item of data.data) {
-      result.push({
-        id: item.id,
-        name: item.name || `WABA ${item.id}`,
-        phone_numbers: item.phone_numbers?.data || [],
+  const addWaba = (wabaId: string, name: string, phoneNumbers: DiscoveredPhone[]) => {
+    if (!wabaMap.has(wabaId)) {
+      wabaMap.set(wabaId, {
+        id: wabaId,
+        name: name || `WABA ${wabaId}`,
+        phone_numbers: phoneNumbers,
       })
     }
   }
-  return result
+
+  // Strategy 1: Fetch via Business Manager accounts (/me/businesses)
+  try {
+    const bizUrl = `${META_API_BASE}/me/businesses?fields=id,name,owned_whatsapp_business_accounts{id,name,phone_numbers{id,display_phone_number,verified_name}},client_whatsapp_business_accounts{id,name,phone_numbers{id,display_phone_number,verified_name}}`
+    const bizRes = await fetch(bizUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    if (bizRes.ok) {
+      const bizData = (await bizRes.json()) as {
+        data?: Array<{
+          id: string
+          name?: string
+          owned_whatsapp_business_accounts?: {
+            data?: Array<{
+              id: string
+              name?: string
+              phone_numbers?: { data?: DiscoveredPhone[] }
+            }>
+          }
+          client_whatsapp_business_accounts?: {
+            data?: Array<{
+              id: string
+              name?: string
+              phone_numbers?: { data?: DiscoveredPhone[] }
+            }>
+          }
+        }>
+      }
+      if (Array.isArray(bizData.data)) {
+        for (const biz of bizData.data) {
+          const owned = biz.owned_whatsapp_business_accounts?.data || []
+          const client = biz.client_whatsapp_business_accounts?.data || []
+          for (const waba of [...owned, ...client]) {
+            addWaba(
+              waba.id,
+              waba.name || `WABA ${waba.id}`,
+              waba.phone_numbers?.data || []
+            )
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[discoverWhatsAppAccounts] Strategy 1 (me/businesses) failed:', err)
+  }
+
+  // Strategy 2: If token debug yields WABA target IDs (for System User tokens or specific scope grants)
+  if (wabaMap.size === 0) {
+    try {
+      const debugUrl = `${META_API_BASE}/debug_token?input_token=${encodeURIComponent(accessToken)}&access_token=${encodeURIComponent(accessToken)}`
+      const debugRes = await fetch(debugUrl)
+      if (debugRes.ok) {
+        const debugData = (await debugRes.json()) as {
+          data?: {
+            granular_scopes?: Array<{
+              scope: string
+              target_ids?: string[]
+            }>
+          }
+        }
+        const scopes = debugData.data?.granular_scopes || []
+        const wabaScope = scopes.find(
+          (s) => s.scope === 'whatsapp_business_management' || s.scope === 'whatsapp_business_messaging'
+        )
+        const targetIds: string[] = wabaScope?.target_ids || []
+        for (const wabaId of targetIds) {
+          try {
+            const wabaUrl = `${META_API_BASE}/${wabaId}?fields=id,name,phone_numbers{id,display_phone_number,verified_name}`
+            const wabaRes = await fetch(wabaUrl, {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            })
+            if (wabaRes.ok) {
+              const wabaData = (await wabaRes.json()) as {
+                id: string
+                name?: string
+                phone_numbers?: { data?: DiscoveredPhone[] }
+              }
+              addWaba(
+                wabaData.id,
+                wabaData.name || `WABA ${wabaData.id}`,
+                wabaData.phone_numbers?.data || []
+              )
+            }
+          } catch {
+            /* ignore individual WABA fetch error */
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[discoverWhatsAppAccounts] Strategy 2 (debug_token) failed:', err)
+    }
+  }
+
+  return Array.from(wabaMap.values())
 }
 
 
