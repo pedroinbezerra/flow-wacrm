@@ -201,7 +201,7 @@ export function SuperAdminsManager() {
                             size="sm"
                             disabled={isSelf}
                             title={isSelf ? "Por segurança, você não pode revogar seu próprio acesso" : "Revogar acesso de Super Admin"}
-                            className="text-destructive hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                             onClick={() => !isSelf && setRevokeTarget(item)}
                           >
                             <Trash2 className="h-4 w-4 mr-1" />

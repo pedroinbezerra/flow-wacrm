@@ -453,11 +453,10 @@ export function MembersTab() {
                         affordance reads at-a-glance. */}
                     {canManageMembers && !isOwnerRow && !isSelf && (
                       <Button
-                        variant="outline"
+                        variant="destructive"
                         size="sm"
                         onClick={() => setRemovingMember(member)}
                         disabled={isBusy}
-                        className="border-red-500/40 bg-red-500/10 text-red-300 hover:bg-red-500/20 hover:border-red-500/60 hover:text-red-200"
                       >
                         <Trash2 className="size-4" />
                       </Button>
@@ -539,10 +538,9 @@ export function MembersTab() {
                           read as a neutral secondary button until
                           hover. */}
                       <Button
-                        variant="outline"
+                        variant="destructive"
                         size="sm"
                         onClick={() => handleRevoke(inv)}
-                        className="border-red-500/40 bg-red-500/10 text-red-300 hover:bg-red-500/20 hover:border-red-500/60 hover:text-red-200"
                       >
                         <MailX className="size-4" />
                         {t('settings.members.revoke')}

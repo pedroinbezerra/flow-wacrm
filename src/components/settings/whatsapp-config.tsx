@@ -725,7 +725,7 @@ export function WhatsAppConfig() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 text-xs text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                        className="h-7 text-xs text-destructive hover:bg-destructive hover:text-destructive-foreground"
                         onClick={() => handleDeleteConfig(cfg.id)}
                       >
                         Remover
@@ -1217,10 +1217,9 @@ export function WhatsAppConfig() {
           </Button>
           {config && (
             <Button
-              variant="outline"
+              variant="destructive"
               onClick={handleReset}
               disabled={resetting}
-              className="border-red-500/30 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-500/10 dark:hover:bg-red-950/40"
             >
               {resetting ? (
                 <>
