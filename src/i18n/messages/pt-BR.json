@@ -137,6 +137,24 @@
         "description2": "Verifique sua caixa de entrada."
       }
     },
+    "resetPassword": {
+      "title": "Redefinir senha",
+      "description": "Digite sua nova senha abaixo para atualizar seu acesso",
+      "newPassword": "Nova senha",
+      "confirmPassword": "Confirmar nova senha",
+      "passwordPlaceholder": "••••••••",
+      "submit": "Redefinir senha",
+      "loading": "Redefinindo...",
+      "successTitle": "Senha alterada com sucesso!",
+      "successDescription": "Sua senha foi redefinida. Você já pode fazer login com sua nova senha.",
+      "goToLogin": "Ir para o login",
+      "passwordsDoNotMatch": "As senhas não coincidem",
+      "passwordTooShort": "A senha deve ter pelo menos 6 caracteres",
+      "invalidSessionTitle": "Link inválido ou expirado",
+      "invalidSessionDescription": "Não foi possível verificar a solicitação de redefinição de senha. Solicite um novo link.",
+      "requestNewLink": "Solicitar novo link",
+      "error": "Falha ao redefinir senha. O link pode ter expirado ou ser inválido."
+    },
     "join": {
       "title": "Entrar na equipe",
       "invitationExpired": "Este convite expirou",

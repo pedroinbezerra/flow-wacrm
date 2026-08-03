@@ -396,6 +396,14 @@ export function WhatsAppConfig() {
   }
 
   async function handleLaunchEmbeddedSignup() {
+    if (typeof window !== 'undefined' && window.location.protocol === 'http:') {
+      toast.error(
+        'O SDK da Meta exige HTTPS no navegador. Para testar o pop-up localmente em dev, execute via HTTPS (ex: npx next dev --experimental-https ou ngrok), ou use a "Auto-Detecção por Token" abaixo.',
+        { duration: 9000 }
+      );
+      return;
+    }
+
     const appId = process.env.NEXT_PUBLIC_META_APP_ID;
     const configId = process.env.NEXT_PUBLIC_META_CONFIG_ID;
 
