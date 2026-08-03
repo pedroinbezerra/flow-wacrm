@@ -326,18 +326,81 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
       {
         id: "wa-connect",
         question: "Como conectar o WhatsApp Business API oficial da Meta?",
-        answer: "Para integrar sua conta da Meta Cloud API com o Flow Hub, siga estes passos:",
+        answer: "Para integrar sua conta da Meta Cloud API com o Flow Hub, você pode utilizar a Auto-Detecção de 1 clique ou inserir as credenciais manualmente:",
         steps: [
           "Acesse Configurações > WhatsApp.",
-          "Insira o Token de Acesso Permanente da Meta.",
-          "Insira o ID da Conta do WhatsApp Business (WABA ID) e o ID do Número de Telefone (Phone Number ID).",
-          "Clique em 'Salvar e Validar Conexão'."
+          "Insira o Token de Acesso Permanente da Meta ou conecte via Cadastro Incorporado (Embedded Signup).",
+          "O sistema detectará automaticamente a sua Conta do WhatsApp Business (WABA ID) e os Telefones associados.",
+          "Clique em 'Salvar alterações' para ativar a integração."
         ],
         routeLink: {
           label: "Ir para Configurações de WhatsApp",
           href: "/settings?tab=whatsapp"
         },
         tags: ["whatsapp", "meta", "cloud api", "token", "waba"]
+      },
+      {
+        id: "wa-system-user-token",
+        question: "Como gerar um Token de Acesso Permanente (System User Token) na Meta?",
+        answer: "Tokens temporários expiram em poucas horas. Para garantir que sua conexão permaneça 100% ativa sem nunca expirar, gere um Token de Usuário do Sistema:",
+        steps: [
+          "Acesse o Meta Business Manager (business.facebook.com/settings).",
+          "No menu lateral, vá em Usuários > Usuários do Sistema e clique em 'Adicionar'.",
+          "Crie o usuário com o papel de 'Administrador'.",
+          "Clique em 'Atribuir ativos', selecione seu Aplicativo e sua Conta do WhatsApp Business com controle total.",
+          "Clique em 'Gerar novo token', selecione o seu App e marque as permissões: whatsapp_business_messaging e whatsapp_business_management.",
+          "Copie o token gerado e cole nas Configurações de WhatsApp do Flow Hub."
+        ],
+        routeLink: {
+          label: "Configurar Token de WhatsApp",
+          href: "/settings?tab=whatsapp"
+        },
+        tags: ["token permanente", "system user", "usuário do sistema", "meta", "gerenciador de negócios"]
+      },
+      {
+        id: "wa-24h-window",
+        question: "Como funciona a Janela de Atendimento de 24 horas do WhatsApp?",
+        answer: "Sempre que um cliente envia uma mensagem para a sua empresa, a Meta abre uma 'Janela de Atendimento de 24 horas':",
+        steps: [
+          "Dentro das 24h: Sua equipe pode responder livremente com qualquer texto, imagem, documento ou áudio diretamente pela Caixa de Entrada.",
+          "Na Caixa de Entrada do Flow Hub, um contador regressivo exibe exatamente quanto tempo falta para o fim da janela gratuita de 24h.",
+          "Após as 24h: Para iniciar uma nova conversa ou retomar o contato após o prazo, é necessário enviar uma Mensagem de Modelo (Template) aprovada pela Meta."
+        ],
+        routeLink: {
+          label: "Ir para a Caixa de Entrada",
+          href: "/inbox"
+        },
+        tags: ["24 horas", "janela de atendimento", "sessão", "tarifas", "regras meta"]
+      },
+      {
+        id: "wa-quality-rating",
+        question: "O que significam os indicadores de Qualidade e Saúde da Linha (Quality Rating)?",
+        answer: "A Meta monitora continuamente o nível de satisfação dos usuários em relação aos seus envios de mensagens. Na tela de configurações, exibimos o status atual da sua linha:",
+        steps: [
+          "GREEN (Verde - Alta Qualidade): Sua linha está saudável e operando sem restrições.",
+          "YELLOW (Amarelo - Média Qualidade): Houve alguns bloqueios ou marcações de spam recentes pelos clientes. Recomenda-se reduzir envios promocionais não solicitados.",
+          "RED (Vermelho - Baixa Qualidade): Linha com alto índice de denúncias ou spam. Riscos de redução temporária do limite diário de mensagens."
+        ],
+        routeLink: {
+          label: "Ver Status da Minha Linha",
+          href: "/settings?tab=whatsapp"
+        },
+        tags: ["qualidade", "quality rating", "saúde", "status", "bloqueio", "spam"]
+      },
+      {
+        id: "wa-groups",
+        question: "Como funciona o atendimento de Grupos do WhatsApp no Flow Hub?",
+        answer: "O Flow Hub oferece suporte à API Oficial de Grupos da Meta para atendimento e suporte em pequenos grupos:",
+        steps: [
+          "Os grupos de atendimento podem ser criados ou conectados diretamente pelo sistema.",
+          "Conforme as diretrizes de privacidade da Meta, participantes entram no grupo através do link de convite oficial enviado pela empresa.",
+          "As mensagens trocadas no grupo chegam em tempo real na Caixa de Entrada e nos Boards do Flow Hub para atendimento multiagente."
+        ],
+        routeLink: {
+          label: "Ir para a Caixa de Entrada",
+          href: "/inbox"
+        },
+        tags: ["grupos", "groups", "atendimento em grupo", "suporte vip", "convite"]
       }
     ]
   },
