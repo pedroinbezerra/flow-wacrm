@@ -511,6 +511,10 @@ export function WhatsAppConfig() {
         return;
       }
 
+      // Track session info from Meta Embedded Signup callback
+      let embeddedPhoneNumberId: string | undefined;
+      let embeddedWabaId: string | undefined;
+
       window.FB.login(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (response: any) => {
@@ -518,7 +522,11 @@ export function WhatsAppConfig() {
             fetch('/api/whatsapp/embedded-signup', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ code: response.authResponse.code }),
+              body: JSON.stringify({
+                code: response.authResponse.code,
+                phone_number_id: embeddedPhoneNumberId,
+                waba_id: embeddedWabaId,
+              }),
             })
               .then((res) => res.json())
               .then((data) => {
@@ -545,6 +553,10 @@ export function WhatsAppConfig() {
           override_default_response_type: true,
           extras: {
             setup: {},
+            sessionInfoListener: (info: { phone_number_id?: string; waba_id?: string }) => {
+              embeddedPhoneNumberId = info?.phone_number_id;
+              embeddedWabaId = info?.waba_id;
+            },
           },
         }
       );

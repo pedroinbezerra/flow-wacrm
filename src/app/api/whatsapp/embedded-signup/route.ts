@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import {
+  discoverWhatsAppAccounts,
   exchangeCodeForAccessToken,
   registerPhoneNumber,
   subscribeWabaToApp,
@@ -81,7 +82,27 @@ export async function POST(request: Request) {
       }
     }
 
-    if (!accessToken || !phone_number_id) {
+    // Step 2: If phone_number_id was not provided by the frontend (e.g. sessionInfoListener
+    // did not fire), auto-discover WABAs and phone numbers using the access token.
+    let resolvedPhoneNumberId = phone_number_id
+    let resolvedWabaId = waba_id
+
+    if (!resolvedPhoneNumberId && accessToken) {
+      try {
+        const discovered = await discoverWhatsAppAccounts({ accessToken })
+        if (discovered.length > 0) {
+          const firstWaba = discovered[0]
+          resolvedWabaId = resolvedWabaId || firstWaba.id
+          if (firstWaba.phone_numbers && firstWaba.phone_numbers.length > 0) {
+            resolvedPhoneNumberId = firstWaba.phone_numbers[0].id
+          }
+        }
+      } catch (discoverErr) {
+        console.warn('[embedded-signup POST] Auto-discovery failed:', discoverErr)
+      }
+    }
+
+    if (!accessToken || !resolvedPhoneNumberId) {
       return NextResponse.json(
         { error: 'access_token (or OAuth code) and phone_number_id are required' },
         { status: 400 }
@@ -92,7 +113,7 @@ export async function POST(request: Request) {
     const { data: claimed, error: claimedError } = await supabaseAdmin()
       .from('whatsapp_config')
       .select('account_id')
-      .eq('phone_number_id', phone_number_id)
+      .eq('phone_number_id', resolvedPhoneNumberId)
       .neq('account_id', accountId)
       .maybeSingle()
 
@@ -114,11 +135,11 @@ export async function POST(request: Request) {
       )
     }
 
-    // Step 2: Verify credentials with Meta
+    // Verify credentials with Meta
     let phoneInfo
     try {
       phoneInfo = await verifyPhoneNumber({
-        phoneNumberId: phone_number_id,
+        phoneNumberId: resolvedPhoneNumberId,
         accessToken,
       })
     } catch (err) {
@@ -151,7 +172,7 @@ export async function POST(request: Request) {
     if (pin && typeof pin === 'string' && pin.trim().length === 6) {
       try {
         await registerPhoneNumber({
-          phoneNumberId: phone_number_id,
+          phoneNumberId: resolvedPhoneNumberId,
           accessToken,
           pin: pin.trim(),
         })
@@ -164,12 +185,12 @@ export async function POST(request: Request) {
       registrationSkipped = true
     }
 
-    // Step 5: Subscribe WABA to app
+    // Subscribe WABA to app
     let subscribedAppsAt: string | null = null
-    if (waba_id) {
+    if (resolvedWabaId) {
       try {
         await subscribeWabaToApp({
-          wabaId: waba_id,
+          wabaId: resolvedWabaId,
           accessToken,
         })
         subscribedAppsAt = new Date().toISOString()
@@ -178,10 +199,10 @@ export async function POST(request: Request) {
       }
     }
 
-    // Step 6: Upsert whatsapp_config row
+    // Upsert whatsapp_config row
     const baseRow = {
-      phone_number_id,
-      waba_id: waba_id || null,
+      phone_number_id: resolvedPhoneNumberId,
+      waba_id: resolvedWabaId || null,
       access_token: encryptedAccessToken,
       status: registrationError ? 'disconnected' : 'connected',
       connected_at: registrationError ? null : new Date().toISOString(),
@@ -195,7 +216,7 @@ export async function POST(request: Request) {
       .from('whatsapp_config')
       .select('id, is_default')
       .eq('account_id', accountId)
-      .eq('phone_number_id', phone_number_id)
+      .eq('phone_number_id', resolvedPhoneNumberId)
       .maybeSingle()
 
     if (!existing) {
