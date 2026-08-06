@@ -15,7 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { CheckCircle, UsersRound } from "lucide-react";
+import { CheckCircle, UsersRound, Eye, EyeOff } from "lucide-react";
 import { FlowLogo } from "@/components/layout/flow-logo";
 
 // `useSearchParams` opts the component out of static prerendering
@@ -42,6 +42,8 @@ function SignupPageInner() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -61,6 +63,11 @@ function SignupPageInner() {
       return;
     }
 
+    if (password.length > 72) {
+      setError(t("auth.signup.passwordTooLong"));
+      return;
+    }
+
     setLoading(true);
 
     // If we have an invite token, point Supabase's verification
@@ -71,7 +78,7 @@ function SignupPageInner() {
       ? `${window.location.origin}/join/${encodeURIComponent(inviteToken)}`
       : undefined;
 
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -81,6 +88,22 @@ function SignupPageInner() {
         ...(emailRedirectTo ? { emailRedirectTo } : {}),
       },
     });
+
+    // Se o e-mail já estiver em uso, o Supabase Auth ou retorna um erro de duplicidade
+    // ou retorna um objeto user com o array identities vazio (comportamento seguro contra enumeração de usuários).
+    const isAlreadyRegistered =
+      (error && (
+        error.message.toLowerCase().includes("already registered") ||
+        error.message.toLowerCase().includes("already exists") ||
+        error.message.toLowerCase().includes("user_already_exists")
+      )) ||
+      (signUpData?.user && Array.isArray(signUpData.user.identities) && signUpData.user.identities.length === 0);
+
+    if (isAlreadyRegistered) {
+      setError(t("auth.signup.emailAlreadyInUse"));
+      setLoading(false);
+      return;
+    }
 
     if (error) {
       setError(t("auth.signup.error"));
@@ -160,7 +183,7 @@ function SignupPageInner() {
             )}
 
             <div className="flex flex-col gap-2">
-              <Label htmlFor="fullName" className="text-muted-foreground">
+              <Label htmlFor="fullName" className="text-foreground font-medium">
                 {t("common.fullName")}
               </Label>
               <Input
@@ -170,12 +193,12 @@ function SignupPageInner() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
+                className="border-border bg-card-2 text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
               />
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label htmlFor="email" className="text-muted-foreground">
+              <Label htmlFor="email" className="text-foreground font-medium">
                 {t("common.email")}
               </Label>
               <Input
@@ -185,38 +208,70 @@ function SignupPageInner() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
+                className="border-border bg-card-2 text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
               />
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label htmlFor="password" className="text-muted-foreground">
+              <Label htmlFor="password" className="text-foreground font-medium">
                 {t("common.password")}
               </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder={t("auth.signup.passwordPlaceholder")}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
-              />
+              <div className="relative flex items-center">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder={t("auth.signup.passwordPlaceholder")}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  maxLength={72}
+                  required
+                  className="border-border bg-card-2 text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  title={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  className="absolute right-3 text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md focus:outline-none"
+                >
+                  {showPassword ? (
+                    <EyeOff className="size-4" />
+                  ) : (
+                    <Eye className="size-4" />
+                  )}
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label htmlFor="confirmPassword" className="text-muted-foreground">
+              <Label htmlFor="confirmPassword" className="text-foreground font-medium">
                 {t("auth.signup.confirmPassword")}
               </Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder={t("auth.signup.repeatPassword")}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
-              />
+              <div className="relative flex items-center">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder={t("auth.signup.repeatPassword")}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  maxLength={72}
+                  required
+                  className="border-border bg-card-2 text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? "Ocultar confirmação de senha" : "Mostrar confirmação de senha"}
+                  title={showConfirmPassword ? "Ocultar confirmação de senha" : "Mostrar confirmação de senha"}
+                  className="absolute right-3 text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md focus:outline-none"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="size-4" />
+                  ) : (
+                    <Eye className="size-4" />
+                  )}
+                </button>
+              </div>
             </div>
 
             <Button

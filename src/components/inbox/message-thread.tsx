@@ -1196,8 +1196,8 @@ export function MessageThread({
               className={cn(
                 "gap-1 text-[10px] font-medium px-1.5 py-0.5 border-border whitespace-nowrap",
                 conversation.ai_handler_status === "human"
-                  ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
-                  : "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                  ? "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300"
+                  : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
               )}
             >
               {conversation.ai_handler_status === "human" ? (
@@ -1225,8 +1225,8 @@ export function MessageThread({
             className={cn(
               "h-7 text-[11px] font-medium gap-1 px-2.5 rounded-md transition-all shadow-xs whitespace-nowrap",
               conversation.ai_handler_status === "human"
-                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
-                : "border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20"
+                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20"
+                : "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:bg-amber-500/20"
             )}
           >
             {conversation.ai_handler_status === "human" ? (

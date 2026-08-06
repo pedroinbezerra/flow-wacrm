@@ -46,7 +46,7 @@ const ROLE_CHIP: Record<
     labelKey: "roles.owner",
     // Amber: scarce, immutable, "the boss" — gets visual emphasis.
     className:
-      "border-amber-500/30 bg-amber-500/10 text-amber-400 dark:text-amber-300 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5",
+      "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5",
   },
   admin: {
     icon: Shield,

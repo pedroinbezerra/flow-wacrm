@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/hooks/use-translation";
 import { Sidebar } from "@/components/layout/sidebar";
@@ -30,6 +31,22 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const combined = `${window.location.hash}&${window.location.search}`.toLowerCase();
+      if (
+        combined.includes("otp_expired") ||
+        combined.includes("token_expired") ||
+        combined.includes("error=access_denied") ||
+        combined.includes("invalid+or+has+expired")
+      ) {
+        const supabase = createClient();
+        void supabase.auth.signOut().then(() => {
+          window.location.href = "/reset-password?expired=true";
+        });
+        return;
+      }
+    }
+
     if (!loading && !user) {
       router.push("/login");
     }

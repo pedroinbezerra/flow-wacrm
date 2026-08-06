@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Conversation, Message, Contact, ConversationStatus } from "@/types";
@@ -552,7 +553,14 @@ export default function InboxPage() {
         <div className="flex shrink-0 flex-col items-start gap-1 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 text-left sm:flex-row sm:items-center sm:justify-center sm:gap-2 sm:text-center">
           <WifiOff className="h-4 w-4 text-amber-400" />
           <p className="text-xs text-amber-400">
-            WhatsApp® não está conectado. Acesse Configurações para conectar sua conta.
+            WhatsApp® não está conectado. Acesse{" "}
+            <Link
+              href="/settings?tab=whatsapp"
+              className="font-semibold underline hover:text-amber-300 transition-colors"
+            >
+              Configurações
+            </Link>{" "}
+            para conectar sua conta.
           </p>
         </div>
       )}

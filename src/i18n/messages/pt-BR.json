@@ -58,7 +58,7 @@
       "searchConversations": "Buscar conversas...",
       "addNote": "Adicionar nota...",
       "writeNote": "Escrever uma nota...",
-      "dealTitle": "Título do deal",
+      "dealTitle": "Título do negócio",
       "newStageName": "Nome do novo estágio",
       "newFieldName": "Nome do novo campo…"
     }
@@ -113,6 +113,8 @@
       "passwordMismatch": "As senhas não coincidem",
       "passwordsDoNotMatch": "As senhas não coincidem",
       "passwordTooShort": "A senha deve ter pelo menos 6 caracteres",
+      "passwordTooLong": "A senha deve possuir no máximo 72 caracteres.",
+      "emailAlreadyInUse": "Não foi possível concluir o cadastro. Verifique os dados informados.",
       "termsAgreement": "Ao se inscrever, você concorda com nossos termos de serviço",
       "checkEmail": {
         "title": "Verifique seu e-mail",
@@ -150,6 +152,7 @@
       "goToLogin": "Ir para o login",
       "passwordsDoNotMatch": "As senhas não coincidem",
       "passwordTooShort": "A senha deve ter pelo menos 6 caracteres",
+      "passwordTooLong": "A senha deve possuir no máximo 72 caracteres.",
       "invalidSessionTitle": "Link inválido ou expirado",
       "invalidSessionDescription": "Não foi possível verificar a solicitação de redefinição de senha. Solicite um novo link.",
       "requestNewLink": "Solicitar novo link",
@@ -247,30 +250,32 @@
     "signOut": "Sair",
     "beta": "Beta",
     "openMenu": "Abrir menu",
-    "closeMenu": "Fechar menu"
+    "closeMenu": "Fechar menu",
+    "toggleLightMode": "Alterar para modo claro",
+    "toggleDarkMode": "Alterar para modo escuro"
   },
 
   "dashboard": {
     "title": "Dashboard",
-    "description": "Análise em tempo real entre conversas, contatos, deals, transmissões e automações.",
+    "description": "Análise em tempo real entre conversas, contatos, negócios, transmissões e automações.",
     "activeConversations": "Conversas Ativas",
     "newContactsToday": "Novos Contatos Hoje",
-    "openDealsValue": "Valor de Deals Abertos",
+    "openDealsValue": "Valor de Negócios Abertos",
     "messagesSentToday": "Mensagens Enviadas Hoje",
-    "openDeal": "deal aberto",
-    "openDeals": "deals abertos",
-    "vsYesterday": "vs ontem",
-    "newToday": "novo hoje vs ontem",
-    "noChange": "Sem mudanças",
+    "openDeal": "negócio aberto",
+    "openDeals": "negócios abertos",
+    "vsYesterday": "desde ontem",
+    "newToday": "novo hoje desde ontem",
+    "noChange": "Sem alterações",
     "recentActivity": "Atividade Recente",
     "viewAll": "Ver tudo →",
     "noActivityYet": "Sem atividade ainda",
-    "activityHint": "Atividade de mensagens, deals, transmissões e automações aparecerá aqui.",
+    "activityHint": "Atividade de mensagens, negócios, transmissões e automações aparecerá aqui.",
     "activity": {
       "newMessage": "Nova mensagem de {name}",
       "newContact": "Novo contato: {name}",
-      "dealInStage": "Deal \"{title}\" em {stage}",
-      "dealUpdated": "Deal \"{title}\" atualizado",
+      "dealInStage": "Negócio \"{title}\" em {stage}",
+      "dealUpdated": "Negócio \"{title}\" atualizado",
       "broadcastSent": "enviada para {count} contatos",
       "broadcastStatus": "{status} ({count} destinatários)",
       "broadcastItem": "Transmissão \"{name}\" {label}",
@@ -281,11 +286,11 @@
     "showing": "Mostrando",
     "of": "de",
     "show": "Mostrar",
-    "totalDeals": "Total de Deals",
+    "totalDeals": "Total de Negócios",
     "pipelineValue": "Valor do Pipeline",
-    "openDealsByStage": "Deals abertos por estágio",
-    "noOpenDeals": "Nenhum deal aberto ainda",
-    "createDealsHint": "Crie deals em Pipelines para ver detalhamentos de estágio aqui.",
+    "openDealsByStage": "Negócios abertos por estágio",
+    "noOpenDeals": "Nenhum negócio aberto ainda",
+    "createDealsHint": "Crie negócios em Pipelines para ver detalhamentos de estágio aqui.",
     "dealSingular": "negócio",
     "dealPlural": "negócios",
     "notEnoughData": "Dados insuficientes ainda",
@@ -306,13 +311,13 @@
     "lastWeek": "Semana passada:",
     "noRepliesRecorded": "Nenhuma resposta registrada ainda",
     "chartFillsAsYouReply": "Este gráfico preenchido conforme você responde às mensagens dos clientes.",
-    "avgDealSize": "Tamanho Médio do Deal",
+    "avgDealSize": "Tamanho Médio do Negócio",
     "weightedValue": "Valor Ponderado",
     "wonThisMonth": "Ganho Este Mês",
     "lostThisMonth": "Perdido Este Mês",
     "quickAction": {
       "newContact": "Novo Contato",
-      "newDeal": "Novo Deal",
+      "newDeal": "Novo Negócio",
       "newBroadcast": "Nova Transmissão",
       "newAutomation": "Nova Automação"
     },
@@ -496,7 +501,7 @@
       "noNotes": "Nenhuma nota ainda.",
       "noCustomFields": "Nenhum campo personalizado definido. Crie-os em Configurações.",
       "saveCustomFields": "Salvar campos personalizados",
-      "noDeals": "Nenhum deal ainda",
+      "noDeals": "Nenhum negócio ainda",
       "failedAddNote": "Falha ao adicionar nota",
       "noteAdded": "Nota adicionada",
       "failedDeleteNote": "Falha ao deletar nota",
@@ -1042,7 +1047,7 @@
     "board": "Board de Conversas",
     "lane": "Raia (Lane)",
     "updateContactField": "Atualizar campo do contato",
-    "createDeal": "Criar deal",
+    "createDeal": "Criar negócio",
     "wait": "Aguardar",
     "condition": "Condição (Se/Senão)",
     "sendWebhook": "Enviar webhook",
@@ -1059,7 +1064,7 @@
     "valueInterpolationExample": "Texto ou {{ vars.x }} / {{ message.text }}",
     "pipelineId": "ID do pipeline",
     "stageId": "ID do estágio",
-    "title": "Título",
+    "titleLabel": "Título",
     "amount": "Quantidade",
     "unit": "Unidade",
     "minutes": "Minutos",
@@ -1319,7 +1324,7 @@
       "whatsapp": "WhatsApp",
       "templates": "Modelos",
       "fieldsAndTags": "Campos e tags",
-      "dealsAndCurrency": "Deals e moeda",
+      "dealsAndCurrency": "Negócios e moeda",
       "teamMembers": "Membros da equipe"
     },
     "groups": {
@@ -1336,7 +1341,10 @@
       "mustBeAtLeast": "Deve ter pelo menos {min} caracteres",
       "passwordsDoNotMatch": "As senhas não coincidem",
       "currentPasswordIncorrect": "Senha atual incorreta",
-      "passwordUpdated": "Senha atualizada com sucesso"
+      "passwordUpdated": "Senha atualizada com sucesso",
+      "passwordTooLong": "A senha deve possuir no máximo 72 caracteres.",
+      "updatePassword": "Atualizar senha",
+      "updatingPassword": "Atualizando..."
     },
     "profile": {
       "title": "Seu perfil",
@@ -1362,14 +1370,44 @@
     "appearance": {
       "title": "Aparência",
       "description": "Defina o modo e a cor de destaque usados em todo o aplicativo. Salvo neste dispositivo — experimente, muda em tempo real.",
-      "mode": "Modo",
-      "accentColor": "Cor de destaque"
+      "mode": "Modo de cor",
+      "accentColor": "Cor de destaque",
+      "lightMode": "Claro",
+      "darkMode": "Escuro",
+      "active": "Ativo",
+      "themes": {
+        "violet": {
+          "name": "Violeta",
+          "tagline": "O padrão — elegante, sofisticado e marcante."
+        },
+        "emerald": {
+          "name": "Esmeralda",
+          "tagline": "Foco em crescimento — transmite dinamismo e renovação."
+        },
+        "cobalt": {
+          "name": "Cobalto",
+          "tagline": "Azul B2B moderno — calmo, seguro e produtivo."
+        },
+        "amber": {
+          "name": "Âmbar",
+          "tagline": "Achegado e amigável — ótimo para pequenas e médias empresas."
+        },
+        "rose": {
+          "name": "Rosê",
+          "tagline": "Moderno e arrojado — ideal para marcas e criadores."
+        }
+      }
+    },
+    "fieldsAndTags": {
+      "title": "Campos e tags",
+      "description": "Duas formas de organizar contatos: tags coloridas para agrupamento rápido e campos personalizados para dados estruturados.",
+      "addTag": "Adicionar tag"
     },
     "deals": {
-      "title": "Deals e moeda",
-      "description": "A moeda usada para novos deals e para os totais do pipeline e do dashboard.",
+      "title": "Negócios e moeda",
+      "description": "A moeda usada para novos negócios e para os totais do pipeline e do dashboard.",
       "defaultCurrency": "Moeda padrão",
-      "defaultCurrencyDescription": "Novos deals usam esta moeda por padrão, e os totais do pipeline e do dashboard são exibidos nela. Deals existentes mantêm a moeda com que foram salvos.",
+      "defaultCurrencyDescription": "Novos negócios usam esta moeda por padrão, e os totais do pipeline e do dashboard são exibidos nela. Negócios existentes mantêm a moeda com que foram salvos.",
       "currency": "Moeda",
       "adminOnly": "Apenas administradores da conta podem alterar a moeda padrão.",
       "failedSaveCurrency": "Falha ao salvar a moeda padrão",
@@ -1457,11 +1495,11 @@
     },
     "security": {
       "title": "Login e segurança",
-      "description": "Altere sua senha e saia de todos os dispositivos. Isso mantém sua conta segura."
+      "description": "Altere sua senha e desconecte-se de todos os dispositivos. Isso mantém sua conta segura."
     },
     "sessions": {
       "title": "Sessões ativas",
-      "description": "Saia de todos os dispositivos onde você está conectado — inclusive neste. Útil se você perdeu um laptop ou compartilhou sua senha.",
+      "description": "Desconecte-se de todos os dispositivos onde você está conectado — inclusive neste. Útil se você perdeu um laptop ou compartilhou sua senha.",
       "signOutAll": "Sair de todos os dispositivos",
       "confirmSignOut": "Sair em todos os lugares?"
     },
@@ -1793,11 +1831,11 @@
         "description": "Cadastre ou importe sua lista de contatos em formato CSV ou manual."
       },
       "create_first_campaign": {
-        "title": "Criar a primeira campanha",
+        "title": "Criar a primeira transmissão",
         "description": "Prepare um modelo de mensagem aprovado para disparo em massa."
       },
       "send_first_campaign": {
-        "title": "Enviar a primeira campanha",
+        "title": "Enviar a primeira transmissão",
         "description": "Dispare sua primeira transmissão para sua base de clientes."
       },
       "invite_team": {
@@ -1816,7 +1854,7 @@
       "contactsDesc": "Importe e organize seus contatos, aplique tags e acompanhe a jornada de cada cliente.",
       "flowsTitle": "Construtor de Fluxos e Automações ⚡",
       "flowsDesc": "Crie chatbots e automações visuais sem código para responder mensagens instantaneamente.",
-      "broadcastsTitle": "Campanhas e Disparos 🚀",
+      "broadcastsTitle": "Transmissões e Disparos 🚀",
       "broadcastsDesc": "Envie mensagens em massa com modelos aprovados pela Meta para suas listas segmentadas.",
       "checklistTitle": "Checklist de Implantação 📋",
       "checklistDesc": "Acompanhe o seu progresso de configuração para deixar seu ambiente 100% pronto para uso!",
@@ -1828,7 +1866,7 @@
         "chatTitle": "Área de Atendimento 📱",
         "chatDesc": "Envie mensagens de texto, áudios, mídias e notas internas.",
         "sidebarTitle": "Painel do Cliente 👤",
-        "sidebarDesc": "Veja os dados do contato, tags e deals associados no CRM."
+        "sidebarDesc": "Veja os dados do contato, tags e negócios associados no CRM."
       },
       "contacts": {
         "headerTitle": "Gestão de Contatos 👥",
@@ -1849,10 +1887,10 @@
         "listDesc": "Gerencie os fluxos ativos, rascunhos e monitore as estatísticas de uso."
       },
       "broadcasts": {
-        "headerTitle": "Campanhas e Transmissões 🚀",
+        "headerTitle": "Transmissões e Disparos 🚀",
         "headerDesc": "Dispare mensagens em massa com alta entregabilidade via WhatsApp API.",
-        "newTitle": "Nova Campanha ➕",
-        "newDesc": "Monte sua campanha escolhendo o modelo da Meta, público-alvo e agendamento.",
+        "newTitle": "Nova Transmissão ➕",
+        "newDesc": "Monte sua transmissão escolhendo o modelo da Meta, público-alvo e agendamento.",
         "statsTitle": "Relatórios e Entregas 📊",
         "statsDesc": "Acompanhe métricas em tempo real de mensagens enviadas, entregues e lidas."
       },

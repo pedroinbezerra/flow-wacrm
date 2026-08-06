@@ -60,15 +60,15 @@ export function AppearancePanel() {
         </h3>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {THEMES.map((t) => (
+          {THEMES.map((themeItem) => (
             <ThemeCard
-              key={t.id}
-              id={t.id}
-              name={t.name}
-              tagline={t.tagline}
-              swatch={t.swatch}
-              isActive={t.id === theme}
-              onPick={() => setTheme(t.id)}
+              key={themeItem.id}
+              id={themeItem.id}
+              name={t(`settings.appearance.themes.${themeItem.id}.name` as any)}
+              tagline={t(`settings.appearance.themes.${themeItem.id}.tagline` as any)}
+              swatch={themeItem.swatch}
+              isActive={themeItem.id === theme}
+              onPick={() => setTheme(themeItem.id)}
             />
           ))}
         </div>
@@ -98,7 +98,9 @@ function ModeCard({
   isActive: boolean;
   onPick: () => void;
 }) {
+  const { t } = useTranslation();
   const isLight = mode === "light";
+  const label = isLight ? t("settings.appearance.lightMode") : t("settings.appearance.darkMode");
   const Icon = isLight ? Sun : Moon;
   return (
     <button
@@ -106,7 +108,7 @@ function ModeCard({
       role="radio"
       onClick={onPick}
       aria-checked={isActive}
-      aria-label={`Use ${mode} mode`}
+      aria-label={`Usar modo ${label.toLowerCase()}`}
       className={cn(
         "flex items-center gap-3 rounded-lg border bg-card p-4 text-left transition-colors",
         isActive
@@ -120,13 +122,13 @@ function ModeCard({
       >
         <Icon className="h-4 w-4" />
       </span>
-      <span className="flex-1 text-sm font-semibold capitalize text-foreground">
-        {mode}
+      <span className="flex-1 text-sm font-semibold text-foreground">
+        {label}
       </span>
       {isActive && (
         <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-medium text-primary">
           <Check className="h-3 w-3" />
-          Active
+          {t("settings.appearance.active")}
         </span>
       )}
     </button>
@@ -148,12 +150,13 @@ function ThemeCard({
   isActive: boolean;
   onPick: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
       onClick={onPick}
       aria-pressed={isActive}
-      aria-label={`Use ${name} theme`}
+      aria-label={`Usar tema ${name}`}
       className={cn(
         "flex flex-col gap-3 rounded-lg border bg-card p-4 text-left transition-colors",
         isActive
@@ -173,7 +176,7 @@ function ThemeCard({
         {isActive && (
           <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-medium text-primary">
             <Check className="h-3 w-3" />
-            Active
+            {t("settings.appearance.active")}
           </span>
         )}
       </div>
@@ -192,7 +195,7 @@ function ThemeCard({
         <span className="w-3 bg-muted" />
         <span className="w-3 bg-card" />
       </div>
-      <span className="sr-only">Theme id: {id}</span>
+      <span className="sr-only">Tema: {name}</span>
     </button>
   );
 }

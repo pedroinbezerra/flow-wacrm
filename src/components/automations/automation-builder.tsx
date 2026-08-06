@@ -1270,7 +1270,7 @@ function StepEditor({
               />
             )}
           </FieldBlock>
-          <FieldBlock label={t("automations.title")}>
+          <FieldBlock label={t("automations.titleLabel")}>
             <Input
               value={(cfg.title as string) ?? ""}
               onChange={(e) => set({ title: e.target.value })}

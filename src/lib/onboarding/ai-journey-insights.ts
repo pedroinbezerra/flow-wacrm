@@ -14,8 +14,8 @@ const STEP_LABELS: Record<string, string> = {
   connect_whatsapp: "Conexão do WhatsApp",
   create_first_flow: "Criação do 1º Fluxo",
   import_contacts: "Importação de Contatos",
-  create_first_campaign: "Criação de Campanha",
-  send_first_campaign: "Envio de Campanha",
+  create_first_campaign: "Criação de Transmissão",
+  send_first_campaign: "Envio de Transmissão",
   invite_team: "Convite de Equipe",
 };
 

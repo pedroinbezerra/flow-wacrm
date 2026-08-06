@@ -341,7 +341,7 @@ export default function BroadcastDetailPage() {
                 ? t('broadcasts.cantDeleteWhileSending')
                 : t('broadcasts.deleteTitle')
             }
-            className="border-red-500/30 bg-transparent text-red-400 hover:bg-red-500/10 disabled:opacity-40"
+            className="border-destructive/30 bg-transparent text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-40"
           >
             <Trash2 className="h-3.5 w-3.5" />
             Delete

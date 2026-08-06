@@ -91,7 +91,7 @@ export function WelcomeScreen() {
           <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent p-5 sm:p-6 space-y-3">
             <div className="flex items-center gap-2 text-amber-600 dark:text-amber-300 font-semibold text-sm sm:text-base">
               <HeartHandshake className="size-5 shrink-0" />
-              Nossos compromisso com você
+              Nosso compromisso com você
             </div>
             <p className="text-sm sm:text-base text-foreground/90 leading-relaxed">
               Saiba que você <strong className="text-foreground font-semibold">não conta apenas com uma ferramenta poderosa</strong>. Conte com toda a equipe da <strong className="text-primary font-bold">Flow Systems</strong> para otimizar seus processos, evoluir seu atendimento e resolver qualquer problema sempre que precisar. Estamos ao seu lado em cada etapa!

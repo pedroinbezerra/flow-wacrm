@@ -68,7 +68,7 @@ function getStatusMeta(
   > = {
     active: {
       label: t("flows.statusActive"),
-      classes: "border-emerald-600/40 bg-emerald-500/10 text-emerald-300",
+      classes: "border-emerald-600/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
       icon: PlayCircle,
     },
     completed: {
@@ -78,7 +78,7 @@ function getStatusMeta(
     },
     handed_off: {
       label: t("flows.statusHandedOff"),
-      classes: "border-amber-600/40 bg-amber-500/10 text-amber-300",
+      classes: "border-amber-600/40 bg-amber-500/10 text-amber-800 dark:text-amber-300",
       icon: UserPlus,
     },
     timed_out: {
@@ -93,7 +93,7 @@ function getStatusMeta(
     },
     failed: {
       label: t("flows.statusFailed"),
-      classes: "border-red-600/40 bg-red-500/10 text-red-300",
+      classes: "border-red-600/40 bg-red-500/10 text-red-700 dark:text-red-300",
       icon: CircleAlert,
     },
   };

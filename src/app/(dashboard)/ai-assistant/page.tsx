@@ -668,7 +668,7 @@ export default function AIAssistantPage() {
           </div>
 
           {activeFlows.length > 0 && (
-            <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
+            <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300">
               <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
               <div className="space-y-1">
                 <span className="font-semibold">
@@ -676,7 +676,7 @@ export default function AIAssistantPage() {
                 </span>
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {activeFlows.map((f) => (
-                    <Badge key={f.id} variant="outline" className="border-amber-400/40 bg-amber-500/20 text-amber-200 text-[10px]">
+                    <Badge key={f.id} variant="outline" className="border-amber-400/40 bg-amber-500/20 text-amber-800 dark:text-amber-200 text-[10px]">
                       {f.name}
                     </Badge>
                   ))}
@@ -1235,7 +1235,7 @@ export default function AIAssistantPage() {
 
                     {/* Handoff Notice */}
                     {msg.handoffRequested && (
-                      <div className="mt-3 flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-300">
+                      <div className="mt-3 flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-800 dark:text-amber-300">
                         <Zap className="h-4 w-4 shrink-0" />
                         <span>
                           <strong>{t('aiAssistant.playground.handoffNotice')}</strong> {t('aiAssistant.playground.reason')} {msg.handoffReason}

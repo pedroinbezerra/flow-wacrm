@@ -2,6 +2,34 @@
 
 Guia de padronização para agentes que criam, alteram ou revisam código neste projeto.
 
+## 0) Constituição do Produto — leitura obrigatória
+
+Este arquivo governa **como implementar**. Ele não governa **o que construir nem
+por quê**. Isso pertence à Constituição do Produto FlowHub, em
+`docs/constituicao/`.
+
+- Ponto de entrada: `docs/constituicao/00-INDICE-E-ARQUITETURA.md`.
+- Consulta rápida de regras: `docs/constituicao/ANEXO-B-indice-de-artigos.md`.
+- Escolhas recorrentes: `docs/constituicao/ANEXO-C-matriz-de-decisao.md`.
+- Protocolo de uso por agentes: `docs/constituicao/L8-C68-protocolo-para-agentes.md`.
+
+Ordem obrigatória de carregamento (`FH-68.08`), do mais barato ao mais caro:
+Anexo B → Anexo C → Núcleos Normativos dos capítulos aplicáveis → capítulo
+completo. Toda entrega com efeito perceptível encerra com o **Bloco de
+Conformidade** (`FH-68.02`).
+
+Regras de precedência:
+
+- Conflito sobre **o que construir** → vence a Constituição.
+- Conflito sobre **como implementar neste repositório** → vence este arquivo.
+- Obrigação legal (`docs/legal/`, `docs/business-rules/`) → vence ambos.
+
+Antes de criar ou alterar qualquer tela, fluxo, componente, texto de interface,
+automação ou funcionalidade de IA, consulte o Anexo B e cite os artigos
+(`FH-XX.NN`) que sustentam a decisão. Se a tarefa solicitada exigir violar um
+artigo marcado **DEVE** ou **NUNCA**, interrompa e sinalize o conflito antes de
+implementar (§0.11 do Volume 0).
+
 ## 1) Regra-base sobre Next.js
 
 Este projeto usa Next.js 16.2.6 com mudanças relevantes em APIs e convenções.

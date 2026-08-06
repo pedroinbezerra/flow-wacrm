@@ -603,7 +603,7 @@ function NodeEditSheet({
             variant="ghost"
             size="sm"
             onClick={onDelete}
-            className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+            className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
           >
             <Trash2 className="h-3.5 w-3.5" />
             {t("flows.deleteNode")}

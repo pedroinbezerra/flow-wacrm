@@ -313,7 +313,7 @@ function SendButtonsForm({
                 variant="ghost"
                 size="sm"
                 onClick={() => removeButton(i)}
-                className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -487,7 +487,7 @@ function SendListForm({
                   variant="ghost"
                   size="sm"
                   onClick={() => removeSection(sIdx)}
-                  className="shrink-0 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                  className="shrink-0 text-destructive hover:bg-destructive hover:text-destructive-foreground"
                   aria-label={t("flows.removeSection")}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -541,7 +541,7 @@ function SendListForm({
                   variant="ghost"
                   size="sm"
                   onClick={() => removeRow(sIdx, rIdx)}
-                  className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                  className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>

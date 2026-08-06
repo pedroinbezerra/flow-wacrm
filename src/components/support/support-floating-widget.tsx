@@ -244,7 +244,7 @@ export function SupportFloatingWidget() {
 
       {/* Panel / Drawer Flutuante de Suporte */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 flex h-[540px] w-[380px] max-w-[calc(100vw-2rem)] flex-col rounded-3xl border border-border/80 bg-card text-card-foreground shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
+        <div className="fixed bottom-22 right-6 z-50 flex h-[470px] max-h-[calc(100vh-6.5rem)] w-[380px] max-w-[calc(100vw-2rem)] flex-col rounded-3xl border border-border/80 bg-card text-card-foreground shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
           {/* Top Header */}
           <div className="flex items-center justify-between border-b border-border bg-gradient-to-r from-primary/10 via-background to-accent/10 p-4">
             <div className="flex items-center gap-3">

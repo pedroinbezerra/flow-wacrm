@@ -18,5 +18,11 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth-callback-failed`);
+  // Se a requisição era para redefinição de senha ou o código falhou por expiração/invalidade,
+  // preserva o contexto na tela de redefinição com o parâmetro de expiração.
+  if (next === "/reset-password" || next.startsWith("/reset-password")) {
+    return NextResponse.redirect(`${origin}/reset-password?expired=true`);
+  }
+
+  return NextResponse.redirect(`${origin}/login?error=link-expired`);
 }

@@ -84,22 +84,84 @@ export async function POST(request: Request) {
 
     // Step 2: If phone_number_id was not provided by the frontend (e.g. sessionInfoListener
     // did not fire), auto-discover WABAs and phone numbers using the access token.
+    // We use the App Access Token (app_id|app_secret) for debug_token, which is more
+    // reliable than self-debugging with Embedded Signup user tokens.
     let resolvedPhoneNumberId = phone_number_id
     let resolvedWabaId = waba_id
 
     if (!resolvedPhoneNumberId && accessToken) {
-      try {
-        const discovered = await discoverWhatsAppAccounts({ accessToken })
-        if (discovered.length > 0) {
-          const firstWaba = discovered[0]
-          resolvedWabaId = resolvedWabaId || firstWaba.id
-          if (firstWaba.phone_numbers && firstWaba.phone_numbers.length > 0) {
-            resolvedPhoneNumberId = firstWaba.phone_numbers[0].id
+      const appId = process.env.NEXT_PUBLIC_META_APP_ID || process.env.META_APP_ID
+      const appSecret = process.env.META_APP_SECRET
+      const metaBase = 'https://graph.facebook.com/v21.0'
+
+      // Strategy A: Use debug_token with App Access Token to find WABA IDs from granular scopes
+      if (appId && appSecret) {
+        try {
+          const appAccessToken = `${appId}|${appSecret}`
+          const debugUrl = `${metaBase}/debug_token?input_token=${encodeURIComponent(accessToken)}&access_token=${encodeURIComponent(appAccessToken)}`
+          const debugRes = await fetch(debugUrl)
+
+          if (debugRes.ok) {
+            const debugData = await debugRes.json() as {
+              data?: {
+                granular_scopes?: Array<{ scope: string; target_ids?: string[] }>
+              }
+            }
+            console.log('[embedded-signup] debug_token granular_scopes:', JSON.stringify(debugData.data?.granular_scopes))
+
+            const scopes = debugData.data?.granular_scopes || []
+            const wabaScope = scopes.find(
+              (s) => s.scope === 'whatsapp_business_management' || s.scope === 'whatsapp_business_messaging'
+            )
+            const wabaIds = wabaScope?.target_ids || []
+
+            for (const wabaId of wabaIds) {
+              if (resolvedPhoneNumberId) break
+              resolvedWabaId = resolvedWabaId || wabaId
+              try {
+                const phonesUrl = `${metaBase}/${wabaId}/phone_numbers?fields=id,display_phone_number,verified_name`
+                const phonesRes = await fetch(phonesUrl, {
+                  headers: { Authorization: `Bearer ${accessToken}` },
+                })
+                if (phonesRes.ok) {
+                  const phonesData = await phonesRes.json() as {
+                    data?: Array<{ id: string; display_phone_number?: string; verified_name?: string }>
+                  }
+                  console.log(`[embedded-signup] WABA ${wabaId} phone_numbers:`, JSON.stringify(phonesData.data))
+                  if (phonesData.data && phonesData.data.length > 0) {
+                    resolvedPhoneNumberId = phonesData.data[0].id
+                  }
+                }
+              } catch (phoneErr) {
+                console.warn(`[embedded-signup] Failed to fetch phones for WABA ${wabaId}:`, phoneErr)
+              }
+            }
+          } else {
+            console.warn('[embedded-signup] debug_token failed:', debugRes.status, await debugRes.text())
           }
+        } catch (debugErr) {
+          console.warn('[embedded-signup] debug_token approach failed:', debugErr)
         }
-      } catch (discoverErr) {
-        console.warn('[embedded-signup POST] Auto-discovery failed:', discoverErr)
       }
+
+      // Strategy B: Fallback to discoverWhatsAppAccounts if debug_token didn't yield results
+      if (!resolvedPhoneNumberId) {
+        try {
+          const discovered = await discoverWhatsAppAccounts({ accessToken })
+          console.log('[embedded-signup] discoverWhatsAppAccounts result:', JSON.stringify(discovered.map(w => ({ id: w.id, phones: w.phone_numbers.length }))))
+          if (discovered.length > 0) {
+            const firstWaba = discovered[0]
+            resolvedWabaId = resolvedWabaId || firstWaba.id
+            if (firstWaba.phone_numbers && firstWaba.phone_numbers.length > 0) {
+              resolvedPhoneNumberId = firstWaba.phone_numbers[0].id
+            }
+          }
+        } catch (discoverErr) {
+          console.warn('[embedded-signup] discoverWhatsAppAccounts fallback failed:', discoverErr)
+        }
+      }
+
+      console.log('[embedded-signup] Resolved phone_number_id:', resolvedPhoneNumberId, 'waba_id:', resolvedWabaId)
     }
 
     if (!accessToken || !resolvedPhoneNumberId) {

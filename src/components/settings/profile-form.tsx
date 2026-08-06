@@ -351,7 +351,7 @@ export function ProfileForm() {
               type="text"
               value={cpfCnpj}
               onChange={(e) => setCpfCnpj(formatCpfCnpj(e.target.value))}
-              placeholder="000.000.000-00 ou 00.000.000/0001-00"
+              placeholder="000.000.000-00 ou 00.000.000/E08G-12"
               maxLength={18}
               disabled={saving}
             />

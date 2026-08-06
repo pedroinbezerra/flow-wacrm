@@ -52,6 +52,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Captura erros de link expirado ou negado via URL query params antes de autorizar rotas protegidas
+  const errorCode = request.nextUrl.searchParams.get('error_code')
+  const errorParam = request.nextUrl.searchParams.get('error')
+  if (
+    errorCode === 'otp_expired' ||
+    errorCode === 'token_expired' ||
+    errorParam === 'access_denied'
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/reset-password'
+    url.search = '?expired=true'
+    url.hash = ''
+    return NextResponse.redirect(url)
+  }
+
   // Protected pages - redirect to login if not authenticated
   const protectedPaths = ['/dashboard', '/inbox', '/contacts', '/pipelines', '/broadcasts', '/automations', '/settings', '/flows']
   if (!user && protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))) {

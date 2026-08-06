@@ -33,8 +33,8 @@ const STEP_NAMES: Record<OnboardingStepKey, string> = {
   connect_whatsapp: "Conectar WhatsApp",
   create_first_flow: "Criar 1º Fluxo",
   import_contacts: "Importar Contatos",
-  create_first_campaign: "Criar 1ª Campanha",
-  send_first_campaign: "Enviar 1ª Campanha",
+  create_first_campaign: "Criar 1ª Transmissão",
+  send_first_campaign: "Enviar 1ª Transmissão",
   invite_team: "Convidar Equipe",
 };
 

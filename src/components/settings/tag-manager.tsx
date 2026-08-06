@@ -244,7 +244,7 @@ export function TagManager() {
                 ) : (
                   <Plus className="size-4" />
                 )}
-                Add tag
+                {t('settings.fieldsAndTags.addTag')}
               </Button>
             </div>
           </>
@@ -255,10 +255,9 @@ export function TagManager() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Delete tag</DialogTitle>
+            <DialogTitle>Deletar tag</DialogTitle>
             <DialogDescription>
-              Delete the tag &quot;{tagToDelete?.name}&quot;? This removes it
-              from all contacts and cannot be undone.
+              Deletar a tag &quot;{tagToDelete?.name}&quot;? Isso remove a tag de todos os contatos associados e não pode ser desfeito.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

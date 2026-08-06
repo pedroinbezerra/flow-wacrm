@@ -93,7 +93,7 @@ export async function POST(req: Request) {
     const customer = await getOrCreateAsaasCustomer({
       name: account.company_name || account.name || user.user_metadata?.full_name || "Cliente Flow Hub",
       email: user.email || `${account.id}@flowhub.app`,
-      cpfCnpj: account.cpf_cnpj ? account.cpf_cnpj.replace(/\D/g, "") : undefined,
+      cpfCnpj: account.cpf_cnpj ? sanitizeCpfCnpj(account.cpf_cnpj) : undefined,
       phone: account.phone ? account.phone.replace(/\D/g, "") : undefined,
       mobilePhone: account.phone ? account.phone.replace(/\D/g, "") : undefined,
       postalCode: account.postal_code ? account.postal_code.replace(/\D/g, "") : undefined,

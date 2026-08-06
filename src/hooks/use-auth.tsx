@@ -251,6 +251,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const init = async () => {
       try {
+        // Se a URL contiver parâmetros de erro no hash ou na query (ex: #error=access_denied&error_code=otp_expired)
+        // causados por um link de e-mail expirado ou reutilizado, encerra imediatamente qualquer sessão ativa.
+        if (typeof window !== "undefined") {
+          const combined = `${window.location.hash}&${window.location.search}`.toLowerCase();
+          if (
+            combined.includes("otp_expired") ||
+            combined.includes("token_expired") ||
+            combined.includes("error=access_denied") ||
+            combined.includes("invalid+or+has+expired")
+          ) {
+            console.warn("[AuthProvider] Erro de link de autenticação detectado na URL:", combined);
+            await supabase.auth.signOut().catch(() => {});
+            if (!mounted) return;
+            setUser(null);
+            setProfile(null);
+            setAccount(null);
+            setProfileLoading(false);
+            setLoading(false);
+            if (!window.location.pathname.startsWith("/reset-password")) {
+              window.location.href = "/reset-password?expired=true";
+              return;
+            }
+          }
+        }
+
         const {
           data: { session },
           error,

@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/card';
 
 const MIN_PASSWORD = 8;
+const MAX_PASSWORD = 72;
 
 export function PasswordForm() {
   const { profile } = useAuth();
@@ -39,6 +40,10 @@ export function PasswordForm() {
     }
     if (next.length < MIN_PASSWORD) {
       setConfirmError(t('settings.password.mustBeAtLeast', { min: MIN_PASSWORD }));
+      return;
+    }
+    if (next.length > MAX_PASSWORD) {
+      setConfirmError(t('settings.password.passwordTooLong'));
       return;
     }
     if (next !== confirm) {
@@ -66,7 +71,7 @@ export function PasswordForm() {
         password: next,
       });
       if (updateError) {
-        toast.error(`Password update failed: ${updateError.message}`);
+        toast.error(`Falha ao atualizar senha: ${updateError.message}`);
         return;
       }
 
@@ -123,6 +128,7 @@ export function PasswordForm() {
                 onChange={(e) => setNext(e.target.value)}
                 autoComplete="new-password"
                 minLength={MIN_PASSWORD}
+                maxLength={MAX_PASSWORD}
                 disabled={saving}
                 required
               />
@@ -138,6 +144,7 @@ export function PasswordForm() {
                 onChange={(e) => setConfirm(e.target.value)}
                 autoComplete="new-password"
                 minLength={MIN_PASSWORD}
+                maxLength={MAX_PASSWORD}
                 disabled={saving}
                 required
               />
@@ -158,10 +165,10 @@ export function PasswordForm() {
               {saving ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
-                  Updating…
+                  {t('settings.password.updatingPassword')}
                 </>
               ) : (
-                'Update password'
+                t('settings.password.updatePassword')
               )}
             </Button>
           </div>
