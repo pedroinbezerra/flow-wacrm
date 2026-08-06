@@ -10,10 +10,10 @@
 
 | Campo | Valor |
 | --- | --- |
-| Versão | 1.1.0 |
-| Matrizes ativas | 14 |
-| Base normativa | Capítulos 1–19 e 68 |
-| Matrizes pendentes | 6 (dependem de capítulos ainda não escritos — ver §Pendentes) |
+| Versão | 1.2.0 |
+| Matrizes ativas | 16 |
+| Base normativa | Capítulos 1–27 e 68 |
+| Matrizes pendentes | 5 (dependem de capítulos ainda não escritos — ver §Pendentes) |
 
 ---
 
@@ -224,6 +224,40 @@ Declaração obrigatória em alteração de fluxo frequente: **antes e depois**
 
 ---
 
+## C15 — Escolha de superfície de navegação
+
+Norma: `FH-23.01`. **Regra de bolso:** percorrer vários → painel • decidir uma vez
+→ modal • trabalhar → página • ajustar → inline.
+
+| Use… | Quando | Nunca quando |
+| --- | --- | --- |
+| **Página** | É o trabalho principal; permanência longa; precisa de endereço e espaço | É consulta rápida dentro de outro contexto |
+| **Painel lateral** | Precisa do detalhe **sem perder** a lista; vai percorrer vários itens | O conteúdo é o trabalho principal ou exige espaço amplo |
+| **Modal** | Decisão imediata e bloqueante: confirmação, escolha curta, aviso crítico | Fluxo de múltiplos passos, edição longa ou trabalho perdível (`FH-23.06`) |
+| **Inline** | Alteração pequena, local, no próprio objeto | Afeta muitos itens ou exige contexto adicional |
+| **Sobreposição efêmera** | Informação complementar, menu, sugestão | A informação é essencial à tarefa (`FH-15.05`) |
+
+**Obrigatório em qualquer superfície:** endereço restaurável (`FH-23.02`) • voltar
+previsível (`FH-23.03`) • sem empilhar bloqueantes (`FH-23.04`) • lista preserva
+filtro/ordenação/seleção/rolagem/foco (`FH-23.05`) • nada descarta trabalho sem
+aviso (`FH-23.07`).
+
+---
+
+## C16 — Onde isto vai (arquitetura)
+
+| Pergunta | Se sim → |
+| --- | --- |
+| É tarefa recorrente, com conteúdo próprio, que não cabe em seção existente e tem frequência de topo? | Pode virar seção principal — com emenda (`FH-22.05`) |
+| Já existe seção cuja tarefa engloba isto? | Vai para lá (`FH-22.01`) |
+| Ficaria além do 3º nível? | Reagrupe: o problema está no nível acima (`FH-22.02`) |
+| É informação necessária a uma tarefa? | Aparece onde a tarefa acontece (`FH-22.11`) |
+| É configuração que vale para a conta? | Lar único de configuração (`FH-22.10`) |
+| É configuração que vale para um item? | No próprio item (`FH-22.10`) |
+| É informação editável? | Tem **um** lar canônico; o resto são exibições (`FH-22.03`) |
+
+---
+
 ## Matrizes pendentes
 
 As seis matrizes abaixo dependem de capítulos ainda não escritos. Criá-las agora
@@ -233,7 +267,6 @@ resolvem por **C8 — falta regra**.
 
 | Matriz | Depende de | Onda |
 | --- | --- | --- |
-| Superfície: página, painel, modal ou inline | Cap. 23 | 4 |
 | Confirmar, desfazer ou nada — matriz completa | Cap. 45 | 5 |
 | Tipo de feedback e onde aparece | Cap. 43 | 5 |
 | Tipo de estado vazio | Cap. 42 | 5 |
@@ -242,5 +275,5 @@ resolvem por **C8 — falta regra**.
 
 ---
 
-*Anexo C v1.1.0 — atualizado na Onda 3 (Livro II). Atualização obrigatória a cada
+*Anexo C v1.2.0 — atualizado na Onda 4 (Livro III). Atualização obrigatória a cada
 capítulo que produza nova escolha recorrente (`FH-04.08`).*

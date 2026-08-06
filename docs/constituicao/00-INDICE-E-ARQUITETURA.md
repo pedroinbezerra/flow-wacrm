@@ -1247,13 +1247,21 @@ capítulo, desde o primeiro.
 | 17 — Design emocional | ✅ Completo | `FH-17.01`–`FH-17.10` |
 | 18 — Confiança e controle | ✅ Completo | `FH-18.01`–`FH-18.11` |
 | 19 — Ergonomia e movimento | ✅ Completo | `FH-19.01`–`FH-19.10` |
-| 20–67 | ⬜ Não iniciado | — |
-| Anexo B — Índice de artigos | ♻️ Vivo — 218 artigos indexados | — |
-| Anexo C — Matrizes de decisão | ♻️ Vivo — 14 matrizes ativas, 6 pendentes | — |
+| 20 — Modelo mental canônico | ✅ Completo | `FH-20.01`–`FH-20.10` |
+| 21 — Ontologia do domínio | ✅ Completo | `FH-21.01`–`FH-21.11` |
+| 22 — Arquitetura da informação | ✅ Completo | `FH-22.01`–`FH-22.11` |
+| 23 — Padrões de navegação | ✅ Completo | `FH-23.01`–`FH-23.11` |
+| 24 — Composição de tela | ✅ Completo | `FH-24.01`–`FH-24.10` |
+| 25 — Jornada completa | ✅ Completo | `FH-25.01`–`FH-25.10` |
+| 26 — Onboarding | ✅ Completo | `FH-26.01`–`FH-26.10` |
+| 27 — Ciclo de vida da conta | ✅ Completo | `FH-27.01`–`FH-27.10` |
+| 28–67 | ⬜ Não iniciado | — |
+| Anexo B — Índice de artigos | ♻️ Vivo — 301 artigos indexados | — |
+| Anexo C — Matrizes de decisão | ♻️ Vivo — 16 matrizes ativas, 5 pendentes | — |
 | Anexo E — Registro de decisões | ♻️ Vivo — estrutura pronta, sem entradas | — |
 | Anexos A, D, F | ⬜ Não iniciado | — |
 
-**Total de artigos vigentes:** 218. **Livros 0, I e II completos; Capítulo 68
+**Total de artigos vigentes:** 301. **Livros 0, I, II e III completos; Capítulo 68
 vigente.**
 
 **Regra de consistência entre capítulos.** Ao escrever qualquer capítulo, é

@@ -11,10 +11,10 @@
 
 | Campo | Valor |
 | --- | --- |
-| Versão | 1.4.0 |
-| Artigos indexados | 218 |
-| Capítulos cobertos | 1–19 e 68 (Livros 0, I e II completos) |
-| Capítulos pendentes | 20–67 |
+| Versão | 1.5.0 |
+| Artigos indexados | 301 |
+| Capítulos cobertos | 1–27 e 68 (Livros 0, I, II e III completos) |
+| Capítulos pendentes | 28–67 |
 
 ---
 
@@ -52,7 +52,14 @@ Toda decisão de produto **DEVE** citar os artigos aplicados (`FH-01.08`).
 | Tom emocional, erro, celebração, engajamento | 17 | ✅ |
 | **Quanto o sistema pode agir sozinho** | 18 | ✅ |
 | Cliques, alcance, teclado, ação destrutiva | 19 | ✅ |
-| Navegação, arquitetura da informação, onboarding | 20–27 | ⬜ |
+| **Onde uma funcionalidade nova se encaixa** | 20 | ✅ |
+| O que é cada entidade, nomes, estados | 21 | ✅ |
+| Onde isto vai, navegação principal, profundidade | 22 | ✅ |
+| Página, painel, modal, voltar, endereço | 23 | ✅ |
+| Composição de tela, ação primária, densidade | 24 | ✅ |
+| Estágios da relação, primeiro valor, saída | 25 | ✅ |
+| Entrada, tour, passos obrigatórios | 26 | ✅ |
+| Conta vazia, crescimento, limites, inatividade | 27 | ✅ |
 | Design system, componentes, acessibilidade, animação | 28–40 | ⬜ |
 | Estados, feedback, erros, confirmação, busca, comandos | 41–51 | ⬜ |
 | Inteligência artificial e automações | 52–56 | ⬜ |
@@ -469,6 +476,170 @@ confirmação • 5 nunca agir.
 
 ---
 
+## Capítulo 20 — Modelo Mental Canônico
+
+📄 [`L3-C20-modelo-mental-canonico.md`](L3-C20-modelo-mental-canonico.md)
+
+**Eixo canônico:** Pessoa → Conversa → Processo → Resultado. Tudo converge para a
+Pessoa.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-20.01` | Toda funcionalidade ocupa posição declarada no eixo. | Consigo declarar a posição? SIM = cumpre |
+| `FH-20.02` | A Pessoa é o centro; tudo é alcançável a partir dela. | Alcançável a partir da pessoa? SIM = cumpre |
+| `FH-20.03` | Nunca haverá modelo mental concorrente. | Introduz organização paralela? NÃO = cumpre |
+| `FH-20.04` | Nenhuma etapa é pré-requisito rígido de outra; entra-se por qualquer ponto. | Obriga ordem administrativa? NÃO = cumpre |
+| `FH-20.05` | Entidade nova declara posição no eixo e relação com a Pessoa. | Declarado? SIM = cumpre |
+| `FH-20.06` | O modelo é único: não varia por conta, segmento ou plano. | Varia? NÃO = cumpre |
+| `FH-20.07` | Navegação, busca, relatórios e IA refletem o mesmo modelo. | Reflete? SIM = cumpre |
+| `FH-20.08` | Localizar informação nunca exige conhecer a estrutura interna. | Exige? NÃO = cumpre |
+| `FH-20.09` | Alterar o eixo é emenda MAIOR. | Houve alteração com emenda MAIOR? SIM = cumpre |
+| `FH-20.10` | Todo elemento do eixo tem estado observável e histórico. | Tem? SIM = cumpre |
+
+---
+
+## Capítulo 21 — Ontologia do Domínio
+
+📄 [`L3-C21-ontologia-do-dominio.md`](L3-C21-ontologia-do-dominio.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-21.01` | Toda entidade tem **ficha canônica** (definição, eixo, atributos, estados, transições, escopo, relação com Pessoa). | Ficha completa? SIM = cumpre |
+| `FH-21.02` | **Par canônico** de nomes: interface (pt-BR) ↔ código (inglês). Terceiro termo é proibido. | Há termo fora do par? NÃO = cumpre |
+| `FH-21.03` | Toda entidade de domínio é escopada por conta. | Escopada ou herda escopo declarado? SIM = cumpre |
+| `FH-21.04` | Estados e transições declarados; estado implícito é proibido. | Declarados? SIM = cumpre |
+| `FH-21.05` | Relações declaradas nas fichas das duas pontas. | Declarada nas duas? SIM = cumpre |
+| `FH-21.06` | Ficha **antes** da implementação. | Ficha veio antes? SIM = cumpre |
+| `FH-21.07` | O ciclo declara o fim: arquivamento, exclusão, anonimização, retenção e prazo. | Declarado com prazo? SIM = cumpre |
+| `FH-21.08` | Nenhuma entidade de domínio fora do eixo; administrativas são declaradas. | Posicionada ou declarada? SIM = cumpre |
+| `FH-21.09` | Renomear atualiza interface, código, banco, docs e traduções no mesmo ciclo. | Todas as camadas? SIM = cumpre |
+| `FH-21.10` | Atributo técnico nunca aparece na interface. | Vazou? NÃO = cumpre |
+| `FH-21.11` | Entidade visível tem estado observável e histórico. | Tem? SIM = cumpre |
+
+---
+
+## Capítulo 22 — Arquitetura da Informação
+
+📄 [`L3-C22-arquitetura-da-informacao.md`](L3-C22-arquitetura-da-informacao.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-22.01` | Agrupar por **tarefa do usuário**, nunca por estrutura interna. | Reflete tarefa? SIM = cumpre |
+| `FH-22.02` | Profundidade máxima: **3 níveis**. | ≤3? SIM = cumpre |
+| `FH-22.03` | **Um lar, muitas janelas:** cada informação tem lar canônico único. | Consigo apontar o lar? SIM = cumpre |
+| `FH-22.04` | Toda tela declara hierarquia: essencial, contextual, secundário. | Declarada? SIM = cumpre |
+| `FH-22.05` | Navegação principal só muda pelos 5 critérios + emenda; nunca por acumulação. | Critérios e emenda? SIM = cumpre |
+| `FH-22.06` | Nenhum item de navegação é apenas contêiner. | Tem conteúdo próprio? SIM = cumpre |
+| `FH-22.07` | Toda informação é alcançável por navegação **e** por busca. | Pelos dois? SIM = cumpre |
+| `FH-22.08` | Nomes de seção designam objeto ou tarefa, com termo canônico. | Designa? SIM = cumpre |
+| `FH-22.09` | Ordem do primeiro nível por frequência real. | Deriva de medição? SIM = cumpre |
+| `FH-22.10` | Configuração **global** em lar único; de **contexto** no ponto de uso. | Está no lugar certo pelo alcance? SIM = cumpre |
+| `FH-22.11` | Informação necessária à tarefa aparece onde a tarefa acontece. | Disponível ali? SIM = cumpre |
+
+---
+
+## Capítulo 23 — Padrões de Navegação
+
+📄 [`L3-C23-padroes-de-navegacao.md`](L3-C23-padroes-de-navegacao.md)
+
+**Regra de bolso:** percorrer vários → painel • decidir uma vez → modal →
+trabalhar → página • ajustar → inline.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-23.01` | Cinco superfícies apenas; escolha pela matriz. | Corresponde à matriz? SIM = cumpre |
+| `FH-23.02` | Todo estado relevante tem endereço restaurável e compartilhável. | Reabre pelo endereço? SIM = cumpre |
+| `FH-23.03` | Voltar sempre produz o resultado esperado. | Retorna sem salto nem perda? SIM = cumpre |
+| `FH-23.04` | Nunca modal sobre modal. | Empilha bloqueante? NÃO = cumpre |
+| `FH-23.05` | Retorno a lista preserva filtro, ordenação, seleção, rolagem e foco. | Os cinco? SIM = cumpre |
+| `FH-23.06` | Modal nunca contém fluxo de múltiplos passos ou trabalho perdível. | Contém? NÃO = cumpre |
+| `FH-23.07` | Navegação nunca descarta trabalho sem aviso e preservação. | Avisa e preserva? SIM = cumpre |
+| `FH-23.08` | O usuário sempre sabe onde está. | Dá para saber olhando? SIM = cumpre |
+| `FH-23.09` | Percorrer vários itens não exige reconstruir o contexto. | Percorre sem reconstruir? SIM = cumpre |
+| `FH-23.10` | Endereço nunca revela dado inacessível (nem sua existência). | Revela? NÃO = cumpre |
+| `FH-23.11` | Sem navegação automática, exceto autenticação, permissão e recurso inexistente — sempre com explicação. | Fora dos três casos? NÃO = cumpre |
+
+---
+
+## Capítulo 24 — Hierarquia Visual e Composição
+
+📄 [`L3-C24-composicao-de-tela.md`](L3-C24-composicao-de-tela.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-24.01` | Ordem canônica: **identidade → estado → conteúdo → ação**. | Nesta ordem? SIM = cumpre |
+| `FH-24.02` | Uma única ação primária por contexto. | Mais de uma dominante? NÃO = cumpre |
+| `FH-24.03` | Anatomia canônica: cabeçalho, contexto/estado, conteúdo, ação. | Existem ou ausência declarada? SIM = cumpre |
+| `FH-24.04` | **Estrutura antes de estilo.** | Hierarquia definida antes do visual? SIM = cumpre |
+| `FH-24.05` | Hierarquia por posição e peso antes de cor; cor nunca é o primeiro recurso. | Sobrevive sem cor? SIM = cumpre |
+| `FH-24.06` | Nada compete com a tarefa dominante. | Compete? NÃO = cumpre |
+| `FH-24.07` | Densidade por tipo: operacional (alta), analítica (média), configuração (baixa). | Corresponde? SIM = cumpre |
+| `FH-24.08` | Espaçamento e alinhamento vêm do sistema; valor arbitrário é proibido. | Do sistema? SIM = cumpre |
+| `FH-24.09` | Hierarquia legível com **volume máximo** de dados. | Sobrevive ao volume real? SIM = cumpre |
+| `FH-24.10` | Ação não primária nunca ocupa a posição primária. | Ocupa? NÃO = cumpre |
+
+---
+
+## Capítulo 25 — Jornada Completa
+
+📄 [`L3-C25-jornada-completa.md`](L3-C25-jornada-completa.md)
+
+**Oito estágios:** descoberta · ativação · **Primeiro Valor Real** · rotina ·
+expansão · maturidade · risco · saída.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-25.01` | **Primeiro Valor Real** declarado, medido e alcançável na primeira sessão. | Declarado e alcançável? SIM = cumpre |
+| `FH-25.02` | Cada estágio tem obrigações declaradas. | Declaradas? SIM = cumpre |
+| `FH-25.03` | Risco se responde removendo obstáculo, nunca com pressão. | Remove ou pressiona? Remove = cumpre |
+| `FH-25.04` | Saída digna: exportação completa, sem obstáculo. | Existe caminho? SIM = cumpre |
+| `FH-25.05` | O sistema nunca infere progressão e muda comportamento sozinho. | Mudou por inferência? NÃO = cumpre |
+| `FH-25.06` | Declarar impacto sobre os demais estágios. | Declarado? SIM = cumpre |
+| `FH-25.07` | Retorno após ausência informa contexto; nunca cobra. | Cobra? NÃO = cumpre |
+| `FH-25.08` | Crescer nunca exige refazer configuração ou migrar manualmente. | Exige? NÃO = cumpre |
+| `FH-25.09` | Comunicação de ciclo de vida segue a voz e a sobriedade do produto. | Segue? SIM = cumpre |
+| `FH-25.10` | Métricas de **esforço e tempo até valor**; engajamento nunca é objetivo. | Mede esforço/tempo? SIM = cumpre |
+
+---
+
+## Capítulo 26 — Onboarding
+
+📄 [`L3-C26-onboarding.md`](L3-C26-onboarding.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-26.01` | Proibido ensinar antes de entregar valor. | Há instrução antes do primeiro valor? NÃO = cumpre |
+| `FH-26.02` | Onboarding é **configuração útil**, não apresentação. | O passo deixa estado real? SIM = cumpre |
+| `FH-26.03` | Pulável sempre, recuperável sempre. | Pula e retoma sem perda? SIM = cumpre |
+| `FH-26.04` | Só é obrigatório o tecnicamente indispensável. | É indispensável? SIM = cumpre |
+| `FH-26.05` | Aprendizado embutido no uso, no ponto onde importa. | No ponto de uso? SIM = cumpre |
+| `FH-26.06` | Percurso corresponde ao arquétipo e ao papel. | Corresponde? SIM = cumpre |
+| `FH-26.07` | Quem entra em conta existente tem percurso próprio. | Percurso próprio? SIM = cumpre |
+| `FH-26.08` | Nunca haverá tour bloqueante. | Bloqueia o uso? NÃO = cumpre |
+| `FH-26.09` | Progresso nunca é cobrança nem barra de completude. | É cobrança? NÃO = cumpre |
+| `FH-26.10` | Nenhum dado fictício se mistura ao real. | Confunde-se com real? NÃO = cumpre |
+
+---
+
+## Capítulo 27 — Primeira Experiência e Ciclo de Vida da Conta
+
+📄 [`L3-C27-ciclo-de-vida-da-conta.md`](L3-C27-ciclo-de-vida-da-conta.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-27.01` | Estado inaugural (conta vazia) é utilizável e orienta. | Utilizável e orienta? SIM = cumpre |
+| `FH-27.02` | Dado de demonstração nunca se mistura ao real; identificado e removível em 1 passo. | Confunde-se? NÃO = cumpre |
+| `FH-27.03` | Maturidade muda conteúdo e ofertas — **nunca** modelo, navegação ou posição. | Mudou algum dos três? NÃO = cumpre |
+| `FH-27.04` | Novo membro encontra ambiente pronto e trabalha no primeiro acesso. | Trabalha sem configurar? SIM = cumpre |
+| `FH-27.05` | Crescer nunca exige migração ou recriação manual. | Exige? NÃO = cumpre |
+| `FH-27.06` | Limites comunicados **antes** de atingidos, com tempo de agir. | Avisa antes? SIM = cumpre |
+| `FH-27.07` | Conta grande nunca é penalizada pelo próprio volume. | Degrada com o volume? NÃO = cumpre |
+| `FH-27.08` | Inatividade nunca destrói dado sem aviso, prazo e exportação. | Os três existem? SIM = cumpre |
+| `FH-27.09` | Reativação restaura o estado anterior. | Restaura? SIM = cumpre |
+| `FH-27.10` | Exclusão definitiva só após exportação disponível e informação do que será perdido. | Precedeu? SIM = cumpre |
+
+---
+
 ## Capítulo 68 — Protocolo para Agentes de IA
 
 📄 [`L8-C68-protocolo-para-agentes.md`](L8-C68-protocolo-para-agentes.md)
@@ -516,5 +687,5 @@ tarefa, independentemente de capítulo:
 
 ---
 
-*Anexo B v1.4.0 — Onda 3 concluída (Livros 0, I e II completos).
-Próxima atualização: Onda 4 (Capítulos 20–27 — Estrutura).*
+*Anexo B v1.5.0 — Onda 4 concluída (Livros 0, I, II e III completos).
+Próxima atualização: Onda 5 (Capítulos 41–51 — Comportamento do Sistema).*
