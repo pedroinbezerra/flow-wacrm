@@ -24,6 +24,7 @@ import { formatConversationPreview } from '@/lib/conversation-preview'
 import type { MessageTemplate } from '@/types'
 import { isMessageTemplate } from '@/lib/whatsapp/template-row-guard'
 import { resolveSendableMediaLink } from '@/lib/storage/media-access'
+import { parseStorageReference } from '@/lib/storage/media-src'
 
 export async function POST(request: Request) {
   try {
@@ -382,6 +383,10 @@ export async function POST(request: Request) {
         .eq('id', contact.id)
     }
 
+    const storagePathParsed = isMediaKind && media_url
+      ? parseStorageReference(media_url)?.path || media_url
+      : null
+
     // Insert message into DB — field names MUST match the messages schema
     // (see supabase/migrations/001_initial_schema.sql):
     //   conversation_id, sender_type, content_type, content_text,
@@ -399,6 +404,10 @@ export async function POST(request: Request) {
         message_id: waMessageId,
         status: 'sent',
         reply_to_message_id: reply_to_message_id || null,
+        media_status: isMediaKind ? 'stored' : null,
+        media_source: isMediaKind ? 'whatsapp_outbound' : null,
+        media_storage_path: isMediaKind ? storagePathParsed : null,
+        media_storage_provider: isMediaKind ? 'supabase' : null,
       })
       .select()
       .single()

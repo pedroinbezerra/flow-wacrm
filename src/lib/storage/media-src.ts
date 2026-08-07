@@ -68,3 +68,23 @@ export function normalizeMediaSrc(value: string | null | undefined): string | nu
   }
   return value
 }
+
+/**
+ * Resolves renderable media URL preferring internal `media_storage_path`
+ * over legacy `media_url` fallbacks.
+ */
+export function resolveMediaSrc(
+  message?: { media_url?: string | null; media_storage_path?: string | null } | string | null
+): string | null {
+  if (!message) return null
+  if (typeof message === 'string') {
+    return normalizeMediaSrc(message)
+  }
+  if (message.media_storage_path) {
+    if (message.media_storage_path.startsWith('/api/media/')) {
+      return message.media_storage_path
+    }
+    return toProxyPath('chat-media', message.media_storage_path)
+  }
+  return normalizeMediaSrc(message.media_url)
+}

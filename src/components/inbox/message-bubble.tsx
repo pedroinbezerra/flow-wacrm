@@ -18,7 +18,7 @@ import { format } from "date-fns";
 import { ReplyQuote } from "./reply-quote";
 import { MessageReactions } from "./message-reactions";
 import { useTranslation } from "@/hooks/use-translation";
-import { normalizeMediaSrc } from "@/lib/storage/media-src";
+import { resolveMediaSrc } from "@/lib/storage/media-src";
 
 interface MessageBubbleProps {
   message: Message;
@@ -132,10 +132,8 @@ function MediaImage({ url, alt }: { url: string; alt: string }) {
 
 function MessageContent({ message }: { message: Message }) {
   const { t } = useTranslation();
-  // Rewrites any pre-migration-040 direct public Storage URL to our
-  // authenticated proxy path; already-proxied paths and the inbound
-  // Meta media proxy (/api/whatsapp/media/...) pass through unchanged.
-  const mediaSrc = normalizeMediaSrc(message.media_url);
+  // Resolves renderable media URL preferring internal media_storage_path over legacy media_url
+  const mediaSrc = message.media_status === "expired" ? null : resolveMediaSrc(message);
 
   switch (message.content_type) {
     case "text":

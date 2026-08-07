@@ -285,6 +285,17 @@ export type ContentType =
   /** Customer tapped a reply button or list row on a message we sent. */
   | 'interactive';
 export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+export type MediaStatus = 'pending' | 'processing' | 'stored' | 'failed' | 'expired';
+export type MediaSource = 'whatsapp_inbound' | 'whatsapp_outbound' | 'manual_upload' | 'automation';
+
+export interface MediaHealthMetrics {
+  storedCount: number;
+  pendingCount: number;
+  processingCount: number;
+  failedCount: number;
+  expiredCount: number;
+  totalSizeMaxBytes?: number;
+}
 
 export interface Message {
   id: string;
@@ -306,6 +317,19 @@ export interface Message {
    * cue (renders with a "↩ button reply" affordance).
    */
   interactive_reply_id?: string;
+  /** Media lifecycle and storage management (migration 055) */
+  media_status?: MediaStatus;
+  media_source?: MediaSource;
+  media_storage_path?: string;
+  media_storage_provider?: string;
+  media_meta_id?: string;
+  media_mime_type?: string;
+  media_size_bytes?: number;
+  media_hash?: string;
+  media_retry_count?: number;
+  media_next_retry_at?: string;
+  locked_until?: string | null;
+  media_error_message?: string;
 }
 
 export type ReactionActor = 'customer' | 'agent';

@@ -9,6 +9,7 @@ import { runAutomationsForTrigger } from '@/lib/automations/engine'
 import { dispatchInboundToFlows } from '@/lib/flows/engine'
 import { processInboundWithAIService } from '@/lib/ai-service/engine'
 import { formatConversationPreview } from '@/lib/conversation-preview'
+import { processMediaForMessage } from '@/lib/media/media-processor'
 import {
   handleTemplateWebhookChange,
   isTemplateWebhookField,
@@ -578,7 +579,7 @@ async function processMessage(
   }
 
   // Parse message content based on type
-  const { contentText, mediaUrl, mediaType, interactiveReplyId } =
+  const { contentText, mediaUrl, mediaType, metaMediaId, interactiveReplyId } =
     await parseMessageContent(message, accessToken)
 
   // Resolve swipe-reply context if present. A missing parent is fine —
@@ -596,15 +597,6 @@ async function processMessage(
       )
     }
   }
-
-  // Insert message — field names MUST match the messages table schema
-  // (see supabase/migrations/001_initial_schema.sql):
-  //   conversation_id, sender_type, content_type, content_text,
-  //   media_url, template_name, message_id, status, created_at
-  // `mediaType` is intentionally unused — the schema has no media_type
-  // column; the MIME type is only used to construct the proxy URL during
-  // parseMessageContent. Silence the unused-var warning:
-  void mediaType
 
   // The messages.content_type CHECK constraint (widened in migration 010
   // to add 'interactive' for button/list taps) allows:
@@ -632,25 +624,48 @@ async function processMessage(
     .eq('sender_type', 'customer')
   const isFirstInboundMessage = (priorCustomerMsgCount ?? 0) === 0
 
-  const { error: msgError } = await supabaseAdmin().from('messages').insert({
-    conversation_id: conversation.id,
-    sender_type: 'customer',
-    content_type: contentType,
-    content_text: contentText,
-    media_url: mediaUrl,
-    message_id: message.id,
-    status: 'delivered',
-    created_at: new Date(parseInt(message.timestamp) * 1000).toISOString(),
-    reply_to_message_id: replyToInternalId,
-    // Only populated for content_type='interactive'. Migration 010 added
-    // the column; null for every other content_type so existing inserts
-    // behave identically.
-    interactive_reply_id: interactiveReplyId,
-  })
+  const { data: insertedMsg, error: msgError } = await supabaseAdmin()
+    .from('messages')
+    .insert({
+      conversation_id: conversation.id,
+      sender_type: 'customer',
+      content_type: contentType,
+      content_text: contentText,
+      media_url: mediaUrl,
+      message_id: message.id,
+      status: 'delivered',
+      created_at: new Date(parseInt(message.timestamp) * 1000).toISOString(),
+      reply_to_message_id: replyToInternalId,
+      interactive_reply_id: interactiveReplyId,
+      media_status: metaMediaId ? 'pending' : null,
+      media_source: metaMediaId ? 'whatsapp_inbound' : null,
+      media_meta_id: metaMediaId || null,
+      media_mime_type: mediaType || null,
+    })
+    .select('id')
+    .single()
 
-  if (msgError) {
+  if (msgError || !insertedMsg) {
     console.error('Error inserting message:', msgError)
     return
+  }
+
+  // Non-blocking asynchronous media download to FlowHub Storage
+  if (metaMediaId && insertedMsg.id) {
+    after(async () => {
+      try {
+        await processMediaForMessage({
+          messageId: insertedMsg.id,
+          accountId,
+          metaMediaId,
+          accessToken,
+          mimeType: mediaType,
+          mediaSource: 'whatsapp_inbound',
+        })
+      } catch (mediaErr) {
+        console.error('[webhook] Async media download threw error:', mediaErr)
+      }
+    })
   }
 
   // Update conversation
@@ -802,6 +817,7 @@ async function parseMessageContent(
   contentText: string | null
   mediaUrl: string | null
   mediaType: string | null
+  metaMediaId: string | null
   /**
    * For interactive button / list replies: the stable id of the tapped
    * option (whatever we put on the button when sending). Used by the
@@ -836,6 +852,7 @@ async function parseMessageContent(
     contentText: null,
     mediaUrl: null,
     mediaType: null,
+    metaMediaId: null,
     interactiveReplyId: null,
   }
 
@@ -850,6 +867,7 @@ async function parseMessageContent(
           contentText: message.image.caption || null,
           mediaUrl: await verifyAndBuildUrl(message.image.id),
           mediaType: message.image.mime_type,
+          metaMediaId: message.image.id,
         }
       }
       return empty
@@ -861,6 +879,7 @@ async function parseMessageContent(
           contentText: message.video.caption || null,
           mediaUrl: await verifyAndBuildUrl(message.video.id),
           mediaType: message.video.mime_type,
+          metaMediaId: message.video.id,
         }
       }
       return empty
@@ -873,6 +892,7 @@ async function parseMessageContent(
             message.document.caption || message.document.filename || null,
           mediaUrl: await verifyAndBuildUrl(message.document.id),
           mediaType: message.document.mime_type,
+          metaMediaId: message.document.id,
         }
       }
       return empty
@@ -883,6 +903,7 @@ async function parseMessageContent(
           ...empty,
           mediaUrl: await verifyAndBuildUrl(message.audio.id),
           mediaType: message.audio.mime_type,
+          metaMediaId: message.audio.id,
         }
       }
       return empty
@@ -896,6 +917,7 @@ async function parseMessageContent(
           ...empty,
           mediaUrl: await verifyAndBuildUrl(message.sticker.id),
           mediaType: message.sticker.mime_type,
+          metaMediaId: message.sticker.id,
         }
       }
       return empty
