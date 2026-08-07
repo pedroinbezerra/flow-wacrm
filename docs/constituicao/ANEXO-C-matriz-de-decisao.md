@@ -10,10 +10,10 @@
 
 | Campo | Valor |
 | --- | --- |
-| Versão | 1.2.0 |
-| Matrizes ativas | 16 |
-| Base normativa | Capítulos 1–27 e 68 |
-| Matrizes pendentes | 5 (dependem de capítulos ainda não escritos — ver §Pendentes) |
+| Versão | 1.4.0 |
+| Matrizes ativas | 21 |
+| Base normativa | Capítulos 1–51 e 68 |
+| Matrizes pendentes | 0 |
 
 ---
 
@@ -63,6 +63,11 @@ sempre perceptível no contexto (`FH-18.07`) • nível 3+ com efeito externo en
 **desligado** (`FH-18.08`) • autonomia **nunca** aumenta por histórico de acerto
 (`FH-18.11`) • o que a IA leu, gerou e executou é consultável (`FH-11.06`) •
 automatizar repetição exige oferta e consentimento (`FH-06.11`).
+
+**Específico para IA** (`FH-52`): o padrão é o **nível 2** • comunicação externa
+gerada é sempre **nível 5** — revisão humana obrigatória (`FH-52.03`) • toda
+afirmação factual é rastreável (`FH-52.04`) • o produto funciona integralmente sem
+IA (`FH-52.07`) • a IA nunca simula ser pessoa (`FH-53.08`).
 
 ---
 
@@ -258,22 +263,102 @@ aviso (`FH-23.07`).
 
 ---
 
-## Matrizes pendentes
+## C17 — Confirmar, desfazer ou nada
 
-As seis matrizes abaixo dependem de capítulos ainda não escritos. Criá-las agora
-produziria decisões que os capítulos poderiam contradizer — proibido por
-`FH-04.10` (a Constituição nunca contém duas verdades). Até lá, esses casos se
-resolvem por **C8 — falta regra**.
+Norma: `FH-45.01`. **"Afeta terceiros" domina os outros três eixos.**
 
-| Matriz | Depende de | Onda |
-| --- | --- | --- |
-| Confirmar, desfazer ou nada — matriz completa | Cap. 45 | 5 |
-| Tipo de feedback e onde aparece | Cap. 43 | 5 |
-| Tipo de estado vazio | Cap. 42 | 5 |
-| Urgência de notificação | Cap. 40 | 6 |
-| Esconder × desabilitar (permissões) | Cap. 51 | 5 |
+| Reversível? | Impacto | Alcance | Tratamento |
+| --- | --- | --- | --- |
+| Sim | Baixo | Um item | **Nada** — executa, feedback ambiente |
+| Sim | Baixo | Muitos | **Desfazer** + resumo do que mudou |
+| Sim | Alto | Qualquer | **Desfazer** prolongado e visível + resumo |
+| Não | Baixo | Um item | **Confirmação simples** com consequência |
+| Não | Alto | Um item | **Confirmação detalhada** |
+| Não | Alto | Muitos | **Confirmação com digitação** (`FH-45.05`) |
+| Qualquer | Qualquer | **Terceiros** | Resumo + confirmação + **sem promessa de reversão** (`FH-45.07`) |
+
+**Nunca:** confirmar ação reversível e frequente (`FH-45.04`) • "Tem certeza?" sem
+consequência (`FH-45.03`) • desfazer parcial (`FH-45.08`) • usar confirmação no
+lugar de prevenção (`FH-45.09`).
 
 ---
 
-*Anexo C v1.2.0 — atualizado na Onda 4 (Livro III). Atualização obrigatória a cada
-capítulo que produza nova escolha recorrente (`FH-04.08`).*
+## C18 — Que feedback usar
+
+Norma: `FH-43`. Use o **menor nível** que comunica o que aconteceu.
+
+| Nível | Forma | Use quando |
+| --- | --- | --- |
+| 1 — Imediato | Reação no próprio controle | **Sempre**, em toda ação (`FH-43.01`) |
+| 2 — Ambiente | Mudança visível no conteúdo | O resultado é observável na tela |
+| 3 — Discreto | Mensagem breve | O resultado não é visível aqui |
+| 4 — Explícito | Mensagem persistente com ação | Consequência relevante, falha parcial |
+| 5 — Bloqueante | Exige decisão | Só quando o usuário precisa decidir (`FH-45`) |
+
+**Nunca:** mensagem para resultado já visível (`FH-43.06`) • silêncio após ação
+(`FH-43.04`) • otimismo sem reconciliação (`FH-43.05`).
+
+---
+
+## C19 — Qual estado vazio
+
+Norma: `FH-42.01`. Sempre responda: o que é este lugar · por que está vazio · o que
+fazer agora.
+
+| Tipo | Causa | Ofereça |
+| --- | --- | --- |
+| **Inaugural** | Nunca houve nada | Ação primária ali mesmo |
+| **Filtro** | Critério não encontrou | Filtro visível + limpar em 1 passo |
+| **Conclusão** | Tudo tratado | Nada obrigatório; **não pode parecer erro** |
+| **Permissão** | Sem acesso | Caminho de solicitação, **sem revelar o que existe** |
+| **Falha** | Não carregou | Tentar novamente (`FH-44`) |
+
+---
+
+## C20 — Esconder, desabilitar ou recusar
+
+Norma: `FH-51.02`. **Empate → esconder** (desabilitar revela existência).
+
+| Situação | Tratamento |
+| --- | --- |
+| Não existe para este papel, em nenhuma condição | **Esconder** |
+| Existe, temporariamente indisponível | **Desabilitar** com motivo acessível |
+| Existe e o usuário poderia obter | **Exibir com recusa** + caminho de solicitação |
+| Bloqueio por limite de plano/cota | **Exibir com recusa** + alternativa concreta |
+
+**Sempre:** motivo + caminho (`FH-51.01`) • nunca revelar quantidade, nome ou
+conteúdo (`FH-51.03`) • autorização no servidor (`FH-51.10`).
+
+---
+
+## C21 — Nível de urgência da notificação
+
+Norma: `FH-40.01`. Use o **menor nível** cuja omissão produza consequência
+(`FH-40.02`).
+
+| Nível | Forma | Critério | Nunca use para |
+| --- | --- | --- | --- |
+| 1 — Silencioso | Registro consultável | Nenhuma ação esperada | — |
+| 2 — Periférico | Indicador discreto, sem movimento | Pode querer saber, sem pressa | — |
+| 3 — Ambiente | Visível na área de trabalho | Relevante para a próxima decisão | — |
+| 4 — Interruptivo | Exige percepção ativa | Consequência concreta se não for visto agora | Novidade, sugestão, comunicação comercial |
+| 5 — Bloqueante | Impede continuar | Prosseguir causaria dano ou perda | Qualquer coisa que possa esperar |
+
+**Sempre:** agrupar equivalentes (`FH-40.03`) • levar ao contexto (`FH-40.09`) •
+origem identificável e desligável (`FH-40.10`).
+**Nunca:** urgência artificial (`FH-40.06`) • depender de som (`FH-40.04`) • expor
+conteúdo de terceiros fora do produto (`FH-40.08`).
+
+---
+
+## Matrizes pendentes
+
+*Nenhuma.* Todas as escolhas recorrentes identificadas até aqui têm matriz ativa.
+Novas matrizes serão adicionadas quando um capítulo produzir escolha recorrente
+ainda não coberta (`FH-04.08`).
+
+---
+
+*Anexo C v1.4.0 — atualizado na Onda 6 (Livro IV). Sem matrizes pendentes.
+Atualização obrigatória a cada capítulo que produza nova escolha recorrente
+(`FH-04.08`).*

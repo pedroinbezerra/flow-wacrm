@@ -27,6 +27,8 @@ interface MessageBubbleProps {
   reactions?: MessageReaction[];
   currentUserId?: string;
   onToggleReaction?: (emoji: string) => void;
+  authorName?: string;
+  showAuthorName?: boolean;
 }
 
 function StatusIcon({ status }: { status: Message["status"] }) {
@@ -265,6 +267,8 @@ export function MessageBubble({
   reactions,
   currentUserId,
   onToggleReaction,
+  authorName,
+  showAuthorName,
 }: MessageBubbleProps) {
   const isAgent = message.sender_type === "agent" || message.sender_type === "bot";
   const time = format(new Date(message.created_at), "HH:mm");
@@ -278,6 +282,11 @@ export function MessageBubble({
         isAgent ? "items-end" : "items-start",
       )}
     >
+      {isAgent && showAuthorName && authorName && (
+        <span className="text-[11px] font-semibold text-muted-foreground mr-1 mb-1">
+          {authorName}
+        </span>
+      )}
       <div
         className={cn(
           "relative rounded-2xl px-3 py-2",

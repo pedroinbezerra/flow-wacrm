@@ -18,9 +18,15 @@ import {
   Square,
   X,
   Loader2,
+  Lock,
+  MessageSquare,
+  StickyNote,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { GatedButton } from "@/components/ui/gated-button";
+import { MentionsAutocomplete } from "./mentions-autocomplete";
+import type { Profile } from "@/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +37,7 @@ import { useCan } from "@/hooks/use-can";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { readDraft, writeDraft, clearDraft } from "@/lib/inbox/composer-draft";
 import {
   uploadAccountMedia,
   deleteAccountMedia,
@@ -122,9 +129,53 @@ export function MessageComposer({
   onClearReply,
 }: MessageComposerProps) {
   const { t } = useTranslation();
-  const [text, setText] = useState("");
+  // O rascunho é persistido por conversa (FH-10.01, FH-14.01, FH-14.03).
+  // Estado em memória sozinho perdia o texto ao recarregar e o vazava para a
+  // conversa seguinte — ver DIV-0005 no Anexo F.
+  const [text, setText] = useState(() => readDraft(conversationId));
   const [sending, setSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Espelhos para os efeitos de troca de conversa, que não podem depender de
+  // `text` sem re-executar a cada tecla.
+  const textRef = useRef(text);
+  const conversationIdRef = useRef(conversationId);
+  conversationIdRef.current = conversationId;
+
+  /** Única porta de escrita do texto vinda do usuário: mantém estado, espelho
+   *  e rascunho persistido em sincronia. */
+  const updateText = useCallback((next: string) => {
+    textRef.current = next;
+    setText(next);
+    writeDraft(conversationIdRef.current, next);
+  }, []);
+
+  /** Usado quando o texto deixa de existir por decisão deliberada (envio):
+   *  o rascunho some junto, porque deixou de ser trabalho em andamento. */
+  const consumeText = useCallback((id: string) => {
+    textRef.current = "";
+    setText("");
+    clearDraft(id);
+  }, []);
+
+  // Mode state: 'message' for client WhatsApp message vs 'note' for internal note
+  const [mode, setMode] = useState<"message" | "note">("message");
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+
+  // Troca de conversa: guarda o rascunho da anterior e restaura o da nova.
+  // Sem isto, o texto escrito para um contato aparecia no compositor do
+  // contato seguinte (FH-14.03), com risco de envio ao destinatário errado.
+  const previousConversationRef = useRef(conversationId);
+  useEffect(() => {
+    const previous = previousConversationRef.current;
+    if (previous === conversationId) return;
+    writeDraft(previous, textRef.current);
+    previousConversationRef.current = conversationId;
+    const restored = readDraft(conversationId);
+    textRef.current = restored;
+    setText(restored);
+    setMentionQuery(null);
+  }, [conversationId]);
 
   // Media attachment state. `draft` holds an uploaded-but-not-yet-sent
   // attachment; `busy` covers the upload/transcode window.
@@ -191,27 +242,95 @@ export function MessageComposer({
     el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
   }, []);
 
+  const handleSendNote = useCallback(async () => {
+    if (!text.trim() || sessionExpired || sending) return;
+    setSending(true);
+    try {
+      // Automatically resolve mentioned user IDs from @mentions in text
+      const extractedUserIds: string[] = [];
+      try {
+        const membersRes = await fetch("/api/account/members");
+        if (membersRes.ok) {
+          const data = await membersRes.json();
+          const members: Profile[] = Array.isArray(data?.members) ? data.members : [];
+          const lowerContent = text.toLowerCase();
+          members.forEach((m) => {
+            if (!m.full_name || !m.user_id) return;
+            const fullName = m.full_name.toLowerCase();
+            const firstName = fullName.split(" ")[0];
+            if (
+              lowerContent.includes(`@${fullName}`) ||
+              (firstName.length >= 2 && lowerContent.includes(`@${firstName}`))
+            ) {
+              if (!extractedUserIds.includes(m.user_id)) {
+                extractedUserIds.push(m.user_id);
+              }
+            }
+          });
+        }
+      } catch {}
+
+      const res = await fetch(`/api/conversations/${conversationId}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: text.trim(), mentions: extractedUserIds }),
+      });
+      if (res.ok) {
+        consumeText(conversationId);
+        setMentionQuery(null);
+        toast.success(t("inbox.notes.created"));
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("flowhub:refresh_notes", { detail: { conversationId } })
+          );
+        }
+
+      } else {
+        toast.error(t("inbox.notes.createError"));
+      }
+    } catch {
+      toast.error(t("inbox.notes.connectionError"));
+    } finally {
+      setSending(false);
+    }
+  }, [text, sessionExpired, sending, conversationId, consumeText, t]);
+
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
     if (!trimmed || sending || sessionExpired) return;
 
-    setSending(true);
-    try {
-      onSend(trimmed, replyTo?.id);
-      setText("");
-      if (textareaRef.current) {
-        textareaRef.current.style.height = "auto";
+    if (mode === "note") {
+      await handleSendNote();
+    } else {
+      setSending(true);
+      try {
+        onSend(trimmed, replyTo?.id);
+        consumeText(conversationId);
+        setMentionQuery(null);
+        if (textareaRef.current) {
+          textareaRef.current.style.height = "auto";
+        }
+      } finally {
+        setSending(false);
       }
-    } finally {
-      setSending(false);
     }
-  }, [text, sending, sessionExpired, onSend, replyTo?.id]);
+  }, [
+    text,
+    sending,
+    sessionExpired,
+    mode,
+    handleSendNote,
+    onSend,
+    replyTo?.id,
+    consumeText,
+    conversationId,
+  ]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        handleSend();
+        void handleSend();
       }
     },
     [handleSend]
@@ -219,11 +338,25 @@ export function MessageComposer({
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setText(e.target.value);
+      const val = e.target.value;
+      updateText(val);
       adjustHeight();
+
+      const lastAt = val.lastIndexOf("@");
+      if (lastAt !== -1 && lastAt >= val.length - 30) {
+        const q = val.slice(lastAt + 1);
+        if (!q.includes("\n")) {
+          setMentionQuery(q);
+        } else {
+          setMentionQuery(null);
+        }
+      } else {
+        setMentionQuery(null);
+      }
     },
-    [adjustHeight]
+    [adjustHeight, updateText]
   );
+
 
   // Upload a captured file to chat-media and stage it as a draft.
   const stageUpload = useCallback(
@@ -382,10 +515,63 @@ export function MessageComposer({
     setDraft((d) => (d ? { ...d, caption } : d));
   }, []);
 
+  const handleSelectMentionUser = useCallback(
+    (u: Profile) => {
+      if (mentionQuery !== null) {
+        const lastAt = text.lastIndexOf("@");
+        const prefix = text.slice(0, lastAt);
+        const newText = `${prefix}@${u.full_name} `;
+        updateText(newText);
+        setMentionQuery(null);
+      }
+    },
+    [mentionQuery, text, updateText]
+  );
+
   // ---- Render --------------------------------------------------------
 
+
   return (
-    <div className="border-t border-border bg-card p-3">
+    <div className="border-t border-border bg-card p-3 relative">
+      {/* Mode Selector Tabs */}
+      <div id="tour-inbox-notes" className="flex items-center gap-1 mb-2 border-b border-border/40 pb-1">
+        <button
+          type="button"
+          onClick={() => setMode("message")}
+          className={cn(
+            "px-2.5 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5",
+            mode === "message"
+              ? "bg-primary/10 text-primary font-semibold"
+              : "text-muted-foreground hover:bg-muted"
+          )}
+        >
+          <MessageSquare className="h-3.5 w-3.5" />
+          Resposta ao Cliente
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("note")}
+          className={cn(
+            "px-2.5 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5",
+            mode === "note"
+              ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 font-semibold"
+              : "text-muted-foreground hover:bg-muted"
+          )}
+        >
+          <StickyNote className="h-3.5 w-3.5 text-amber-500" />
+          Nota Interna
+        </button>
+      </div>
+
+
+      {mentionQuery !== null && (
+        <MentionsAutocomplete
+          query={mentionQuery}
+          onSelectUser={handleSelectMentionUser}
+          onClose={() => setMentionQuery(null)}
+        />
+      )}
+
       {replyTo && (
         <div className="mb-2">
           <ReplyQuote
@@ -411,6 +597,7 @@ export function MessageComposer({
           </Button>
         </div>
       )}
+
 
       {/* Hidden file inputs driven by the attach menu. */}
       <input

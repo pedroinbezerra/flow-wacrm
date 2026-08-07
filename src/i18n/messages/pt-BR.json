@@ -61,14 +61,13 @@
       "dealTitle": "Título do negócio",
       "newStageName": "Nome do novo estágio",
       "newFieldName": "Nome do novo campo…"
-    }
+    },
+    "required": "Preencha os campos obrigatórios."
   },
-
   "metadata": {
     "appTitle": "Flow Hub",
     "appDescription": "Template CRM auto-hospedável para WhatsApp"
   },
-
   "auth": {
     "login": {
       "title": "Entrar",
@@ -221,7 +220,6 @@
       }
     }
   },
-
   "navigation": {
     "dashboard": "Dashboard",
     "contacts": "Contatos",
@@ -254,7 +252,6 @@
     "toggleLightMode": "Alterar para modo claro",
     "toggleDarkMode": "Alterar para modo escuro"
   },
-
   "dashboard": {
     "title": "Dashboard",
     "description": "Análise em tempo real entre conversas, contatos, negócios, transmissões e automações.",
@@ -332,12 +329,26 @@
     },
     "crmTitle": "FlowHub"
   },
-
   "contacts": {
     "title": "Contatos",
     "pageDescription": "Gerencie sua lista de contatos.",
     "totalContacts": "{count} contatos no total",
-    "customFields": "Campos personalizados",
+    "customFields": {
+      "label": "Campos personalizados",
+      "title": "Campos personalizados",
+      "description": "Defina campos de contato extras (ex: CEP, fonte de lead). Eles aparecem em cada contato e na ação de automação \"Atualizar Campo de Contato\".",
+      "add": "Adicionar",
+      "noFields": "Nenhum campo personalizado ainda.",
+      "duplicateName": "Um campo nomeado \"{name}\" já existe.",
+      "createFailed": "Não foi possível criar o campo. Você pode não ter permissão.",
+      "created": "Criado \"{name}\".",
+      "renameFailed": "Não foi possível renomear o campo.",
+      "deleteConfirm": "Deletar \"{name}\"? Isso também remove seu valor armazenado em cada contato. Isso não pode ser desfeito.",
+      "deleteFailed": "Não foi possível deletar o campo.",
+      "deleted": "Deletado \"{name}\".",
+      "renameAria": "Renomear {name}",
+      "deleteFieldTitle": "Deletar campo"
+    },
     "add": "Adicionar contato",
     "addFirstContact": "Adicionar seu primeiro contato",
     "import": "Importar",
@@ -397,7 +408,6 @@
       "showing": "Mostrando {start}-{end} de {total}",
       "page": "Página {current} de {total}"
     },
-    "delete": "Deletar",
     "deleteConfirm": {
       "title": "Deletar contato",
       "description": "Tem certeza que deseja deletar este contato? Esta ação não pode ser desfeita.",
@@ -510,28 +520,11 @@
       "customFieldsSaved": "Campos personalizados salvos",
       "customFieldPlaceholder": "Digite {field}..."
     },
-    "customFields": {
-      "label": "Campos personalizados",
-      "title": "Campos personalizados",
-      "description": "Defina campos de contato extras (ex: CEP, fonte de lead). Eles aparecem em cada contato e na ação de automação \"Atualizar Campo de Contato\".",
-      "add": "Adicionar",
-      "noFields": "Nenhum campo personalizado ainda.",
-      "duplicateName": "Um campo nomeado \"{name}\" já existe.",
-      "createFailed": "Não foi possível criar o campo. Você pode não ter permissão.",
-      "created": "Criado \"{name}\".",
-      "renameFailed": "Não foi possível renomear o campo.",
-      "deleteConfirm": "Deletar \"{name}\"? Isso também remove seu valor armazenado em cada contato. Isso não pode ser desfeito.",
-      "deleteFailed": "Não foi possível deletar o campo.",
-      "deleted": "Deletado \"{name}\".",
-      "renameAria": "Renomear {name}",
-      "deleteFieldTitle": "Deletar campo"
-    },
     "paginate": "Página",
     "searchPlaceholder": "Buscar por nome, telefone ou e-mail...",
     "selectAll": "Selecionar todos nesta página",
     "willCreateOnImport": "será criada na importação"
   },
-
   "broadcasts": {
     "title": "Transmissões",
     "new": "Nova transmissão",
@@ -676,7 +669,6 @@
       "error": "Erro"
     }
   },
-
   "pipelines": {
     "title": "Pipelines",
     "new": "Novo pipeline",
@@ -711,11 +703,10 @@
     "failedCreateDeal": "Falha ao criar negócio",
     "failedSaveDeal": "Falha ao salvar negócio",
     "failedSave": "Falha ao salvar pipeline",
-    "successCreate": "Pipeline criado",
+    "successCreate": "Negócio criado",
     "successDelete": "Pipeline deletado",
     "successSave": "Pipeline salvo",
     "successUpdate": "Negócio atualizado",
-    "successCreate": "Negócio criado",
     "failedDeletePipeline": "Falha ao deletar pipeline",
     "failedDeleteStage": "Falha ao deletar estágio",
     "failedAddStage": "Falha ao adicionar estágio",
@@ -739,7 +730,6 @@
     "markAsWon": "Marcar como ganho",
     "markAsLost": "Marcar como perdido",
     "reopenDeal": "Reabrir negócio",
-    "saveChanges": "Salvar alterações",
     "requiredFields": "Título, contato e estágio são obrigatórios",
     "noAccountLinked": "Seu perfil não está vinculado a uma conta.",
     "markedWon": "Marcado como ganho",
@@ -765,7 +755,6 @@
     "changeColor": "Alterar cor",
     "pickColor": "Selecionar cor"
   },
-
   "flows": {
     "title": "Fluxos",
     "new": "Novo fluxo",
@@ -940,7 +929,6 @@
     "runsDescription": "As 50 execuções mais recentes. Expanda uma linha para ver o log por etapa do mecanismo.",
     "noRunsYet": "Nenhuma execução ainda. Acione o fluxo a partir de um número do WhatsApp pessoal para vê-lo aparecer aqui.",
     "unknownContact": "Contato desconhecido",
-    "statusActive": "Ativo",
     "statusCompleted": "Concluído",
     "statusHandedOff": "Entregue",
     "statusTimedOut": "Expirado",
@@ -952,7 +940,6 @@
     "capturedVars": "Variáveis capturadas",
     "noEventsRecorded": "Nenhum evento registrado para esta execução."
   },
-
   "automations": {
     "title": "Automações",
     "create": "Criar automação",
@@ -1110,7 +1097,6 @@
       }
     }
   },
-
   "inbox": {
     "title": "Caixa de entrada",
     "conversation": "Conversa",
@@ -1237,6 +1223,56 @@
       "loadBoardsError": "Falha ao carregar boards",
       "linkError": "Falha ao vincular conversa ao board",
       "noBoards": "Nenhum board disponível"
+    },
+    "notes": {
+      "created": "Nota interna criada.",
+      "createError": "Não foi possível criar a nota interna. Tente novamente.",
+      "connectionError": "Sem conexão para criar a nota. Tente novamente.",
+      "streamTitle": "Notas internas",
+      "empty": "Nenhuma nota interna nesta conversa.",
+      "writing": "Escrevendo nota"
+    },
+    "collaboration": {
+      "participants": "Participantes:",
+      "noParticipants": "Nenhum participante adicionado",
+      "typing": "Digitando…",
+      "preparingReply": "Preparando resposta",
+      "requestHelp": "Solicitar ajuda",
+      "helpTitle": "Solicitar ajuda no atendimento",
+      "selectSector": "Setor",
+      "selectTeammate": "Colaborador",
+      "contextMessage": "Mensagem de contexto (opcional)",
+      "returnToAi": "Devolver para IA",
+      "takeOver": "Assumir atendimento",
+      "viewing": "Visualizando",
+      "teammate": "Colaborador",
+      "participantAdded": "Participante adicionado ao atendimento.",
+      "participantAddError": "Não foi possível adicionar o participante. Tente novamente.",
+      "participantRemoved": "Participante removido.",
+      "participantRemoveError": "Não foi possível remover o participante. Tente novamente.",
+      "removeParticipant": "Remover participante",
+      "owner": "Responsável",
+      "add": "Adicionar",
+      "allParticipating": "Todos já participam",
+      "helpTooltip": "Solicitar ajuda a um colaborador ou setor"
+    },
+    "help": {
+      "title": "Solicitar ajuda no atendimento",
+      "sector": "Setor",
+      "sectorPlaceholder": "Escolha um setor",
+      "teammate": "Colaborador",
+      "teammatePlaceholder": "Escolha um colaborador",
+      "context": "Mensagem de contexto (opcional)",
+      "sent": "Solicitação de ajuda enviada.",
+      "sendError": "Não foi possível enviar a solicitação. Tente novamente.",
+      "connectionError": "Sem conexão para enviar a solicitação. Tente novamente.",
+      "sectors": {
+        "finance": "Financeiro",
+        "support": "Suporte técnico",
+        "sales": "Vendas e comercial",
+        "operations": "Operações",
+        "leadership": "Diretoria"
+      }
     }
   },
   "boards": {
@@ -1554,7 +1590,6 @@
       "selectPhone": "Selecione o Número de Telefone",
       "manualConfigTitle": "Configuração Avançada (Manual)",
       "manualConfigDescription": "Preencha os IDs e Tokens manualmente caso utilize um ambiente de teste ou configuração personalizada.",
-
       "registeredTitle": "Registrado - a Meta entregará eventos para o Flow Hub",
       "notRegisteredTitle": "Não registrado - a Meta não entregará eventos",
       "verifyWithMeta": "Verificar com a Meta",
@@ -1609,8 +1644,8 @@
       "step4Item1": "Vá para WhatsApp > Configuration",
       "step4Item2": "Clique em \"Edit\" na seção Webhook",
       "step4Item3": "Cole a URL de callback deste app",
-      "step4Item4": "Defina o Verify Token para combinar com o que você salvou aqui"
-      ,"step4Item5": "Inscreva-se no campo de webhook \"messages\"",
+      "step4Item4": "Defina o Verify Token para combinar com o que você salvou aqui",
+      "step4Item5": "Inscreva-se no campo de webhook \"messages\"",
       "metaDocs": "Documentação da API WhatsApp da Meta"
     },
     "templates": {
@@ -1772,14 +1807,12 @@
       }
     }
   },
-
   "roles": {
     "owner": "Proprietário",
     "admin": "Administrador",
     "agent": "Agente",
     "viewer": "Visualizador"
   },
-
   "errors": {
     "generic": "Algo deu errado. Tente novamente.",
     "networkError": "Erro de rede. Verifique sua conexão.",
@@ -1793,7 +1826,6 @@
     "invalidPhone": "Telefone inválido",
     "invalidUrl": "URL inválida"
   },
-
   "time": {
     "never": "Nunca",
     "justNow": "Agora mesmo",
@@ -1803,7 +1835,6 @@
     "monthsAgo": "{count}mês atrás",
     "yearsAgo": "{count}a atrás"
   },
-
   "onboarding": {
     "title": "Jornada de Implantação",
     "percentageCompleted": "{percentage}% concluído",
@@ -1859,15 +1890,18 @@
       "checklistTitle": "Checklist de Implantação 📋",
       "checklistDesc": "Acompanhe o seu progresso de configuração para deixar seu ambiente 100% pronto para uso!",
       "inbox": {
-        "listTitle": "Lista de Conversas 💬",
-        "listDesc": "Visualize todas as conversas ativas, não lidas ou atribuídas a você.",
+        "listTitle": "Painéis Retráteis & Conversas 💬",
+        "listDesc": "Visualize todas as conversas ativas. Você pode retrair ou expandir os painéis laterais a qualquer momento para maximizar sua área de trabalho.",
         "searchTitle": "Filtros e Busca 🔍",
-        "searchDesc": "Filtre por status, atendente responsável ou etiquetas.",
-        "chatTitle": "Área de Atendimento 📱",
-        "chatDesc": "Envie mensagens de texto, áudios, mídias e notas internas.",
-        "sidebarTitle": "Painel do Cliente 👤",
-        "sidebarDesc": "Veja os dados do contato, tags e negócios associados no CRM."
+        "searchDesc": "Filtre conversas por status, atendente responsável ou etiquetas.",
+        "chatTitle": "Área de Atendimento & 2 Camadas 📱",
+        "chatDesc": "Interface completa com barra dupla de ferramentas, cronômetro de sessão e suporte a troca entre IA e Humano.",
+        "notesTitle": "Notas Internas & Menções 📝",
+        "notesDesc": "Alterne para 'Nota Interna' para enviar recados privados e mencione colegas com @nome. As notas aparecem com um ícone de bloco de notas amarelo.",
+        "sidebarTitle": "Painel do Cliente & Linha do Tempo 👤",
+        "sidebarDesc": "Veja dados do cliente, tags do CRM e inspecione todos os eventos da Linha do Tempo com linguagem natural."
       },
+
       "contacts": {
         "headerTitle": "Gestão de Contatos 👥",
         "headerDesc": "Centralize a lista de clientes e prospects da sua empresa.",
@@ -1988,7 +2022,6 @@
       "errorTitle": "Erro ao carregar inteligência de onboarding"
     }
   },
-
   "aiAssistant": {
     "title": "Atendimento Inteligente",
     "subtitle": "Ensine a Inteligência Artificial a atender seus clientes sem criar fluxos ou árvores de decisão. Basta descrever o funcionamento do seu negócio!",

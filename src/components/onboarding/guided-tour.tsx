@@ -72,7 +72,15 @@ export function GuidedTour() {
           popover: {
             title: t("onboarding.tour.inbox.chatTitle"),
             description: t("onboarding.tour.inbox.chatDesc"),
-            side: "left",
+            side: "top",
+          },
+        },
+        {
+          element: "#tour-inbox-notes",
+          popover: {
+            title: t("onboarding.tour.inbox.notesTitle"),
+            description: t("onboarding.tour.inbox.notesDesc"),
+            side: "top",
           },
         },
         {
@@ -84,6 +92,7 @@ export function GuidedTour() {
           },
         },
       ];
+
     } else if (pathname.startsWith("/contacts")) {
       tourKey = "contacts";
       steps = [

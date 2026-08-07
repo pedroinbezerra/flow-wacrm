@@ -48,6 +48,7 @@ function getPageTitleKey(pathname: string): string {
 }
 
 import { TourTriggerButton } from "@/components/onboarding/tour-trigger-button";
+import { NotificationCenter } from "@/components/notifications/notification-center";
 
 interface HeaderProps {
   /** Wired to the shell's drawer state. Used only on mobile — the
@@ -85,6 +86,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-1 sm:gap-2">
+        <NotificationCenter />
         <TourTriggerButton />
         <ModeToggle />
 

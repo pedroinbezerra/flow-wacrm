@@ -932,3 +932,172 @@ export interface AICommercialInsight {
   estimated_financial_impact: string;
 }
 
+// ============================================================
+// Atendimento Colaborativo & Motor de Eventos (052)
+// ============================================================
+
+export type ConversationParticipantRole = 'owner' | 'participant' | 'observer';
+
+export interface ConversationParticipant {
+  id: string;
+  account_id: string;
+  conversation_id: string;
+  user_id: string;
+  role: ConversationParticipantRole;
+  joined_at: string;
+  profile?: Profile;
+}
+
+export interface InternalNote {
+  id: string;
+  account_id: string;
+  conversation_id: string;
+  author_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  author_profile?: Profile;
+  reactions?: InternalReaction[];
+}
+
+export type NotificationType = 'mention' | 'assignment' | 'help_request' | 'task' | 'response';
+
+export interface Notification {
+  id: string;
+  account_id: string;
+  user_id: string;
+  actor_id?: string | null;
+  conversation_id?: string | null;
+  type: NotificationType;
+  title: string;
+  body: string;
+  is_read: boolean;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+  actor_profile?: Profile;
+}
+
+export interface ConversationTimelineEvent {
+  id: string;
+  account_id: string;
+  conversation_id: string;
+  author_id?: string | null;
+  event_type: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+  author_profile?: Profile;
+}
+
+export interface InternalReaction {
+  id: string;
+  account_id: string;
+  conversation_id: string;
+  target_type: 'message' | 'note';
+  target_id: string;
+  user_id: string;
+  emoji: string;
+  created_at: string;
+  user_profile?: Profile;
+}
+
+export type MessageTagType = 'Importante' | 'Resolver hoje' | 'Aguardando cliente' | 'Aguardando setor' | (string & {});
+
+export interface MessageTag {
+  id: string;
+  account_id: string;
+  conversation_id: string;
+  message_id: string;
+  user_id: string;
+  tag: MessageTagType;
+  created_at: string;
+}
+
+export interface ResponseReservation {
+  id: string;
+  account_id: string;
+  conversation_id: string;
+  user_id: string;
+  expires_at: string;
+  created_at: string;
+  user_profile?: Profile;
+}
+
+export type ParticipantActivityState = 'viewing' | 'typing' | 'preparing_response' | 'writing_note' | 'idle';
+
+export interface ParticipantPresenceState {
+  user_id: string;
+  full_name: string;
+  avatar_url?: string;
+  role?: ConversationParticipantRole;
+  activity: ParticipantActivityState;
+  last_active_at: string;
+}
+
+export interface ResponseReservationState {
+  is_reserved: boolean;
+  reserved_by_user_id?: string;
+  reserved_by_name?: string;
+  expires_at?: string;
+}
+
+export type CollaborativeEventType =
+  | 'message_sent'
+  | 'internal_note_created'
+  | 'collaborator_mentioned'
+  | 'participant_added'
+  | 'participant_removed'
+  | 'owner_changed'
+  | 'help_requested'
+  | 'reaction_added'
+  | 'reaction_removed'
+  | 'message_tagged'
+  | 'message_untagged'
+  | 'response_reservation_created'
+  | 'response_reservation_released';
+
+export interface CollaborativeEventContext {
+  account_id: string;
+  conversation_id: string;
+  actor_id: string;
+  actor_name?: string;
+}
+
+export interface CollaborativeEventPayloadMap {
+  message_sent: { message_id: string; content_text: string; sender_type: string };
+  internal_note_created: { note_id?: string; content: string; mentions?: string[] };
+  collaborator_mentioned: { mentioned_user_id: string; note_id?: string; message_id?: string; snippet: string };
+  participant_added: { target_user_id: string; target_user_name?: string; role: ConversationParticipantRole };
+  participant_removed: { target_user_id: string; target_user_name?: string };
+
+  owner_changed: { old_owner_id?: string | null; new_owner_id: string };
+  help_requested: { target_sector?: string; target_user_id?: string; note?: string };
+  reaction_added: { target_type: 'message' | 'note'; target_id: string; emoji: string };
+  reaction_removed: { target_type: 'message' | 'note'; target_id: string; emoji: string };
+  message_tagged: { message_id: string; tag: MessageTagType };
+  message_untagged: { message_id: string; tag: MessageTagType };
+  response_reservation_created: { duration_seconds: number };
+  response_reservation_released: { reason?: string };
+}
+
+export interface CollaborativeEvent<T extends CollaborativeEventType = CollaborativeEventType> {
+  type: T;
+  context: CollaborativeEventContext;
+  payload: CollaborativeEventPayloadMap[T];
+  created_at?: string;
+}
+
+export interface CollaborativeEventResult {
+  success: boolean;
+  event_type: CollaborativeEventType;
+  persisted_ids?: {
+    note_id?: string;
+    participant_id?: string;
+    notification_ids?: string[];
+    timeline_event_id?: string;
+    reaction_id?: string;
+    tag_id?: string;
+    reservation_id?: string;
+  };
+  error?: string;
+}
+

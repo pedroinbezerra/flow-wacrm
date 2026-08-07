@@ -74,6 +74,25 @@ export default function InboxPage() {
     });
   }, []);
 
+  const [listPanelOpen, setListPanelOpen] = useState(true);
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("flowhub:inbox_list_open");
+      if (stored !== null) setListPanelOpen(stored === "true");
+    } catch {}
+  }, []);
+
+  const handleToggleListPanel = useCallback(() => {
+    setListPanelOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("flowhub:inbox_list_open", String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+
   // Fire the deep-link auto-select exactly once per URL — subsequent
   // list refreshes (realtime, manual refetch) must not snap the user
   // back to the deep-linked conversation if they've already clicked
@@ -566,14 +585,11 @@ export default function InboxPage() {
       )}
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left panel: Conversation list.
-            Hidden on mobile when a conversation is selected so the
-            thread can occupy the full width. Always visible on lg+. */}
         <div
           id="tour-inbox-list"
           className={cn(
-            "flex h-full flex-1 lg:flex-none",
-            hasActiveConv ? "hidden lg:flex" : "flex",
+            "h-full shrink-0 border-r border-border bg-card transition-all duration-300 ease-in-out overflow-hidden hidden lg:block",
+            listPanelOpen ? "w-80 opacity-100" : "w-0 opacity-0 border-r-0 pointer-events-none"
           )}
         >
           <ConversationList
@@ -585,16 +601,6 @@ export default function InboxPage() {
           />
         </div>
 
-        {/* Center panel: Message thread.
-            Hidden on mobile when no conversation is selected so the
-            list can occupy the full width. Always visible on lg+
-            (shows its own empty-state if no thread is picked yet).
-
-            `min-w-0` is load-bearing: without it, a single wide piece
-            of content inside the thread (long quote preview, very
-            long URL in a message body) forces the flex child past
-            its share and pushes the contact-sidebar panel off-screen
-            on the right. Issue #165. */}
         <div
           id="tour-inbox-chat"
           className={cn(
@@ -616,18 +622,20 @@ export default function InboxPage() {
             onRefresh={handleManualRefresh}
             contactPanelOpen={contactPanelOpen}
             onToggleContactPanel={handleToggleContactPanel}
+            listPanelOpen={listPanelOpen}
+            onToggleListPanel={handleToggleListPanel}
           />
         </div>
 
-        {/* Right panel: Contact sidebar — desktop only, and only when the
-            agent hasn't collapsed it via the thread-header toggle (#258).
-            On mobile it's always hidden (the `lg:block` below), so the
-            toggle — which is itself desktop-only — never affects it. */}
-        {contactPanelOpen && (
-          <div id="tour-inbox-sidebar" className="hidden lg:block">
-            <ContactSidebar contact={activeContact} />
-          </div>
-        )}
+        <div
+          id="tour-inbox-sidebar"
+          className={cn(
+            "hidden lg:block h-full shrink-0 border-l border-border bg-card transition-all duration-300 ease-in-out overflow-hidden",
+            contactPanelOpen ? "w-80 opacity-100" : "w-0 opacity-0 border-l-0 pointer-events-none"
+          )}
+        >
+          <ContactSidebar contact={activeContact} conversationId={activeConversation?.id} />
+        </div>
       </div>
     </div>
   );

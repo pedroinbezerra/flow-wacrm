@@ -391,6 +391,7 @@ export async function POST(request: Request) {
       .insert({
         conversation_id,
         sender_type: 'agent',
+        sender_id: user.id,
         content_type: message_type,
         content_text: content_text || null,
         media_url: media_url || null,
@@ -401,6 +402,7 @@ export async function POST(request: Request) {
       })
       .select()
       .single()
+
 
     if (msgError) {
       console.error('Error inserting sent message:', msgError)

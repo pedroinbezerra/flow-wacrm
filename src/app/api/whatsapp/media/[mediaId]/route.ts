@@ -80,7 +80,23 @@ export async function GET(
         'Cache-Control': 'public, max-age=86400',
       },
     })
-  } catch (error) {
+  } catch (error: any) {
+    const message = error?.message || String(error)
+    const isExpiredOrNotFound =
+      message.includes('does not exist') ||
+      message.includes('missing permissions') ||
+      message.includes('Unsupported get request') ||
+      message.includes('404') ||
+      message.includes('410')
+
+    if (isExpiredOrNotFound) {
+      console.warn(`[WhatsApp Media Proxy] Media expired or invalid on Meta CDN:`, message)
+      return NextResponse.json(
+        { error: 'Mídia expirada ou indisponível nos servidores do WhatsApp (expira em 30 dias na Meta).' },
+        { status: 410 }
+      )
+    }
+
     console.error('Error in WhatsApp media GET:', error)
     return NextResponse.json(
       { error: 'Failed to fetch media' },
@@ -88,3 +104,4 @@ export async function GET(
     )
   }
 }
+

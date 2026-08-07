@@ -30,17 +30,29 @@ import {
   RefreshCw,
   PanelRightOpen,
   PanelRightClose,
+  PanelLeftOpen,
+  PanelLeftClose,
+  PanelLeft,
+  PanelRight,
   Pin,
+
   Clock3,
   FolderKanban,
   Bot,
   Sparkles,
   UserCheck,
   User,
+  HelpCircle,
+  Lock,
 } from "lucide-react";
 import { format, isToday, isYesterday, differenceInHours } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ParticipantBar } from "./participant-bar";
+import { InternalNoteCard } from "./internal-notes-stream";
+import { HelpRequestModal } from "./help-request-modal";
+import { useCollaborativePresence } from "@/hooks/use-collaborative-presence";
+import type { InternalNote, ConversationTimelineEvent } from "@/types";
 import {
   Dialog,
   DialogContent,
@@ -129,7 +141,10 @@ interface MessageThreadProps {
    */
   contactPanelOpen?: boolean;
   onToggleContactPanel?: () => void;
+  listPanelOpen?: boolean;
+  onToggleListPanel?: () => void;
 }
+
 
 function formatDateSeparator(dateStr: string, t: ReturnType<typeof useTranslation>["t"]): string {
   const date = new Date(dateStr);
@@ -196,7 +211,10 @@ export function MessageThread({
   onRefresh,
   contactPanelOpen,
   onToggleContactPanel,
+  listPanelOpen,
+  onToggleListPanel,
 }: MessageThreadProps) {
+
   const { t } = useTranslation();
   const { user } = useAuth();
   const { getPresence, getRow, now } = usePresence();
@@ -238,28 +256,98 @@ export function MessageThread({
   const [linkBoardId, setLinkBoardId] = useState("");
   const [linkLaneId, setLinkLaneId] = useState("");
 
+  // Collaborative inbox states
+  const [internalNotes, setInternalNotes] = useState<InternalNote[]>([]);
+  const [timelineEvents, setTimelineEvents] = useState<ConversationTimelineEvent[]>([]);
+  const [helpModalOpen, setHelpModalOpen] = useState(false);
+  const [composerMode, setComposerMode] = useState<"message" | "note">("message");
+
+  const handleNoteInserted = useCallback((newNote: InternalNote) => {
+    setInternalNotes((prev) => {
+      if (prev.some((n) => n.id === newNote.id)) return prev;
+      return [...prev, newNote];
+    });
+  }, []);
+
+  const handleTimelineInserted = useCallback((newEvent: ConversationTimelineEvent) => {
+    setTimelineEvents((prev) => {
+      if (prev.some((e) => e.id === newEvent.id)) return prev;
+      return [newEvent, ...prev];
+    });
+  }, []);
+
+  const { activeParticipants, reservationState, updateActivity } = useCollaborativePresence({
+    conversationId: conversation?.id ?? null,
+    enabled: Boolean(conversation?.id),
+    onNoteInserted: handleNoteInserted,
+    onTimelineEventInserted: handleTimelineInserted,
+  });
+
+  // Fetch internal notes for current conversation
+  useEffect(() => {
+    const convId = conversation?.id;
+    if (!convId) return;
+    async function loadNotes() {
+      try {
+        const res = await fetch(`/api/conversations/${convId}/notes`);
+        if (res.ok) {
+          const data = await res.json();
+          setInternalNotes(data || []);
+        }
+      } catch (err) {
+        console.error("Failed to load internal notes:", err);
+      }
+    }
+    loadNotes();
+
+    const handleRefresh = (e: Event) => {
+      const customEvent = e as CustomEvent<{ conversationId?: string }>;
+      if (!customEvent.detail?.conversationId || customEvent.detail.conversationId === convId) {
+        loadNotes();
+      }
+    };
+    window.addEventListener("flowhub:refresh_notes", handleRefresh);
+    return () => {
+      window.removeEventListener("flowhub:refresh_notes", handleRefresh);
+    };
+  }, [conversation?.id]);
+
+
+
   // Profiles are bounded by RLS to rows the current user is allowed to
-  // see — today that's just the current user, but the dropdown keeps the
-  // shape ready for shared-team workspaces without a refactor.
   useEffect(() => {
     let cancelled = false;
-    const supabase = createClient();
-    supabase
-      .from("profiles")
-      .select("*")
-      .order("full_name")
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error) {
-          console.error("Failed to fetch profiles:", error);
-          return;
+    async function loadTeamProfiles() {
+      try {
+        const res = await fetch("/api/account/members");
+        if (res.ok) {
+          const json = await res.json();
+          const list = Array.isArray(json?.members) ? json.members : Array.isArray(json) ? json : [];
+          if (!cancelled && list.length > 0) {
+            setProfiles(list);
+            return;
+          }
         }
-        setProfiles((data as Profile[]) ?? []);
-      });
+      } catch {}
+
+      const supabase = createClient();
+      supabase
+        .from("profiles")
+        .select("*")
+        .order("full_name")
+        .then(({ data, error }) => {
+          if (cancelled) return;
+          if (!error && data) {
+            setProfiles(data as Profile[]);
+          }
+        });
+    }
+    loadTeamProfiles();
     return () => {
       cancelled = true;
     };
   }, []);
+
 
   // 24-hour session timer
   const sessionInfo = useMemo(() => {
@@ -1113,6 +1201,36 @@ export function MessageThread({
     }
   };
 
+  // Interleave messages and internal notes in exact chronological order for the chat thread stream.
+  // This memo must stay before any early return to preserve hook ordering between renders.
+  const combinedStreamGroups = useMemo(() => {
+    type StreamItem =
+      | { kind: "message"; data: Message; created_at: string }
+      | { kind: "note"; data: InternalNote; created_at: string };
+
+    const items: StreamItem[] = [
+      ...messages.map((msg) => ({ kind: "message" as const, data: msg, created_at: msg.created_at })),
+      ...internalNotes.map((note) => ({ kind: "note" as const, data: note, created_at: note.created_at })),
+    ];
+
+    items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+    const groups: { date: string; items: StreamItem[] }[] = [];
+    let currentDate = "";
+
+    for (const item of items) {
+      const day = format(new Date(item.created_at), "yyyy-MM-dd");
+      if (day !== currentDate) {
+        currentDate = day;
+        groups.push({ date: item.created_at, items: [item] });
+      } else {
+        groups[groups.length - 1].items.push(item);
+      }
+    }
+
+    return groups;
+  }, [messages, internalNotes]);
+
   // Empty state — same WhatsApp-style doodle background as the active
   // thread below, so swapping between empty/selected doesn't change the
   // pattern under the user's eye.
@@ -1133,8 +1251,9 @@ export function MessageThread({
   }
 
   const displayName = contact.name || contact.phone;
-  const messageGroups = groupMessagesByDate(messages);
+
   const currentStatus = statusOptions.find(
+
     (s: typeof statusOptions[number]) => s.value === conversation.status
   );
   const assignedAgentId = conversation.assigned_agent_id ?? null;
@@ -1151,249 +1270,161 @@ export function MessageThread({
     // paints on top of the contact sidebar at lg+ — outgoing bubbles get
     // clipped and the hover toolbar overlaps the Tags panel. Letting the
     // root shrink lets the bubbles' break-words / max-w caps apply.
-    // Issue #257.
     <div className={cn("flex min-w-0 flex-1 flex-col", DOODLE_BG_CLASSES)}>
-      {/* Header — solid card surface sits on top of the doodle so the
-          name/avatar/dropdowns stay legible. */}
-      {/* Header — solid card surface with clean toolbar layout groups */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-3 py-2 sm:px-4">
-        {/* Left Side: Contact Info & Status Badges */}
-        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-          {/* Back-to-list button — mobile only. */}
-          {onBack && (
-            <button
+      {/* 2-Tier Clean Header Toolbar */}
+      <div className="flex flex-col border-b border-border bg-card shrink-0">
+
+        {/* Tier 1: Primary Header Bar */}
+        <div className="flex h-14 items-center justify-between gap-2 px-3 sm:px-4 border-b border-border/40">
+          {/* Left Side: Panel 2 Toggle, Contact Avatar & Info */}
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+            {onToggleListPanel && (
+              <button
+                type="button"
+                onClick={onToggleListPanel}
+                title={listPanelOpen ? "Recolher lista de conversas" : "Expandir lista de conversas"}
+                className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:flex"
+              >
+                {listPanelOpen ? <PanelLeftClose className="h-4.5 w-4.5" /> : <PanelLeftOpen className="h-4.5 w-4.5" />}
+              </button>
+            )}
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                aria-label={t("inbox.backToConversations")}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+            )}
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary ring-1 ring-primary/20">
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0 shrink">
+              <h2 className="truncate text-xs font-semibold text-foreground">{displayName}</h2>
+              <p className="truncate text-[11px] text-muted-foreground">{contact.phone}</p>
+            </div>
+          </div>
+
+          {/* Right Side: Core Actions (AI Handoff, Status, Assignee, Panel 3 Toggle) */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* AI Handoff CTA */}
+            <Button
               type="button"
-              onClick={onBack}
-              aria-label={t("inbox.backToConversations")}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-          )}
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary ring-1 ring-primary/20">
-            {displayName.charAt(0).toUpperCase()}
-          </div>
-          <div className="min-w-0 shrink">
-            <h2 className="truncate text-xs font-semibold text-foreground">{displayName}</h2>
-            <p className="truncate text-[11px] text-muted-foreground">{contact.phone}</p>
-          </div>
-
-          {/* Session timer & AI status badges */}
-          <div className="hidden items-center gap-1 sm:flex">
-            <Badge
               variant="outline"
+              size="sm"
+              onClick={handleToggleAIHandler}
+              disabled={updatingHandlerStatus}
               className={cn(
-                "gap-1 border-border text-[10px] font-medium px-1.5 py-0.5 whitespace-nowrap",
-                sessionInfo.expired ? "text-red-400 border-red-500/30 bg-red-500/10" : "text-primary border-primary/30 bg-primary/10"
-              )}
-            >
-              <Clock className="h-3 w-3" />
-              {sessionInfo.remaining}
-            </Badge>
-
-            <Badge
-              variant="outline"
-              className={cn(
-                "gap-1 text-[10px] font-medium px-1.5 py-0.5 border-border whitespace-nowrap",
+                "h-7 text-[11px] font-medium gap-1 px-2.5 rounded-md transition-all shadow-2xs whitespace-nowrap",
                 conversation.ai_handler_status === "human"
-                  ? "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300"
-                  : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20"
+                  : "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:bg-amber-500/20"
               )}
             >
               {conversation.ai_handler_status === "human" ? (
                 <>
-                  <User className="h-3 w-3" /> Humano
+                  <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                  <span className="whitespace-nowrap">{t("inbox.collaboration.returnToAi")}</span>
                 </>
               ) : (
                 <>
-                  <Bot className="h-3 w-3" /> IA Ativa
+                  <UserCheck className="h-3.5 w-3.5 shrink-0" />
+                  <span className="whitespace-nowrap">{t("inbox.collaboration.takeOver")}</span>
                 </>
               )}
-            </Badge>
-          </div>
-        </div>
+            </Button>
 
-        {/* Right Side: Action Control Groups */}
-        <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
-          {/* Group 1: AI Handoff CTA */}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleToggleAIHandler}
-            disabled={updatingHandlerStatus}
-            className={cn(
-              "h-7 text-[11px] font-medium gap-1 px-2.5 rounded-md transition-all shadow-xs whitespace-nowrap",
-              conversation.ai_handler_status === "human"
-                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20"
-                : "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:bg-amber-500/20"
-            )}
-          >
-            {conversation.ai_handler_status === "human" ? (
-              <>
-                <Sparkles className="h-3.5 w-3.5 shrink-0" />
-                <span className="whitespace-nowrap">Devolver para IA</span>
-              </>
-            ) : (
-              <>
-                <UserCheck className="h-3.5 w-3.5 shrink-0" />
-                <span className="whitespace-nowrap">Assumir Atendimento</span>
-              </>
-            )}
-          </Button>
-
-          {/* Group 2: Ticket Management (Status & Assignment) */}
-          <div className="flex items-center gap-0.5 rounded-md border border-border/60 bg-muted/40 p-0.5">
-            {/* Status dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                className={cn(
-                  "inline-flex items-center justify-center h-7 gap-1 px-2 text-[11px] font-medium rounded-md transition-colors whitespace-nowrap hover:bg-muted",
-                  currentStatus?.color ?? "text-muted-foreground"
-                )}
-              >
-                <span className="whitespace-nowrap">{currentStatus?.label ?? t("common.status")}</span>
-                <ChevronDown className="h-3 w-3 opacity-70 shrink-0" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="border-border bg-popover">
-                {statusOptions.map((opt: typeof statusOptions[number]) => (
-                  <DropdownMenuItem
-                    key={opt.value}
-                    onClick={() => handleStatusChange(opt.value)}
-                    className={cn("text-xs", opt.color)}
-                  >
-                    {opt.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <div className="h-3.5 w-[1px] bg-border/60 shrink-0" />
-
-            {/* Assign dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                className={cn(
-                  "inline-flex items-center justify-center h-7 gap-1 px-2 text-[11px] font-medium rounded-md transition-colors whitespace-nowrap hover:bg-muted",
-                  assignedAgentId ? "text-primary font-semibold" : "text-muted-foreground"
-                )}
-              >
-                <UserPlus className="h-3.5 w-3.5 shrink-0" />
-                <span className="whitespace-nowrap">{assignLabel}</span>
-                <ChevronDown className="h-3 w-3 opacity-70 shrink-0" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="border-border bg-popover">
-                {profiles.length === 0 ? (
-                  <DropdownMenuItem disabled className="text-xs text-muted-foreground">
-                    {t("inbox.noAvailableTeammates")}
-                  </DropdownMenuItem>
-                ) : (
-                  profiles.map((p) => {
-                    const isSelected = p.user_id === assignedAgentId;
-                    const presence = getPresence(p.user_id);
-                    return (
-                      <DropdownMenuItem
-                        key={p.id}
-                        onClick={() => handleAssignChange(p.user_id)}
-                        className={cn(
-                          "text-xs",
-                          isSelected ? "text-primary font-medium" : "text-popover-foreground"
-                        )}
-                      >
-                        <PresenceDot
-                          status={presence}
-                          label={presenceLabel(
-                            presence,
-                            getRow(p.user_id)?.last_seen_at ?? null,
-                            now
-                          )}
-                          className="mr-2"
-                        />
-                        <span className="flex-1 whitespace-nowrap">
-                          {p.full_name}
-                          {p.user_id === user?.id ? ` (${t("inbox.me")})` : ""}
-                        </span>
-                        {isSelected && <Check className="ml-2 h-3.5 w-3.5 text-primary" />}
-                      </DropdownMenuItem>
-                    );
-                  })
-                )}
-                {assignedAgentId && (
-                  <>
-                    <DropdownMenuSeparator className="bg-border" />
+            {/* Ticket Management (Status & Assignment) */}
+            <div className="flex items-center gap-0.5 rounded-md border border-border/60 bg-muted/40 p-0.5">
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  className={cn(
+                    "inline-flex items-center justify-center h-7 gap-1 px-2 text-[11px] font-medium rounded-md transition-colors whitespace-nowrap hover:bg-muted",
+                    currentStatus?.color ?? "text-muted-foreground"
+                  )}
+                >
+                  <span className="whitespace-nowrap">{currentStatus?.label ?? t("common.status")}</span>
+                  <ChevronDown className="h-3 w-3 opacity-70 shrink-0" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="border-border bg-popover">
+                  {statusOptions.map((opt: typeof statusOptions[number]) => (
                     <DropdownMenuItem
-                      onClick={() => handleAssignChange(null)}
-                      className="text-xs text-muted-foreground"
+                      key={opt.value}
+                      onClick={() => handleStatusChange(opt.value)}
+                      className={cn("text-xs", opt.color)}
                     >
-                      {t("inbox.unassign")}
+                      {opt.label}
                     </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-          {/* Group 3: CRM & Board Tools */}
-          <div className="flex items-center gap-0.5 rounded-md border border-border/60 bg-muted/40 p-0.5">
-            <button
-              type="button"
-              onClick={handleOpenLinkBoard}
-              title={t("inbox.board.addToBoard")}
-              className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium whitespace-nowrap text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <FolderKanban className="h-3.5 w-3.5 shrink-0" />
-              <span className="hidden sm:inline whitespace-nowrap">{t("inbox.board.addToBoard")}</span>
-            </button>
+              <div className="h-3.5 w-[1px] bg-border/60 shrink-0" />
 
-            <div className="h-3.5 w-[1px] bg-border/60 shrink-0" />
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  className={cn(
+                    "inline-flex items-center justify-center h-7 gap-1 px-2 text-[11px] font-medium rounded-md transition-colors whitespace-nowrap hover:bg-muted",
+                    assignedAgentId ? "text-primary font-semibold" : "text-muted-foreground"
+                  )}
+                >
+                  <UserPlus className="h-3.5 w-3.5 shrink-0" />
+                  <span className="whitespace-nowrap">{assignLabel}</span>
+                  <ChevronDown className="h-3 w-3 opacity-70 shrink-0" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="border-border bg-popover">
+                  {profiles.length === 0 ? (
+                    <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                      {t("inbox.noAvailableTeammates")}
+                    </DropdownMenuItem>
+                  ) : (
+                    profiles.map((p) => {
+                      const isSelected = p.user_id === assignedAgentId;
+                      const presence = getPresence(p.user_id);
+                      return (
+                        <DropdownMenuItem
+                          key={p.user_id}
+                          onClick={() => handleAssignChange(p.user_id)}
+                          className={cn(
+                            "text-xs",
+                            isSelected ? "text-primary font-medium" : "text-popover-foreground"
+                          )}
+                        >
+                          <PresenceDot
+                            status={presence}
+                            label={presenceLabel(
+                              presence,
+                              getRow(p.user_id)?.last_seen_at ?? null,
+                              now
+                            )}
+                            className="mr-2"
+                          />
+                          <span className="flex-1 whitespace-nowrap">
+                            {p.full_name}
+                            {p.user_id === user?.id ? ` (${t("inbox.me")})` : ""}
+                          </span>
+                          {isSelected && <Check className="ml-2 h-3.5 w-3.5 text-primary" />}
+                        </DropdownMenuItem>
+                      );
+                    })
+                  )}
+                  {assignedAgentId && (
+                    <>
+                      <DropdownMenuSeparator className="bg-border" />
+                      <DropdownMenuItem
+                        onClick={() => handleAssignChange(null)}
+                        className="text-xs text-muted-foreground"
+                      >
+                        {t("inbox.unassign")}
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
-            {/* Aguardando retorno toggle */}
-            <button
-              type="button"
-              onClick={handleToggleAwaitingReturn}
-              disabled={updatingBoardFlags}
-              title={
-                defaultBoardItem?.awaiting_return
-                  ? t("boards.clearAwaitingReturn")
-                  : t("boards.markAwaitingReturn")
-              }
-              className={cn(
-                "inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium whitespace-nowrap transition-colors",
-                defaultBoardItem?.awaiting_return
-                  ? "bg-amber-500/20 text-amber-400 font-semibold"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                updatingBoardFlags && "opacity-60"
-              )}
-            >
-              <Clock3 className="h-3.5 w-3.5 shrink-0" />
-              <span className="hidden sm:inline whitespace-nowrap">{t("boards.awaitingReturn")}</span>
-            </button>
-
-            {/* Prioridade toggle */}
-            <button
-              type="button"
-              onClick={handleTogglePriority}
-              disabled={updatingBoardFlags}
-              title={
-                (defaultBoardItem?.priority_rank ?? 0) > 0
-                  ? t("boards.clearPriority")
-                  : t("boards.promotePriority")
-              }
-              className={cn(
-                "inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium whitespace-nowrap transition-colors",
-                (defaultBoardItem?.priority_rank ?? 0) > 0
-                  ? "bg-red-500/20 text-red-400 font-semibold"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                updatingBoardFlags && "opacity-60"
-              )}
-            >
-              <Pin className={cn("h-3.5 w-3.5 shrink-0", (defaultBoardItem?.priority_rank ?? 0) > 0 && "fill-current")} />
-              <span className="hidden sm:inline whitespace-nowrap">{t("boards.priority")}</span>
-            </button>
-          </div>
-
-          {/* Group 4: Header Utilities (Refresh & Sidebar Toggle) */}
-          <div className="flex items-center gap-0.5">
             {onRefresh && (
               <button
                 type="button"
@@ -1411,26 +1442,119 @@ export function MessageThread({
               <button
                 type="button"
                 onClick={onToggleContactPanel}
-                aria-label={
-                  contactPanelOpen ? t("inbox.hideContactPanel") : t("inbox.showContactPanel")
-                }
-                aria-pressed={contactPanelOpen}
-                title={contactPanelOpen ? t("inbox.hideContact") : t("inbox.showContact")}
-                className={cn(
-                  "hidden h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-muted hover:text-foreground lg:inline-flex",
-                  contactPanelOpen ? "text-primary" : "text-muted-foreground"
-                )}
+                title={contactPanelOpen ? "Recolher detalhes e timeline" : "Expandir detalhes e timeline"}
+                className="hidden lg:flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
-                {contactPanelOpen ? (
-                  <PanelRightClose className="h-3.5 w-3.5" />
-                ) : (
-                  <PanelRightOpen className="h-3.5 w-3.5" />
-                )}
+                {contactPanelOpen ? <PanelRightClose className="h-4.5 w-4.5" /> : <PanelRightOpen className="h-4.5 w-4.5" />}
               </button>
             )}
           </div>
         </div>
+
+        {/* Tier 2: Secondary Action Toolbar Bar (CRM Tools, Help, Badges) */}
+        <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-muted/20 overflow-x-auto scrollbar-none text-xs">
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Session Timer Badge */}
+            <Badge
+              variant="outline"
+              className={cn(
+                "gap-1 border-border text-[10px] font-medium px-2 py-0.5 whitespace-nowrap shrink-0",
+                sessionInfo.expired ? "text-red-400 border-red-500/30 bg-red-500/10" : "text-primary border-primary/30 bg-primary/10"
+              )}
+            >
+              <Clock className="h-3 w-3" />
+              {sessionInfo.remaining}
+            </Badge>
+
+            {/* AI Status Badge */}
+            <Badge
+              variant="outline"
+              className={cn(
+                "gap-1 text-[10px] font-medium px-2 py-0.5 border-border whitespace-nowrap shrink-0",
+                conversation.ai_handler_status === "human"
+                  ? "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300"
+                  : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+              )}
+            >
+              {conversation.ai_handler_status === "human" ? (
+                <>
+                  <User className="h-3 w-3" /> Humano
+                </>
+              ) : (
+                <>
+                  <Bot className="h-3 w-3" /> IA Ativa
+                </>
+              )}
+            </Badge>
+
+            <div className="h-3.5 w-[1px] bg-border/60 shrink-0 mx-0.5" />
+
+            {/* Board CTA */}
+            <button
+              type="button"
+              onClick={handleOpenLinkBoard}
+              title={t("inbox.board.addToBoard")}
+              className="inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-medium whitespace-nowrap text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <FolderKanban className="h-3.5 w-3.5 shrink-0" />
+              <span>{t("inbox.board.addToBoard")}</span>
+            </button>
+
+            {/* Aguardando retorno toggle */}
+            <button
+              type="button"
+              onClick={handleToggleAwaitingReturn}
+              disabled={updatingBoardFlags}
+              className={cn(
+                "inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-medium whitespace-nowrap transition-colors",
+                defaultBoardItem?.awaiting_return
+                  ? "bg-amber-500/20 text-amber-400 font-semibold"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                updatingBoardFlags && "opacity-60"
+              )}
+            >
+              <Clock3 className="h-3.5 w-3.5 shrink-0" />
+              <span>{t("boards.awaitingReturn")}</span>
+            </button>
+
+            {/* Prioridade toggle */}
+            <button
+              type="button"
+              onClick={handleTogglePriority}
+              disabled={updatingBoardFlags}
+              className={cn(
+                "inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-medium whitespace-nowrap transition-colors",
+                (defaultBoardItem?.priority_rank ?? 0) > 0
+                  ? "bg-red-500/20 text-red-400 font-semibold"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                updatingBoardFlags && "opacity-60"
+              )}
+            >
+              <Pin className={cn("h-3.5 w-3.5 shrink-0", (defaultBoardItem?.priority_rank ?? 0) > 0 && "fill-current")} />
+              <span>{t("boards.priority")}</span>
+            </button>
+
+            {/* Solicitar Ajuda */}
+            <button
+              type="button"
+              onClick={() => setHelpModalOpen(true)}
+              title={t("inbox.collaboration.helpTooltip")}
+              className="inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-medium whitespace-nowrap text-amber-500 hover:bg-amber-500/10 transition-colors"
+            >
+              <HelpCircle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+              <span>{t("inbox.collaboration.requestHelp")}</span>
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* Participant Presence Bar */}
+
+      <ParticipantBar
+        conversationId={conversation?.id ?? ""}
+        activePresences={activeParticipants}
+        currentUserId={user?.id}
+      />
 
       <Dialog open={linkBoardOpen} onOpenChange={setLinkBoardOpen}>
         <DialogContent>
@@ -1499,13 +1623,13 @@ export function MessageThread({
         </DialogContent>
       </Dialog>
 
-      {/* Messages Area */}
+      {/* Messages & Internal Notes Area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
-        ) : messages.length === 0 ? (
+        ) : messages.length === 0 && internalNotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
             <p className="text-sm text-muted-foreground">{t("inbox.noMessagesYet")}</p>
             <p className="text-xs text-muted-foreground">
@@ -1514,7 +1638,7 @@ export function MessageThread({
           </div>
         ) : (
           <div className="space-y-4">
-            {messageGroups.map((group) => (
+            {combinedStreamGroups.map((group) => (
               <div key={group.date}>
                 {/* Date separator */}
                 <div className="mb-4 flex items-center justify-center">
@@ -1522,9 +1646,21 @@ export function MessageThread({
                     {formatDateSeparator(group.date, t)}
                   </span>
                 </div>
-                {/* Messages */}
-                <div className="space-y-2">
-                  {group.messages.map((msg) => {
+
+                {/* Combined Messages & Internal Notes Stream */}
+                <div className="space-y-3">
+                  {group.items.map((item, idx) => {
+                    if (item.kind === "note") {
+                      return (
+                        <InternalNoteCard
+                          key={`note-${item.data.id}`}
+                          note={item.data}
+                          currentUserId={user?.id}
+                        />
+                      );
+                    }
+
+                    const msg = item.data;
                     const parent = msg.reply_to_message_id
                       ? messagesById.get(msg.reply_to_message_id)
                       : null;
@@ -1535,8 +1671,25 @@ export function MessageThread({
                         }
                       : null;
                     const msgReactions = reactionsByMessageId.get(msg.id);
-                    // Toggle is computed at the call site — `msgReactions`
-                    // and `user?.id` are already in scope, no extra hook.
+
+                    // Rule 2 — Message Author Identification on transition
+                    const prevItem = idx > 0 ? group.items[idx - 1] : null;
+                    const prevMsg = prevItem?.kind === "message" ? prevItem.data : null;
+                    const isAuthorTransition =
+                      !prevMsg ||
+                      prevMsg.sender_type !== msg.sender_type ||
+                      prevMsg.sender_id !== msg.sender_id;
+
+                    const authorProf = profiles.find((p) => p.user_id === msg.sender_id);
+                    const currentUserProf = profiles.find((p) => p.user_id === user?.id);
+                    const authorName =
+                      authorProf?.full_name ||
+                      (msg.sender_id && msg.sender_id === user?.id
+                        ? (currentUserProf?.full_name || "Você")
+                        : msg.sender_type === "bot"
+                          ? "IA FlowHub"
+                          : (msg.sender_type === "agent" ? (currentUserProf?.full_name || "Colaborador") : contactDisplayName));
+
                     const handlePillToggle = (emoji: string) => {
                       const own = msgReactions?.find(
                         (r) =>
@@ -1546,6 +1699,7 @@ export function MessageThread({
                       const next = own?.emoji === emoji ? "" : emoji;
                       void postReaction(msg.id, next);
                     };
+
                     return (
                       <MessageActions
                         key={msg.id}
@@ -1561,6 +1715,8 @@ export function MessageThread({
                           reactions={msgReactions}
                           currentUserId={user?.id}
                           onToggleReaction={handlePillToggle}
+                          authorName={authorName}
+                          showAuthorName={isAuthorTransition}
                         />
                       </MessageActions>
                     );
@@ -1570,11 +1726,24 @@ export function MessageThread({
             ))}
           </div>
         )}
+
       </div>
+
+      {/* Smart Response Control Warning Banner */}
+      {reservationState.is_reserved && reservationState.reserved_by_user_id !== user?.id && (
+        <div className="px-4 py-2 bg-amber-500/15 border-t border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs flex items-center justify-between animate-in slide-in-from-bottom-2">
+          <div className="flex items-center gap-2">
+            <Lock className="h-4 w-4 text-amber-600 shrink-0" />
+            <span>
+              <strong>{reservationState.reserved_by_name}</strong> está preparando uma resposta ao cliente. Revise seu texto antes de enviar.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Composer */}
       <MessageComposer
-        conversationId={conversation.id}
+        conversationId={conversation?.id ?? ""}
         sessionExpired={sessionInfo.expired}
         onSend={handleSend}
         onSendMedia={handleSendMedia}
@@ -1588,6 +1757,14 @@ export function MessageThread({
         onOpenChange={setTemplateModalOpen}
         onSelect={handleSendTemplate}
       />
+
+      <HelpRequestModal
+        conversationId={conversation?.id ?? ""}
+        open={helpModalOpen}
+        onOpenChange={setHelpModalOpen}
+      />
+
+
     </div>
   );
 }

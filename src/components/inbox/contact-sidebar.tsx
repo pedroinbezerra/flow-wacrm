@@ -16,24 +16,57 @@ import {
   DollarSign,
   StickyNote,
   Plus,
+  History,
+  Eye,
+  Info,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { format } from "date-fns";
 
 interface ContactSidebarProps {
   contact: Contact | null;
+  conversationId?: string;
 }
 
-export function ContactSidebar({ contact }: ContactSidebarProps) {
+export function ContactSidebar({ contact, conversationId }: ContactSidebarProps) {
   const { accountId } = useAuth();
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [notes, setNotes] = useState<ContactNote[]>([]);
   const [tags, setTags] = useState<(Tag & { contact_tag_id: string })[]>([]);
+  const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [newNote, setNewNote] = useState("");
   const [addingNote, setAddingNote] = useState(false);
+
+
+  const fetchTimeline = useCallback(async () => {
+    if (!conversationId) return;
+    try {
+      const res = await fetch(`/api/conversations/${conversationId}/timeline`);
+      if (res.ok) {
+        const data = await res.json();
+        setTimelineEvents(Array.isArray(data) ? data : []);
+      }
+    } catch {}
+  }, [conversationId]);
+
+  useEffect(() => {
+    fetchTimeline();
+    const handleRefresh = () => fetchTimeline();
+    window.addEventListener("flowhub:refresh_notes", handleRefresh);
+    return () => window.removeEventListener("flowhub:refresh_notes", handleRefresh);
+  }, [fetchTimeline]);
+
 
   const fetchContactData = useCallback(async () => {
     if (!contact) return;
@@ -129,11 +162,11 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
   const initials = displayName.charAt(0).toUpperCase();
 
   return (
-    <div className="flex h-full w-70 flex-col border-l border-border bg-card">
-      <ScrollArea className="flex-1">
-        <div className="p-4">
-          {/* Contact Info */}
-          <div className="flex flex-col items-center text-center">
+    <div className="flex h-full w-full flex-col bg-card overflow-hidden">
+      <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
+        {/* Contact Info */}
+        <div className="flex flex-col items-center text-center">
+
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted text-lg font-semibold text-foreground">
               {contact.avatar_url ? (
                 <img
@@ -293,9 +326,178 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
                 ))}
               </div>
             </div>
+
+          {/* Divider */}
+
+          <div className="my-4 border-t border-border" />
+
+          {/* Timeline Events */}
+          <div>
+            <div className="flex items-center gap-2 px-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <History className="h-3.5 w-3.5 text-primary" />
+              <span>Linha do Tempo</span>
+            </div>
+            <div className="mt-2 space-y-2">
+              {timelineEvents.length === 0 ? (
+                <p className="px-1 text-xs text-muted-foreground italic">Nenhum evento registrado ainda</p>
+              ) : (
+                timelineEvents.map((evt) => {
+                  const { actionText, naturalSentence } = formatTimelineNaturalAction(evt);
+
+                  return (
+                    <div
+                      key={evt.id}
+                      className="group relative flex items-center justify-between rounded-lg bg-muted/60 p-2.5 text-xs border border-border/40 hover:border-primary/40 transition-colors"
+                    >
+                      <div className="min-w-0 flex-1 pr-2">
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                          <span className="font-semibold text-foreground truncate">{evt.actor_name || "Sistema"}</span>
+                          <span className="shrink-0">{format(new Date(evt.created_at), "HH:mm")}</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground leading-tight">{actionText}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedEvent({ ...evt, actionText, naturalSentence })}
+                        title="Visualizar detalhes do evento"
+                        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
-      </ScrollArea>
+      </div>
+
+      {/* Event Details Dialog */}
+      <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <History className="h-4 w-4 text-primary" />
+              Detalhes do Evento
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Histórico detalhado da ação registrada na conversa.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedEvent && (
+            <div className="space-y-3.5 pt-2">
+              <div className="rounded-lg border border-border/60 bg-muted/30 p-3.5 space-y-2.5">
+                <div className="flex flex-col gap-1 text-xs">
+                  <span className="text-muted-foreground font-medium">Evento:</span>
+                  <span className="font-semibold text-foreground leading-relaxed">
+                    {selectedEvent.naturalSentence}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-border/40">
+                  <span className="text-muted-foreground font-medium">Executado por:</span>
+                  <span className="font-medium text-foreground">{selectedEvent.actor_name || "Sistema"}</span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground font-medium">Data e Hora:</span>
+                  <span className="text-muted-foreground font-mono">
+                    {format(new Date(selectedEvent.created_at), "dd/MM/yyyy 'às' HH:mm:ss")}
+                  </span>
+                </div>
+
+                {(selectedEvent.metadata?.note_text || selectedEvent.metadata?.text || selectedEvent.metadata?.content) && (
+                  <div className="flex flex-col gap-1 text-xs pt-2 border-t border-border/40">
+                    <span className="text-muted-foreground font-medium">Conteúdo da Nota:</span>
+                    <span className="font-normal text-foreground bg-muted/60 p-2.5 rounded border border-border/40 italic">
+                      "{selectedEvent.metadata?.note_text || selectedEvent.metadata?.text || selectedEvent.metadata?.content}"
+                    </span>
+                  </div>
+                )}
+
+                {selectedEvent.metadata?.reason && (
+                  <div className="flex flex-col gap-1 text-xs pt-2 border-t border-border/40">
+                    <span className="text-muted-foreground font-medium">Motivo do Pedido de Ajuda:</span>
+                    <span className="font-normal text-foreground bg-amber-500/10 text-amber-700 dark:text-amber-300 p-2.5 rounded border border-amber-500/30">
+                      "{selectedEvent.metadata?.reason}"
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+function formatTimelineNaturalAction(evt: any): { actionText: string; naturalSentence: string } {
+  const actor = evt.actor_name || "Sistema";
+  const targetName = evt.target_user_name || evt.metadata?.target_user_name;
+  const newOwnerName = evt.new_owner_name || evt.metadata?.new_owner_name;
+
+  switch (evt.event_type) {
+    case "participant_added": {
+      const actionText = targetName ? `Adicionou ${targetName} como participante` : "Adicionou um participante";
+      const naturalSentence = `${actor} adicionou ${targetName || "um participante"} como participante da conversa`;
+      return { actionText, naturalSentence };
+    }
+    case "participant_removed": {
+      const actionText = targetName ? `Removeu ${targetName} da conversa` : "Removeu um participante";
+      const naturalSentence = `${actor} removeu ${targetName || "um participante"} da conversa`;
+      return { actionText, naturalSentence };
+    }
+    case "owner_changed": {
+      const actionText = newOwnerName ? `Transferiu atendimento para ${newOwnerName}` : "Alterou o responsável pelo atendimento";
+      const naturalSentence = `${actor} transferiu a responsabilidade do atendimento para ${newOwnerName || "outro colaborador"}`;
+      return { actionText, naturalSentence };
+    }
+    case "internal_note_created": {
+      return {
+        actionText: "Criou uma nota interna",
+        naturalSentence: `${actor} adicionou uma nota interna nesta conversa`,
+      };
+    }
+    case "collaborator_mentioned": {
+      const actionText = targetName ? `Mencionou ${targetName} na nota` : "Mencionou um colaborador";
+      return {
+        actionText,
+        naturalSentence: `${actor} mencionou ${targetName || "um colaborador"} em uma nota interna`,
+      };
+    }
+    case "help_requested": {
+      return {
+        actionText: "Solicitou ajuda da equipe",
+        naturalSentence: `${actor} solicitou apoio da equipe para este atendimento`,
+      };
+    }
+    case "reaction_added": {
+      const emoji = evt.metadata?.emoji ? ` ${evt.metadata.emoji}` : "";
+      return {
+        actionText: `Adicionou a reação${emoji}`,
+        naturalSentence: `${actor} reagiu a uma mensagem na conversa${emoji}`,
+      };
+    }
+    case "message_sent": {
+      return {
+        actionText: "Enviou uma mensagem",
+        naturalSentence: `${actor} enviou uma nova mensagem ao cliente`,
+      };
+    }
+    default: {
+      return {
+        actionText: "Ação registrada no sistema",
+        naturalSentence: `${actor} realizou uma alteração nesta conversa`,
+      };
+    }
+  }
+}
+
+
+
+
+
+

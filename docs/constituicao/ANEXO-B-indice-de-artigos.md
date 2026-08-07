@@ -11,10 +11,10 @@
 
 | Campo | Valor |
 | --- | --- |
-| Versão | 1.5.0 |
-| Artigos indexados | 301 |
-| Capítulos cobertos | 1–27 e 68 (Livros 0, I, II e III completos) |
-| Capítulos pendentes | 28–67 |
+| Versão | 2.1.0 |
+| Artigos indexados | **712** |
+| Capítulos cobertos | **1–68 — todos** |
+| Capítulos pendentes | nenhum |
 
 ---
 
@@ -60,11 +60,46 @@ Toda decisão de produto **DEVE** citar os artigos aplicados (`FH-01.08`).
 | Estágios da relação, primeiro valor, saída | 25 | ✅ |
 | Entrada, tour, passos obrigatórios | 26 | ✅ |
 | Conta vazia, crescimento, limites, inatividade | 27 | ✅ |
-| Design system, componentes, acessibilidade, animação | 28–40 | ⬜ |
-| Estados, feedback, erros, confirmação, busca, comandos | 41–51 | ⬜ |
-| Inteligência artificial e automações | 52–56 | ⬜ |
-| Linguagem, microcopy, nomenclatura, i18n | 57–60 | ⬜ |
-| Qualidade, checklists, métricas, governança | 61–67 | ⬜ |
+| Criar ou reutilizar componente | 28 | ✅ |
+| Cor, tema claro/escuro, acento | 29 | ✅ |
+| Tamanhos de texto, truncamento, números | 30 | ✅ |
+| Espaçamento, densidade, agrupamento | 31 | ✅ |
+| Raio, sombra, camadas, empilhamento | 32 | ✅ |
+| Ícones, status, contadores | 33 | ✅ |
+| **O que todo componente garante** | 34 | ✅ |
+| **Qual componente usar** | 35 | ✅ |
+| Tabelas, listas, filtros, volume alto | 36 | ✅ |
+| Celular, toque, tela pequena | 37 | ✅ |
+| **Acessibilidade (bloqueia entrega)** | 38 | ✅ |
+| Animação e transições | 39 | ✅ |
+| Notificações, som, interrupção | 40 | ✅ |
+| Estados de tela, carregando, degradado | 41 | ✅ |
+| Tela sem nada, filtro sem resultado | 42 | ✅ |
+| Resposta a cliques, mensagens, otimismo | 43 | ✅ |
+| **Erros: prevenir, escrever, recuperar** | 44 | ✅ |
+| **Confirmar, desfazer, ação destrutiva** | 45 | ✅ |
+| Espera, carregamento, progresso | 46 | ✅ |
+| Busca e seus resultados | 47 | ✅ |
+| Teclado, atalhos, paleta de comandos | 48 | ✅ |
+| Seleção múltipla, ações em lote | 49 | ✅ |
+| Tempo real, presença, edição simultânea | 50 | ✅ |
+| Permissões, papéis, limites de plano | 51 | ✅ |
+| **O que a IA pode fazer sozinha** | 52 | ✅ |
+| Sugestões, aceite, recusa, conteúdo gerado | 53 | ✅ |
+| **Automações: construir, ativar, auditar** | 54 | ✅ |
+| Personalização e adaptação ao usuário | 55 | ✅ |
+| Números, gráficos e insights ao usuário | 56 | ✅ |
+| Tom, emoji, exclamação, humor | 57 | ✅ |
+| **Como escrever botão, rótulo, mensagem** | 58 | ✅ |
+| Como nomear e renomear conceitos | 59 | ✅ |
+| Chaves de tradução, formatos, expansão | 60 | ✅ |
+| **Avaliar rápido: as dez heurísticas** | 61 | ✅ |
+| **O que bloqueia a entrega** | 62 | ✅ |
+| Checklists por tipo de tarefa | 63 | ✅ |
+| O que medir e o que nunca medir | 64 | ✅ |
+| Quem decide, alçadas, registro | 65 | ✅ |
+| Dívida, depreciação, remoção | 66 | ✅ |
+| Construir, testar, aprender, reverter | 67 | ✅ |
 | **Execução por agente de IA** | 68 | ✅ |
 
 ---
@@ -640,6 +675,845 @@ expansão · maturidade · risco · saída.
 
 ---
 
+## Capítulo 28 — Fundamentos do Design System
+
+📄 [`L4-C28-fundamentos-do-design-system.md`](L4-C28-fundamentos-do-design-system.md)
+
+**Ordem antes de criar:** primitiva existente → composição → variante registrada →
+proposta.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-28.01` | O design system **materializa** a Constituição; não cria regra. | Deriva de artigo existente? SIM = cumpre |
+| `FH-28.02` | Reutilização antes de criação, incluindo por composição. | Demonstrou que nada resolve? SIM = cumpre |
+| `FH-28.03` | Ciclo declarado: proposta → experimental → estável → depreciado → removido. | Estágio declarado? SIM = cumpre |
+| `FH-28.04` | Variante local não registrada é proibida. | Registrada? SIM = cumpre |
+| `FH-28.05` | Proposta declara problema, alternativas, estados e custo permanente. | Os quatro? SIM = cumpre |
+| `FH-28.06` | **Composição antes de configuração.** | Considerou compor? SIM = cumpre |
+| `FH-28.07` | Componente nunca decide regra de negócio. | Contém regra? NÃO = cumpre |
+| `FH-28.08` | Uma responsabilidade por componente; duplicatas se fundem. | Existe duplicata? NÃO = cumpre |
+| `FH-28.09` | Tokens são a única fonte de valores visuais. | Valor fora do sistema? NÃO = cumpre |
+| `FH-28.10` | Depreciação com prazo e substituto declarados. | Ambos? SIM = cumpre |
+
+---
+
+## Capítulo 29 — Tokens: Cor, Tema e Modo
+
+📄 [`L4-C29-tokens-cor-tema-e-modo.md`](L4-C29-tokens-cor-tema-e-modo.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-29.01` | Nenhuma cor literal; tudo por token semântico. | Cor fora de token? NÃO = cumpre |
+| `FH-29.02` | Token escolhido pelo **significado**, nunca pela aparência. | Pelo significado? SIM = cumpre |
+| `FH-29.03` | **Ortogonalidade:** modo define neutros; acento define primária. Conjuntos disjuntos. | Misturou? NÃO = cumpre |
+| `FH-29.04` | Cor nunca é o único portador de significado. | Sobrevive sem cor? SIM = cumpre |
+| `FH-29.05` | Contraste mínimo em todos os modos e acentos. | Verificado em todos? SIM = cumpre |
+| `FH-29.06` | Token novo exige definição completa em todas as combinações. | Completo? SIM = cumpre |
+| `FH-29.07` | Cores de estado são conjunto fechado e **não variam por acento**. | Invariante? SIM = cumpre |
+| `FH-29.08` | Séries de dados mantêm cor estável entre gráficos e sessões. | Estável? SIM = cumpre |
+| `FH-29.09` | Derivações partem de tokens e preservam contraste. | Ambos? SIM = cumpre |
+| `FH-29.10` | Verificar toda tela nos dois modos e em todos os acentos. | Verificou? SIM = cumpre |
+
+---
+
+## Capítulo 30 — Tipografia
+
+📄 [`L4-C30-tipografia.md`](L4-C30-tipografia.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-30.01` | Escala fechada de tamanhos. | Todos na escala? SIM = cumpre |
+| `FH-30.02` | Hierarquia por **peso e cor** antes de tamanho. | Tentou antes? SIM = cumpre |
+| `FH-30.03` | Largura máxima em leitura contínua. | Respeitada? SIM = cumpre |
+| `FH-30.04` | Altura de linha varia por função. | Corresponde? SIM = cumpre |
+| `FH-30.05` | Truncamento só com acesso ao conteúdo completo no contexto. | Tem acesso? SIM = cumpre |
+| `FH-30.06` | **Texto do usuário nunca é alterado** sem solicitação. | Alterou? NÃO = cumpre |
+| `FH-30.07` | Números comparáveis com largura uniforme e alinhamento. | Alinhados? SIM = cumpre |
+| `FH-30.08` | Monoespaçada só para dado técnico copiável. | Corresponde? SIM = cumpre |
+| `FH-30.09` | Nada abaixo do tamanho mínimo legível. | Abaixo? NÃO = cumpre |
+| `FH-30.10` | Verificar com texto longo e tradução expandida. | Verificou? SIM = cumpre |
+
+---
+
+## Capítulo 31 — Espaço, Grid e Ritmo
+
+📄 [`L4-C31-espaco-grid-e-ritmo.md`](L4-C31-espaco-grid-e-ritmo.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-31.01` | Escala de espaçamento fechada. | Todos na escala? SIM = cumpre |
+| `FH-31.02` | **Espaço interno sempre menor que o externo.** | Menor? SIM = cumpre |
+| `FH-31.03` | Densidade por tipo de tela (operacional/analítica/configuração). | Corresponde? SIM = cumpre |
+| `FH-31.04` | Ritmo vertical consistente entre telas equivalentes. | Consistente? SIM = cumpre |
+| `FH-31.05` | Agrupamento crítico nunca depende só de espaço. | Tem reforço? SIM = cumpre |
+| `FH-31.06` | Margens canônicas por tipo de superfície. | Canônica? SIM = cumpre |
+| `FH-31.07` | Espaço reservado para estados futuros. | Reservado? SIM = cumpre |
+| `FH-31.08` | Densidade nunca reduz a **área sensível** abaixo do mínimo. | Acima do mínimo? SIM = cumpre |
+| `FH-31.09` | Grid do sistema, nunca ad hoc. | Do sistema? SIM = cumpre |
+| `FH-31.10` | Espaço acima do padrão precisa comunicar algo. | Comunica? SIM = cumpre |
+
+---
+
+## Capítulo 32 — Forma, Elevação e Profundidade
+
+📄 [`L4-C32-forma-e-profundidade.md`](L4-C32-forma-e-profundidade.md)
+
+**Camadas:** base < superfície < flutuante < sobreposto < crítico.
+**Critério:** borda delimita no mesmo plano; sombra separa planos.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-32.01` | Raio derivado de valor único do sistema. | Deriva? SIM = cumpre |
+| `FH-32.02` | Cinco camadas fechadas; nova exige emenda. | Pertence? SIM = cumpre |
+| `FH-32.03` | Elevação comunica relação, nunca decoração. | Declarável? SIM = cumpre |
+| `FH-32.04` | Borda × sombra por critério objetivo. | Corresponde? SIM = cumpre |
+| `FH-32.05` | Hierarquia de profundidade legível nos **dois modos**. | Legível? SIM = cumpre |
+| `FH-32.06` | Ordem de empilhamento previsível e respeitada. | Respeitada? SIM = cumpre |
+| `FH-32.07` | Profundidade nunca é o único indicador de interatividade. | Sobrevive sem ela? SIM = cumpre |
+| `FH-32.08` | Raio consistente por família. | Canônico? SIM = cumpre |
+| `FH-32.09` | Sobreposição bloqueante é visualmente distinta da não bloqueante. | Distinguível? SIM = cumpre |
+| `FH-32.10` | Elevar não torna importante. | Importância vem do conteúdo? SIM = cumpre |
+
+---
+
+## Capítulo 33 — Iconografia e Sinalização
+
+📄 [`L4-C33-iconografia-e-sinalizacao.md`](L4-C33-iconografia-e-sinalizacao.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-33.01` | Ícone é reforço; sozinho só na lista fechada de 4 condições. | Na lista? SIM = cumpre |
+| `FH-33.02` | **Um ícone, um significado**, em todo o produto. | Duplo sentido? NÃO = cumpre |
+| `FH-33.03` | Ícone sem rótulo exige nome acessível e dica. | Tem os dois? SIM = cumpre |
+| `FH-33.04` | Status é tríade canônica: **forma + cor + texto**. | Usa a tríade? SIM = cumpre |
+| `FH-33.05` | Ícone decorativo proibido em área operacional densa. | Tem função? SIM = cumpre |
+| `FH-33.06` | Conjunto único de ícones. | Do conjunto? SIM = cumpre |
+| `FH-33.07` | Tamanho deriva da escala tipográfica do contexto. | Deriva e alinha? SIM = cumpre |
+| `FH-33.08` | Estado crítico nunca só por ícone. | Sobrevive sem ícone? SIM = cumpre |
+| `FH-33.09` | Ícone novo registrado com conceito e termo canônico. | Registrado? SIM = cumpre |
+| `FH-33.10` | Indicador numérico declara o que conta. | Declara? SIM = cumpre |
+
+---
+
+## Capítulo 34 — Contratos de Componente
+
+📄 [`L4-C34-contratos-de-componente.md`](L4-C34-contratos-de-componente.md)
+
+**Oito estados:** padrão · apontado · focado · ativo · desabilitado · carregando ·
+erro · somente leitura.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-34.01` | Os oito estados aplicáveis são obrigatórios. | Implementados? SIM = cumpre |
+| `FH-34.02` | Operável por teclado, com resultado idêntico. | Operável? SIM = cumpre |
+| `FH-34.03` | Verificar com conteúdo mínimo, típico e **extremo**. | Os três? SIM = cumpre |
+| `FH-34.04` | Sem regra de negócio dentro do componente. | Contém? NÃO = cumpre |
+| `FH-34.05` | Nomes e variantes consistentes na família. | Consistentes? SIM = cumpre |
+| `FH-34.06` | Posse do estado declarada (controlado/não controlado). | Declarada? SIM = cumpre |
+| `FH-34.07` | Aceita rótulo acessível. | Aceita? SIM = cumpre |
+| `FH-34.08` | Nunca suprime o foco. | Visível? SIM = cumpre |
+| `FH-34.09` | Desabilitado expõe **motivo acessível**. | Expõe? SIM = cumpre |
+| `FH-34.10` | Contrato estável só muda por depreciação. | Mudou sem? NÃO = cumpre |
+
+---
+
+## Capítulo 35 — Catálogo Normativo de Componentes
+
+📄 [`L4-C35-catalogo-de-componentes.md`](L4-C35-catalogo-de-componentes.md)
+
+**Sete famílias:** ação · entrada · exibição · navegação · sobreposição · feedback ·
+estrutura.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-35.01` | Todo componente pertence a uma família; nova exige emenda. | Pertence? SIM = cumpre |
+| `FH-35.02` | **Botão executa; link navega.** Aparência não decide. | Correto? SIM = cumpre |
+| `FH-35.03` | Hierarquia fechada: primária (uma), secundária, terciária, destrutiva. | Segue? SIM = cumpre |
+| `FH-35.04` | Alternância aplica na hora; formulário, ao confirmar. | Corresponde? SIM = cumpre |
+| `FH-35.05` | Tabela (comparar) × lista (percorrer) × cartão (reconhecer). | Pela tarefa? SIM = cumpre |
+| `FH-35.06` | Abas nunca separam o que precisa ser comparado. | Separou? NÃO = cumpre |
+| `FH-35.07` | Temporária × alerta × faixa por urgência e persistência. | Corresponde? SIM = cumpre |
+| `FH-35.08` | Controle de seleção por cardinalidade e tamanho do conjunto. | Corresponde? SIM = cumpre |
+| `FH-35.09` | Feedback não vira conteúdo permanente, nem exibição vira estado transitório. | Corresponde? SIM = cumpre |
+| `FH-35.10` | Anti-padrões documentados por componente. | Documentados? SIM = cumpre |
+
+---
+
+## Capítulo 36 — Dados, Densidade e Escala
+
+📄 [`L4-C36-dados-densidade-e-escala.md`](L4-C36-dados-densidade-e-escala.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-36.01` | Prioridade de campos declarada: essencial/contextual/secundário. | Declarada? SIM = cumpre |
+| `FH-36.02` | Identidade do item visível durante toda a rolagem. | Visível? SIM = cumpre |
+| `FH-36.03` | Filtros visíveis, removíveis em 1 passo, persistentes. | Os três? SIM = cumpre |
+| `FH-36.04` | Ordenação declarada e **estável** (com desempate). | Estável? SIM = cumpre |
+| `FH-36.05` | Carregamento incremental preserva posição. | Preserva? SIM = cumpre |
+| `FH-36.06` | Totalizadores honestos: aproximação **declarada**. | Declarada? SIM = cumpre |
+| `FH-36.07` | Verificar com volume máximo previsto. | Verificou? SIM = cumpre |
+| `FH-36.08` | Colunas nunca se reordenam sozinhas. | Reordenou? NÃO = cumpre |
+| `FH-36.09` | Exportação reflete a tela ou declara a diferença. | Reflete? SIM = cumpre |
+| `FH-36.10` | Ajuste de densidade não altera modelo, ordem nem posição. | Alterou? NÃO = cumpre |
+
+---
+
+## Capítulo 37 — Responsividade
+
+📄 [`L4-C37-responsividade.md`](L4-C37-responsividade.md)
+
+**Ordem de degradação:** compactar → agrupar → mover para detalhe → **nunca
+remover**.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-37.01` | **Paridade de capacidade** entre superfícies. | Possível em tela pequena? SIM = cumpre |
+| `FH-37.02` | Ordem de degradação fixa; remover é proibido. | Seguiu? SIM = cumpre |
+| `FH-37.03` | Adaptação por contexto de uso, não só largura. | Considerou? SIM = cumpre |
+| `FH-37.04` | Tudo revelado por apontamento tem caminho por toque. | Tem? SIM = cumpre |
+| `FH-37.05` | Ação primária alcançável, com uma mão em toque. | Alcançável? SIM = cumpre |
+| `FH-37.06` | Nenhuma capacidade essencial exclusiva de tela grande. | Exclusiva? NÃO = cumpre |
+| `FH-37.07` | Sem rolagem horizontal acidental. | Acidental? NÃO = cumpre |
+| `FH-37.08` | Modelo e vocabulário idênticos em todas as superfícies. | Idênticos? SIM = cumpre |
+| `FH-37.09` | Mudar tamanho ou orientação preserva estado. | Preserva? SIM = cumpre |
+| `FH-37.10` | Verificar em superfície pequena com toque. | Verificou? SIM = cumpre |
+
+---
+
+## Capítulo 38 — Acessibilidade
+
+📄 [`L4-C38-acessibilidade.md`](L4-C38-acessibilidade.md)
+
+> **Cláusula pétrea.** Vence estética, prazo e prioridade comercial. Violação
+> **bloqueia entrega**.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-38.01` | Acessibilidade bloqueia entrega; nunca é melhoria futura. | Há violação? NÃO = cumpre |
+| `FH-38.02` | Foco sempre visível, nunca suprimido. | Visível? SIM = cumpre |
+| `FH-38.03` | Operação integral por teclado, sem armadilha de foco. | Integral? SIM = cumpre |
+| `FH-38.04` | Contraste em todos os modos, acentos e tipos de elemento. | Verificado? SIM = cumpre |
+| `FH-38.05` | Nome acessível coerente em todo elemento interativo. | Coerente? SIM = cumpre |
+| `FH-38.06` | Estrutura semântica reflete a hierarquia real. | Reflete? SIM = cumpre |
+| `FH-38.07` | Movimento reduzido = caminho **equivalente**, não degradado. | Equivalente? SIM = cumpre |
+| `FH-38.08` | Alvos respeitam a dimensão mínima. | Respeitam? SIM = cumpre |
+| `FH-38.09` | Nada depende de um único canal (cor, som, posição, forma, movimento). | Sobrevive? SIM = cumpre |
+| `FH-38.10` | Mudanças dinâmicas anunciadas **sem roubar o foco**. | Anuncia sem roubar? SIM = cumpre |
+| `FH-38.11` | Verificar só com teclado **e** com leitor de tela. | As duas? SIM = cumpre |
+
+---
+
+## Capítulo 39 — Movimento e Animação
+
+📄 [`L4-C39-movimento-e-animacao.md`](L4-C39-movimento-e-animacao.md)
+
+**Funções válidas:** causa · origem · continuidade · hierarquia. Fora disso é
+decoração.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-39.01` | Duração dentro da faixa da finalidade. | Corresponde? SIM = cumpre |
+| `FH-39.02` | Animação comunica causa, origem, continuidade ou hierarquia. | Declarável? SIM = cumpre |
+| `FH-39.03` | Nunca bloqueia entrada. | Interage durante? SIM = cumpre |
+| `FH-39.04` | Cancelável por nova ação. | Cancelável? SIM = cumpre |
+| `FH-39.05` | Sem decoração em fluxo repetitivo. | Decorativa em alta frequência? NÃO = cumpre |
+| `FH-39.06` | Movimento reduzido entrega equivalência. | Equivalente? SIM = cumpre |
+| `FH-39.07` | Nada essencial depende de movimento. | Depende? NÃO = cumpre |
+| `FH-39.08` | **Animação nunca atrasa o resultado.** | Atrasa? NÃO = cumpre |
+| `FH-39.09` | Entrada/saída consistentes por família. | Consistentes? SIM = cumpre |
+| `FH-39.10` | Nada se move sob leitura ou manipulação. | Move? NÃO = cumpre |
+
+---
+
+## Capítulo 40 — Notificação, Som e Canais
+
+📄 [`L4-C40-notificacao-e-canais.md`](L4-C40-notificacao-e-canais.md)
+
+**Escala:** silencioso · periférico · ambiente · interruptivo · bloqueante. Use o
+**menor nível** cuja omissão tenha consequência.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-40.01` | Escala de urgência fechada. | Pertence? SIM = cumpre |
+| `FH-40.02` | **Interromper é dívida:** exige consequência concreta. | Existe? SIM = cumpre |
+| `FH-40.03` | Eventos equivalentes são agrupados. | Agrupados? SIM = cumpre |
+| `FH-40.04` | Som é opcional e nunca único portador. | Depende de som? NÃO = cumpre |
+| `FH-40.05` | Controle por canal **e** por tipo de evento. | Granular? SIM = cumpre |
+| `FH-40.06` | Urgência artificial proibida. | Real? SIM = cumpre |
+| `FH-40.07` | Notificação externa usa a voz da interface. | Mesma voz? SIM = cumpre |
+| `FH-40.08` | Notificação externa **não expõe conteúdo de terceiros**. | Expõe? NÃO = cumpre |
+| `FH-40.09` | Toda notificação leva ao contexto ou oferece ação. | Leva? SIM = cumpre |
+| `FH-40.10` | Origem identificável e desativação a partir dela. | Ambas? SIM = cumpre |
+
+---
+
+## Capítulo 41 — Sistema de Estados
+
+📄 [`L5-C41-sistema-de-estados.md`](L5-C41-sistema-de-estados.md)
+
+**Catálogo fechado:** inicial · carregando · vazio · conteúdo · parcial ·
+atualizando · **sucesso parcial** · erro · sem permissão · degradado/offline.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-41.01` | Catálogo fechado de dez estados; nenhum fora dele. | Todos pertencem ao catálogo? SIM = cumpre |
+| `FH-41.02` | Todos os estados aplicáveis projetados antes de "pronto". | Todos tratados? SIM = cumpre |
+| `FH-41.03` | Estado indefinido é proibido: nunca "nada acontece". | Algum caminho não comunica nada? NÃO = cumpre |
+| `FH-41.04` | Transições sem salto de layout nem perda de posição. | Desloca conteúdo? NÃO = cumpre |
+| `FH-41.05` | **Sucesso parcial é estado próprio**, nunca exibido como sucesso. | Exibe falha parcial como sucesso? NÃO = cumpre |
+| `FH-41.06` | Degradação declarada, dizendo o que ainda funciona. | Declara? SIM = cumpre |
+| `FH-41.07` | Perda/retomada de conexão visível, com recuperação sem perda. | Visível e sem perda? SIM = cumpre |
+| `FH-41.08` | **Sem permissão é estado, não erro.** | Tratado como estado explicado? SIM = cumpre |
+| `FH-41.09` | Atualização em segundo plano não bloqueia nem substitui o que está sob manipulação. | Bloqueia ou desloca? NÃO = cumpre |
+| `FH-41.10` | Representação canônica: mesmo estado, mesma aparência em todo o produto. | Igual ao resto? SIM = cumpre |
+| `FH-41.11` | Estado exibido é verdadeiro agora, ou declara sua defasagem. | Verdadeiro ou datado? SIM = cumpre |
+
+---
+
+## Capítulo 42 — Estados Vazios
+
+📄 [`L5-C42-estados-vazios.md`](L5-C42-estados-vazios.md)
+
+**Cinco tipos:** inaugural · filtro · conclusão · permissão · falha.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-42.01` | Cada tipo recebe tratamento distinto. | Identificado e tratado? SIM = cumpre |
+| `FH-42.02` | Responder: o que é este lugar, por que está vazio, o que fazer agora. | As três? SIM = cumpre |
+| `FH-42.03` | Vazio inaugural traz a ação primária ali mesmo. | Traz? SIM = cumpre |
+| `FH-42.04` | Vazio por filtro mostra o filtro e permite limpá-lo em 1 passo. | Mostra e limpa? SIM = cumpre |
+| `FH-42.05` | Vazio por conclusão nunca parece erro ou falta. | Distinto? SIM = cumpre |
+| `FH-42.06` | Nada de vazio decorativo sem ação ou informação útil. | Oferece algo? SIM = cumpre |
+| `FH-42.07` | Vazio nunca culpa nem cobra. | Culpa? NÃO = cumpre |
+| `FH-42.08` | Vazio ensina o modelo: o que aparecerá e de onde virá. | Ensina? SIM = cumpre |
+| `FH-42.09` | Vazio nunca simula conteúdo (sem esqueleto eterno ou dado fantasma). | Confunde-se com conteúdo? NÃO = cumpre |
+| `FH-42.10` | Vazio nunca revela o que existiria com permissão. | Revela? NÃO = cumpre |
+
+---
+
+## Capítulo 43 — Sistema de Feedback
+
+📄 [`L5-C43-sistema-de-feedback.md`](L5-C43-sistema-de-feedback.md)
+
+**Escala:** imediato · ambiente · discreto · explícito · bloqueante. Use o **menor
+nível** que comunica.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-43.01` | Reconhecimento é imediato; o resultado pode demorar. | Reage no ato? SIM = cumpre |
+| `FH-43.02` | A resposta aparece próxima ao ponto da ação. | Próxima? SIM = cumpre |
+| `FH-43.03` | Intensidade proporcional à consequência. | Proporcional? SIM = cumpre |
+| `FH-43.04` | Silêncio após ação é proibido. | Algum desfecho não comunicado? NÃO = cumpre |
+| `FH-43.05` | Otimismo só com 3 condições: alta probabilidade, reversível, **reconciliação com reversão visível**. | As três? SIM = cumpre |
+| `FH-43.06` | Resultado visível dispensa mensagem de sucesso. | Notificou o óbvio? NÃO = cumpre |
+| `FH-43.07` | Feedback não bloqueia, exceto quando exige decisão. | Bloqueia sem exigir decisão? NÃO = cumpre |
+| `FH-43.08` | Operação assíncrona informa que continua e avisa ao terminar. | Informa e avisa? SIM = cumpre |
+| `FH-43.09` | Feedback nunca afirma mais do que o sistema sabe. | Afirma demais? NÃO = cumpre |
+| `FH-43.10` | Mesma classe de ação → mesma classe de feedback. | Consistente? SIM = cumpre |
+
+---
+
+## Capítulo 44 — Erros
+
+📄 [`L5-C44-erros.md`](L5-C44-erros.md)
+
+**Ordem obrigatória:** eliminar → prevenir → detectar cedo → tolerar → comunicar.
+**Anatomia:** o que houve · por quê · o que fazer · como sair.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-44.01` | Prevenção antes de mensagem, com registro do descarte. | Considerou antes? SIM = cumpre |
+| `FH-44.02` | Os quatro elementos da anatomia. | Todos presentes? SIM = cumpre |
+| `FH-44.03` | O erro aparece onde a correção acontece. | No ponto certo? SIM = cumpre |
+| `FH-44.04` | Validar ao concluir a unidade de entrada — nem durante, nem só no envio. | No momento certo? SIM = cumpre |
+| `FH-44.05` | **Preservação absoluta** do conteúdo digitado. | Sobreviveu ao erro? SIM = cumpre |
+| `FH-44.06` | Nunca culpar; nunca expor detalhe interno. | Culpa ou expõe? NÃO = cumpre |
+| `FH-44.07` | Erro sem saída é proibido. | Há caminho? SIM = cumpre |
+| `FH-44.08` | Falha em lote: relatório **por item** + reprocessar só o que falhou. | Por item e seletivo? SIM = cumpre |
+| `FH-44.09` | Erro de permissão não é erro de sistema e não revela existência. | Revela? NÃO = cumpre |
+| `FH-44.10` | Erro técnico traduzido; identificador só se necessário e explicado. | Traduzido? SIM = cumpre |
+| `FH-44.11` | Erro recorrente é **defeito de desenho**: corrige-se a prevenção, não o texto. | Gerou prevenção? SIM = cumpre |
+
+---
+
+## Capítulo 45 — Confirmações e Desfazer
+
+📄 [`L5-C45-confirmacoes-e-desfazer.md`](L5-C45-confirmacoes-e-desfazer.md)
+
+**Matriz:** reversibilidade × impacto × alcance — e **"afeta terceiros" domina os
+três**.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-45.01` | O tratamento vem da matriz, nunca de preferência. | Corresponde? SIM = cumpre |
+| `FH-45.02` | **Desfazer vence confirmar** sempre que a reversão for possível. | Ofereceu desfazer? SIM = cumpre |
+| `FH-45.03` | Confirmação declara efeito, alcance e o que não volta. "Tem certeza?" é proibido. | Declara os três? SIM = cumpre |
+| `FH-45.04` | **Proibida confirmação em ação reversível e frequente.** | Existe? NÃO = cumpre |
+| `FH-45.05` | Digitação só em destruição irreversível de alto alcance. | Fora disso? NÃO = cumpre |
+| `FH-45.06` | Janela de desfazer visível, com duração declarada, persistente enquanto durar. | Persistente? SIM = cumpre |
+| `FH-45.07` | **Afeta terceiros = categoria própria:** resumo + confirmação + sem promessa de reversão. | Aplicado? SIM = cumpre |
+| `FH-45.08` | Desfazer restaura o estado **completo**. | Restaura tudo? SIM = cumpre |
+| `FH-45.09` | Confirmação nunca substitui prevenção possível. | Substitui? NÃO = cumpre |
+| `FH-45.10` | Mesma classe de ação → mesmo tratamento. | Consistente? SIM = cumpre |
+| `FH-45.11` | Confirmação autoriza apenas a ação declarada. | Só ela? SIM = cumpre |
+
+---
+
+## Capítulo 46 — Desempenho Percebido
+
+📄 [`L5-C46-desempenho-percebido.md`](L5-C46-desempenho-percebido.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-46.01` | Cada faixa de espera tem resposta obrigatória. | Corresponde à faixa? SIM = cumpre |
+| `FH-46.02` | Forma conhecida → carregamento reproduz a forma. | Reproduz? SIM = cumpre |
+| `FH-46.03` | Espaço reservado: nada se desloca ao chegar. | Desloca? NÃO = cumpre |
+| `FH-46.04` | **Progresso honesto:** só com medição real. | Deriva de medição? SIM = cumpre |
+| `FH-46.05` | Antecipação só se não alterar estado, não gerar efeito externo e não consumir cota. | Cumpre as três? SIM = cumpre |
+| `FH-46.06` | Trabalho em segundo plano visível e não bloqueante. | Visível e livre? SIM = cumpre |
+| `FH-46.07` | Resposta ao gesto sempre imediata. | Reage no ato? SIM = cumpre |
+| `FH-46.08` | Nenhum bloqueio evitável de interface. | Inevitável? SIM = cumpre |
+| `FH-46.09` | Velocidade nunca é obtida por engano. | Depende de falsidade? NÃO = cumpre |
+| `FH-46.10` | Verificar com **rede degradada e conta grande**. | Verificou? SIM = cumpre |
+
+---
+
+## Capítulo 47 — Sistema de Busca
+
+📄 [`L5-C47-sistema-de-busca.md`](L5-C47-sistema-de-busca.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-47.01` | A busca alcança **entidades e ações**. | Retorna ações? SIM = cumpre |
+| `FH-47.02` | Resposta incremental, sem confirmação. | Incremental? SIM = cumpre |
+| `FH-47.03` | Ordenação explicável em uma frase. | Declarável? SIM = cumpre |
+| `FH-47.04` | Escopo sempre visível e alterável no fluxo. | Visível? SIM = cumpre |
+| `FH-47.05` | Tolerância a termo parcial, acento, maiúscula e erro simples. | Tolera? SIM = cumpre |
+| `FH-47.06` | Vazio de busca mostra termo, escopo e caminho. | Mostra? SIM = cumpre |
+| `FH-47.07` | Nunca revela existência inacessível — por resultado, **contagem** ou **tempo de resposta**. | Inferível? NÃO = cumpre |
+| `FH-47.08` | Mesmo acesso à busca em todo o produto. | Igual? SIM = cumpre |
+| `FH-47.09` | Resultado traz contexto discriminante. | Escolho sem abrir? SIM = cumpre |
+| `FH-47.10` | A busca nunca é o único caminho. | Alcançável sem busca? SIM = cumpre |
+
+---
+
+## Capítulo 48 — Comandos e Teclado
+
+📄 [`L5-C48-comandos-e-teclado.md`](L5-C48-comandos-e-teclado.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-48.01` | Paleta de comandos alcançável de qualquer lugar pelo mesmo gesto. | Existe? SIM = cumpre |
+| `FH-48.02` | Toda ação frequente executável só por teclado, com resultado idêntico. | Executável? SIM = cumpre |
+| `FH-48.03` | Uma tecla, um significado, em todo o produto. | Consistente? SIM = cumpre |
+| `FH-48.04` | Nunca sobrescrever teclas do navegador, do sistema ou de tecnologia assistiva. | Conflita? NÃO = cumpre |
+| `FH-48.05` | Atalho exibido junto da ação (documentação não conta). | Exibido? SIM = cumpre |
+| `FH-48.06` | Atalho destrutivo com a mesma proteção do caminho longo. | Mesma proteção? SIM = cumpre |
+| `FH-48.07` | Foco sempre visível; nunca suprimido por estética. | Visível? SIM = cumpre |
+| `FH-48.08` | Ordem de foco = ordem de uso, sem saltos nem inalcançáveis. | Previsível? SIM = cumpre |
+| `FH-48.09` | Escape sempre cancela, sem efeito colateral e sem perda. | Cancela sem perder? SIM = cumpre |
+| `FH-48.10` | A paleta nunca lista o que o usuário não pode fazer ou acessar. | Lista? NÃO = cumpre |
+
+---
+
+## Capítulo 49 — Produtividade, Lote e Repetição
+
+📄 [`L5-C49-produtividade-e-lote.md`](L5-C49-produtividade-e-lote.md)
+
+**Ciclo obrigatório:** seleção → declaração de alcance → autorização → execução →
+relatório por item → reversão.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-49.01` | Seleção previsível e persistente, com total visível. | Sobrevive a filtro e retorno? SIM = cumpre |
+| `FH-49.02` | Declarar alcance real **antes**: quantos, quais serão ignorados, por quê. | Declarado? SIM = cumpre |
+| `FH-49.03` | Relatório **por item** + reprocessar só o que falhou. | Por item? SIM = cumpre |
+| `FH-49.04` | Desfazer do **lote inteiro**, quando reversível. | Do lote todo? SIM = cumpre |
+| `FH-49.05` | Repetição vira **oferta com pré-visualização**, nunca automação silenciosa. | Oferta? SIM = cumpre |
+| `FH-49.06` | Todo lote tem limite de segurança declarado. | Existe? SIM = cumpre |
+| `FH-49.07` | "Todos" declara o total real e separa visível de invisível. | Declara? SIM = cumpre |
+| `FH-49.08` | Lote sobre terceiros segue `FH-45.07` integralmente. | Aplicado? SIM = cumpre |
+| `FH-49.09` | Progresso honesto e interrompível, informando o já executado. | Honesto? SIM = cumpre |
+| `FH-49.10` | Repetição manual nunca é o único caminho. | Existe lote? SIM = cumpre |
+
+---
+
+## Capítulo 50 — Tempo Real, Presença e Colaboração
+
+📄 [`L5-C50-tempo-real-e-colaboracao.md`](L5-C50-tempo-real-e-colaboracao.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-50.01` | **Não-interferência:** nunca mover/substituir o que está sob manipulação. | Altera o manipulado? NÃO = cumpre |
+| `FH-50.02` | Novidade é **anunciada**, não inserida sozinha. | Anuncia? SIM = cumpre |
+| `FH-50.03` | Presença coordena; nunca controla. | Coordena? SIM = cumpre |
+| `FH-50.04` | Conflito preserva o trabalho de **todos**; sem sobrescrita silenciosa. | Preserva ambos? SIM = cumpre |
+| `FH-50.05` | Responsabilidade visível: quem atende, quem edita, quem responde. | Visível? SIM = cumpre |
+| `FH-50.06` | Ação de terceiros rastreável: quem, o quê, quando. | Rastreável? SIM = cumpre |
+| `FH-50.07` | Desconexão visível; reconexão sincroniza sem perda. | Sem perda? SIM = cumpre |
+| `FH-50.08` | Atividade alheia é **sinal**, nunca conteúdo não confirmado. | Exibe rascunho alheio? NÃO = cumpre |
+| `FH-50.09` | Colaboração nunca é reaproveitada como monitoramento individual. | Vira avaliação? NÃO = cumpre |
+| `FH-50.10` | Ordem exibida = ordem real; nunca efeito antes da causa. | Consistente? SIM = cumpre |
+
+---
+
+## Capítulo 51 — Permissões, Papéis e Limites
+
+📄 [`L5-C51-permissoes-e-limites.md`](L5-C51-permissoes-e-limites.md)
+
+**Critério:** esconde-se o que **não existe** para aquele papel; desabilita-se o
+que existe e está **temporariamente** indisponível; exibe-se com recusa o que ele
+**poderia obter**. Empate → esconder.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-51.01` | Toda recusa diz **motivo** e **caminho**. | Diz os dois? SIM = cumpre |
+| `FH-51.02` | Esconder × desabilitar por critério objetivo. | Corresponde? SIM = cumpre |
+| `FH-51.03` | Nenhuma recusa, contagem ou rótulo revela o protegido. | Inferível? NÃO = cumpre |
+| `FH-51.04` | Limites comunicados **antes**, com tempo de agir. | Antes? SIM = cumpre |
+| `FH-51.05` | Caminho de solicitação de acesso sem sair do fluxo. | Existe? SIM = cumpre |
+| `FH-51.06` | Papel nunca muda modelo, navegação ou posição de ações. | Mudou? NÃO = cumpre |
+| `FH-51.07` | Mudança de permissão tem efeito imediato e é comunicada. | Imediata e comunicada? SIM = cumpre |
+| `FH-51.08` | Limite nunca é culpa nem pressão comercial. | Pressiona? NÃO = cumpre |
+| `FH-51.09` | Recusa por limite oferece **alternativa concreta**. | Oferece? SIM = cumpre |
+| `FH-51.10` | Autorização no **servidor**; interface nunca é a única barreira. | No servidor? SIM = cumpre |
+
+---
+
+## Capítulo 52 — Princípios de IA Aplicada
+
+📄 [`L6-C52-principios-de-ia.md`](L6-C52-principios-de-ia.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-52.01` | IA integrada ao fluxo; nunca uma "sala de IA" separada. | No ponto de uso? SIM = cumpre |
+| `FH-52.02` | Nível de autonomia declarado; **padrão é sugerir**. | Menor nível suficiente? SIM = cumpre |
+| `FH-52.03` | **Revisão humana obrigatória** antes de qualquer comunicação externa. | Existe caminho sem revisão? NÃO = cumpre |
+| `FH-52.04` | A IA nunca inventa dado: toda afirmação factual é rastreável. | Rastreável? SIM = cumpre |
+| `FH-52.05` | O contexto lido é consultável pelo usuário. | Consultável? SIM = cumpre |
+| `FH-52.06` | Incerteza declarada; inferência ≠ fato. | Distinguível? SIM = cumpre |
+| `FH-52.07` | **Degradação segura:** o produto funciona inteiro sem IA. | Funciona? SIM = cumpre |
+| `FH-52.08` | Custo e consumo transparentes **antes** da execução. | Sabe antes? SIM = cumpre |
+| `FH-52.09` | Nenhuma tarefa essencial depende de IA. | Existe caminho manual? SIM = cumpre |
+| `FH-52.10` | Erro da IA é erro do sistema, nunca do usuário. | Culpa o usuário? NÃO = cumpre |
+| `FH-52.11` | Dado enviado a provedor externo tem finalidade, base legal e prazo. | Os três? SIM = cumpre |
+
+---
+
+## Capítulo 53 — Padrões de Interação com IA
+
+📄 [`L6-C53-padroes-de-interacao-com-ia.md`](L6-C53-padroes-de-interacao-com-ia.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-53.01` | Sugestão responde: **o que é · de onde veio · o que acontece se aceitar**. | As três? SIM = cumpre |
+| `FH-53.02` | Aceite sempre editável antes do efeito. | Editável? SIM = cumpre |
+| `FH-53.03` | Recusar não custa nada e não gera insistência. | Custa ou insiste? NÃO = cumpre |
+| `FH-53.04` | Conteúdo gerado é distinguível até ser assumido. | Distinguível? SIM = cumpre |
+| `FH-53.05` | Espera por IA nunca bloqueia o trabalho. | Bloqueia? NÃO = cumpre |
+| `FH-53.06` | Frequência de sugestão tem limite declarado. | Existe? SIM = cumpre |
+| `FH-53.07` | Corrigir ou descartar em **um passo**. | Um passo? SIM = cumpre |
+| `FH-53.08` | A IA nunca simula identidade humana ao destinatário. | Simula? NÃO = cumpre |
+| `FH-53.09` | Linguagem natural nunca é o único caminho. | Existe estruturado? SIM = cumpre |
+| `FH-53.10` | Registro auditável de entrada, contexto e saída. | Existe? SIM = cumpre |
+
+---
+
+## Capítulo 54 — Automações e Flows
+
+📄 [`L6-C54-automacoes-e-flows.md`](L6-C54-automacoes-e-flows.md)
+
+**Ciclo:** construir → pré-visualizar → ativar → executar → registrar → recuperar →
+versionar → pausar.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-54.01` | Legível por não técnicos, na linguagem do usuário. | Legível? SIM = cumpre |
+| `FH-54.02` | **Pré-visualização obrigatória** antes de ativar. | Existe? SIM = cumpre |
+| `FH-54.03` | Entra desligada; ativação explícita. | Desligada? SIM = cumpre |
+| `FH-54.04` | Histórico de execução compreensível sem conhecimento técnico. | Compreensível? SIM = cumpre |
+| `FH-54.05` | Falha visível e reprocessável seletivamente. | Ambas? SIM = cumpre |
+| `FH-54.06` | Limites de segurança contra efeito em massa. | Declarados? SIM = cumpre |
+| `FH-54.07` | Alteração em automação ativa é versionada e declara efeito em curso. | Ambos? SIM = cumpre |
+| `FH-54.08` | Nunca age fora do escopo da conta. | Alcança outra conta? NÃO = cumpre |
+| `FH-54.09` | Envio a terceiros segue `FH-45.07` e `FH-11.03` integralmente. | Aplicado? SIM = cumpre |
+| `FH-54.10` | Criador, ativador e último editor identificáveis. | Os três? SIM = cumpre |
+| `FH-54.11` | **Pausa de emergência em um passo**, de qualquer lugar. | Um passo? SIM = cumpre |
+
+---
+
+## Capítulo 55 — Personalização e Adaptação
+
+📄 [`L6-C55-personalizacao-e-adaptacao.md`](L6-C55-personalizacao-e-adaptacao.md)
+
+**Regra de leitura:** se a adaptação muda **onde algo está**, é proibida; se muda
+**o que aparece primeiro**, é permitida — com transparência e reversão.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-55.01` | Estrutura, navegação, posição e vocabulário **nunca** se adaptam. | Toca alguma? NÃO = cumpre |
+| `FH-55.02` | Adapta por prioridade e sugestão; **nunca por remoção**. | Removeu? NÃO = cumpre |
+| `FH-55.03` | Toda adaptação perceptível é identificável e explicada. | Explicada? SIM = cumpre |
+| `FH-55.04` | Reversível em um passo, de forma duradoura. | Reversível? SIM = cumpre |
+| `FH-55.05` | Escopos pessoa/papel/conta declarados e não confundidos. | Declarado? SIM = cumpre |
+| `FH-55.06` | **Preferência explícita vence inferência**, sempre. | Sobrepôs? NÃO = cumpre |
+| `FH-55.07` | Adaptação nunca altera capacidade entre usuários. | Altera? NÃO = cumpre |
+| `FH-55.08` | Nada de adaptação silenciosa em memória motora. | Mudou? NÃO = cumpre |
+| `FH-55.09` | Dado de terceiro nunca alimenta perfilamento. | Alimenta? NÃO = cumpre |
+| `FH-55.10` | Estado inicial idêntico para todas as contas novas. | Idêntico? SIM = cumpre |
+
+---
+
+## Capítulo 56 — Dados, Métricas e Insights
+
+📄 [`L6-C56-dados-metricas-e-insights.md`](L6-C56-dados-metricas-e-insights.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-56.01` | Todo número com período e comparação. | Interpretável sem cálculo? SIM = cumpre |
+| `FH-56.02` | Amostra pequena, período parcial e defasagem **declarados**. | Declarados? SIM = cumpre |
+| `FH-56.03` | Representação visual nunca distorce proporção. | Corresponde? SIM = cumpre |
+| `FH-56.04` | Insight sempre acionável. | Leva a ação? SIM = cumpre |
+| `FH-56.05` | Nunca atribuir a alguém o que não controla. | Atribui? NÃO = cumpre |
+| `FH-56.06` | Toda métrica declara como é calculada. | Declara? SIM = cumpre |
+| `FH-56.07` | Comparação entre pessoas nunca vira classificação. | Classifica? NÃO = cumpre |
+| `FH-56.08` | Agregados nunca revelam o individual protegido. | Revela? NÃO = cumpre |
+| `FH-56.09` | **Ausência de dado ≠ zero.** | Distinguido? SIM = cumpre |
+| `FH-56.10` | Exportação usa o mesmo cálculo, período e filtro da tela. | Corresponde? SIM = cumpre |
+
+---
+
+## Capítulo 57 — Voz, Tom e Personalidade Verbal
+
+📄 [`L7-C57-voz-e-tom.md`](L7-C57-voz-e-tom.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-57.01` | Voz constante; tom varia por situação (tabela de 8 contextos). | Compatível com os cinco traços? SIM = cumpre |
+| `FH-57.02` | Segunda pessoa direta, sem cerimônia nem informalidade forçada. | Direto e adulto? SIM = cumpre |
+| `FH-57.03` | **Perspectiva do usuário**, nunca do funcionamento interno. | Fala do trabalho dele? SIM = cumpre |
+| `FH-57.04` | Sobriedade proporcional à gravidade. | Aumentou em momento adverso? NÃO = cumpre |
+| `FH-57.05` | Linguagem publicitária proibida dentro do produto. | Vende? NÃO = cumpre |
+| `FH-57.06` | Emoji nunca carrega significado nem aparece em contexto adverso. | Carrega ou aparece? NÃO = cumpre |
+| `FH-57.07` | Exclamação proibida em erro, limite, confirmação e ação destrutiva. | Há? NÃO = cumpre |
+| `FH-57.08` | Sem humor onde há dano. | Há? NÃO = cumpre |
+| `FH-57.09` | A voz da IA é a voz do produto. | Mesma voz? SIM = cumpre |
+| `FH-57.10` | O sistema não se personifica em primeira pessoa. | Personifica? NÃO = cumpre |
+
+---
+
+## Capítulo 58 — Microcopy
+
+📄 [`L7-C58-microcopy.md`](L7-C58-microcopy.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-58.01` | **Rótulo descreve o resultado**, não o mecanismo. | Descreve? SIM = cumpre |
+| `FH-58.02` | Limite de extensão por elemento; reescrever, nunca truncar. | Respeita? SIM = cumpre |
+| `FH-58.03` | Sem jargão técnico nem tradução literal. | Vocabulário do usuário? SIM = cumpre |
+| `FH-58.04` | Texto de exemplo nunca substitui rótulo. | Tem rótulo visível? SIM = cumpre |
+| `FH-58.05` | Formatos fixos: data, hora, moeda, telefone, quantidade. | Do sistema? SIM = cumpre |
+| `FH-58.06` | Capitalização e pontuação normatizadas; sem maiúsculas para ênfase. | Segue a norma? SIM = cumpre |
+| `FH-58.07` | Voz ativa e ordem direta. | Informação principal primeiro? SIM = cumpre |
+| `FH-58.08` | Rótulo nomeia **o dado**, não a ação de preencher. | Nomeia o dado? SIM = cumpre |
+| `FH-58.09` | Erro, confirmação e vazio seguem suas anatomias. | Completa? SIM = cumpre |
+| `FH-58.10` | Todo texto é autossuficiente fora do contexto de origem. | Compreensível isolado? SIM = cumpre |
+| `FH-58.11` | Conteúdo do usuário nunca é normalizado na exibição. | Alterado? NÃO = cumpre |
+
+---
+
+## Capítulo 59 — Nomenclatura
+
+📄 [`L7-C59-nomenclatura.md`](L7-C59-nomenclatura.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-59.01` | O **Anexo A** é a fonte única de nomes. | Consta? SIM = cumpre |
+| `FH-59.02` | **Um conceito, um termo**, em todas as camadas. | Mais de um? NÃO = cumpre |
+| `FH-59.03` | Termos proibidos declarados, com substituto. | Apareceu proibido? NÃO = cumpre |
+| `FH-59.04` | Termo novo exige registro com definição e alternativas descartadas. | Registrado antes? SIM = cumpre |
+| `FH-59.05` | Renomear exige transição comunicada e atualização simultânea. | Ambas? SIM = cumpre |
+| `FH-59.06` | Mesmo termo em interface, código, banco, docs e suporte. | Consistente? SIM = cumpre |
+| `FH-59.07` | Termos criados pelo usuário nunca são normalizados. | Alterado? NÃO = cumpre |
+| `FH-59.08` | O nome descreve significado, não implementação. | Faz sentido sem o código? SIM = cumpre |
+| `FH-59.09` | Sigla só com definição no Anexo A e explicação no primeiro uso. | Definida? SIM = cumpre |
+| `FH-59.10` | Canal ou tecnologia só onde é a informação. | Nomeia conceito? NÃO = cumpre |
+
+---
+
+## Capítulo 60 — Internacionalização
+
+📄 [`L7-C60-internacionalizacao.md`](L7-C60-internacionalizacao.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-60.01` | Texto fixo em componente é proibido. | Existe? NÃO = cumpre |
+| `FH-60.02` | Chaves hierárquicas por domínio → contexto → elemento. | No lugar certo? SIM = cumpre |
+| `FH-60.03` | Layout tolera expansão por tradução. | Verificado? SIM = cumpre |
+| `FH-60.04` | **Frase é unidade:** plural, gênero e variáveis pelo sistema, nunca por concatenação. | Concatenou? NÃO = cumpre |
+| `FH-60.05` | pt-BR é canônico; traduções derivam. | Origem correta? SIM = cumpre |
+| `FH-60.06` | Formatos regionais seguem o idioma ativo. | Seguem? SIM = cumpre |
+| `FH-60.07` | Termos canônicos preservados conforme o Anexo A. | Preservados? SIM = cumpre |
+| `FH-60.08` | Chave ausente nunca aparece: recorre ao canônico. | Apareceu? NÃO = cumpre |
+| `FH-60.09` | Conteúdo do usuário nunca é traduzido sem pedido. | Traduziu? NÃO = cumpre |
+| `FH-60.10` | Chave nova entra com texto canônico completo e revisado. | Completo? SIM = cumpre |
+
+---
+
+## Capítulo 61 — Heurísticas do FlowHub
+
+📄 [`L8-C61-heuristicas.md`](L8-C61-heuristicas.md)
+
+**As dez:** H1 orientação · H2 reversibilidade · H3 esforço · H4 coerência ·
+H5 carga · H6 adversidade · H7 acesso · H8 silêncio · H9 honestidade ·
+H10 descoberta.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-61.01` | As dez heurísticas são o instrumento padrão de avaliação. | Percorreu as dez? SIM = cumpre |
+| `FH-61.02` | Todo achado cita heurística **e** artigo. | Cita? SIM = cumpre |
+| `FH-61.03` | Heurística nunca substitui artigo. | Artigo citado quando existe? SIM = cumpre |
+| `FH-61.04` | Gravidade: bloqueio · correção obrigatória · melhoria. | Classificado? SIM = cumpre |
+| `FH-61.05` | Achado exige **sinal observável**. | Descreve sinal? SIM = cumpre |
+| `FH-61.06` | Nenhuma heurística nova sem emenda. | Está nas dez? SIM = cumpre |
+| `FH-61.07` | Avaliar tarefa completa, nunca tela isolada. | Tarefa inteira? SIM = cumpre |
+| `FH-61.08` | Incluir estados adversos na avaliação. | Incluiu? SIM = cumpre |
+| `FH-61.09` | Achado não corrigido vira dívida com prazo. | Virou? SIM = cumpre |
+| `FH-61.10` | Autoavaliação antes da revisão de terceiro. | Houve? SIM = cumpre |
+
+---
+
+## Capítulo 62 — Qualidade e Definição de Pronto
+
+📄 [`L8-C62-qualidade-e-pronto.md`](L8-C62-qualidade-e-pronto.md)
+
+**Oito bloqueios absolutos:** acessibilidade · perda de trabalho · quebra de
+tenancy · estado não tratado · destrutivo sem saída · efeito externo sem
+autorização · texto fora do dicionário · estado exibido falso.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-62.01` | Oito bloqueios absolutos impedem a entrega. | Algum presente? NÃO = cumpre |
+| `FH-62.02` | "Pronto" tem definição declarada. | Cumprida? SIM = cumpre |
+| `FH-62.03` | Adiamento exige registro, prazo e responsável. | Os três? SIM = cumpre |
+| `FH-62.04` | Quem declara pronto é identificável. | Identificável? SIM = cumpre |
+| `FH-62.05` | Cinco verificações obrigatórias antes da entrega. | Todas? SIM = cumpre |
+| `FH-62.06` | Bloco de Conformidade obrigatório. | Presente? SIM = cumpre |
+| `FH-62.07` | **Bloqueio absoluto nunca vira dívida.** | Virou? NÃO = cumpre |
+| `FH-62.08` | Pronto inclui estados, textos, i18n e permissões. | Completos? SIM = cumpre |
+| `FH-62.09` | Reverter é preferível a entregar com bloqueio. | Entregou com bloqueio? NÃO = cumpre |
+| `FH-62.10` | Qualidade é critério de aceite, não fase final. | Durante a construção? SIM = cumpre |
+
+---
+
+## Capítulo 63 — Checklists de Validação
+
+📄 [`L8-C63-checklists.md`](L8-C63-checklists.md)
+
+**Listas de entrega:** C-A tela · C-B componente · C-C texto · C-D destrutivo ·
+C-E IA · C-F automação · C-G volume alto · C-H revisão.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-63.01` | Checklist do tipo de tarefa é obrigatória. | Percorrida? SIM = cumpre |
+| `FH-63.02` | Checklist não substitui a leitura dos artigos. | Consultou capítulos? SIM = cumpre |
+| `FH-63.03` | Todo item remete a artigo. | Cita? SIM = cumpre |
+| `FH-63.04` | **Marcar sem verificar é falsidade de conformidade.** | Verificado de fato? SIM = cumpre |
+| `FH-63.05` | Emenda atualiza checklists no mesmo ciclo. | Atualizadas? SIM = cumpre |
+| `FH-63.06` | Autor e revisor usam a mesma lista. | Mesma? SIM = cumpre |
+| `FH-63.07` | Nenhum item sem artigo que o sustente. | Todos derivam? SIM = cumpre |
+| `FH-63.08` | Checklist percorrível em minutos. | É? SIM = cumpre |
+| `FH-63.09` | Falha recorrente vira prevenção, não repetição. | Virou? SIM = cumpre |
+| `FH-63.10` | Agentes usam as mesmas checklists. | Usou? SIM = cumpre |
+
+---
+
+## Capítulo 64 — Métricas de Experiência
+
+📄 [`L8-C64-metricas-de-experiencia.md`](L8-C64-metricas-de-experiencia.md)
+
+**Anti-métricas proibidas como objetivo:** tempo de tela · frequência de acesso ·
+cliques por sessão · duração de sessão · funcionalidades usadas · notificações
+abertas.
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-64.01` | Métricas primárias medem **esforço e tempo até valor**. | Mede? SIM = cumpre |
+| `FH-64.02` | Anti-métricas nunca são objetivo (só diagnóstico). | Virou objetivo? NÃO = cumpre |
+| `FH-64.03` | Toda métrica declara o princípio que protege. | Declara? SIM = cumpre |
+| `FH-64.04` | Métrica nunca vira meta que corrompe o que mede. | Corrompeu? NÃO = cumpre |
+| `FH-64.05` | Medição respeita minimização e finalidade. | Respeita? SIM = cumpre |
+| `FH-64.06` | Métrica de equipe nunca vira avaliação individual. | Virou? NÃO = cumpre |
+| `FH-64.07` | Degradação detectada vira dívida com prazo. | Virou? SIM = cumpre |
+| `FH-64.08` | Base de cálculo, período e limitações declarados. | Os três? SIM = cumpre |
+| `FH-64.09` | Nenhuma decisão de experiência só por número. | Tem qualitativo? SIM = cumpre |
+| `FH-64.10` | Métrica sem uso decisório é removida. | Influenciou decisão? SIM = cumpre |
+
+---
+
+## Capítulo 65 — Governança da Experiência
+
+📄 [`L8-C65-governanca-da-experiencia.md`](L8-C65-governanca-da-experiencia.md)
+
+**Alçadas:** 1 execução · 2 interpretação · 3 arbitragem · 4 emenda. **Agentes
+atuam em alçada 1.**
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-65.01` | Decisão dentro da alçada declarada. | Dentro? SIM = cumpre |
+| `FH-65.02` | Registro com autor, data, artigos e fundamento. | Existe? SIM = cumpre |
+| `FH-65.03` | Ausência de dono não autoriza improviso. | Fallback registrado? SIM = cumpre |
+| `FH-65.04` | Escalada segue caminho declarado, sem pular etapas. | Seguiu? SIM = cumpre |
+| `FH-65.05` | Decisão recorrente vira precedente ou artigo. | Virou? SIM = cumpre |
+| `FH-65.06` | Revisão independente com checklist em toda entrega perceptível. | Houve? SIM = cumpre |
+| `FH-65.07` | **Quem propõe não aprova sozinho.** | Aprovador diferente? SIM = cumpre |
+| `FH-65.08` | Urgência nunca reduz alçada. | Reduziu? NÃO = cumpre |
+| `FH-65.09` | Exceção com responsável nomeado e prazo. | Ambos? SIM = cumpre |
+| `FH-65.10` | Governança igual para pessoas e agentes. | Agente em alçada 1? SIM = cumpre |
+
+---
+
+## Capítulo 66 — Dívida de Experiência
+
+📄 [`L8-C66-divida-de-experiencia.md`](L8-C66-divida-de-experiencia.md)
+
+**Gravidades:** crítica (bloqueio absoluto) · estrutural (padrão que se propaga) ·
+pontual (local isolado).
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-66.01` | Toda dívida classificada por gravidade. | Classificada? SIM = cumpre |
+| `FH-66.02` | Desconformidade encontrada é registrada na hora. | Registrada? SIM = cumpre |
+| `FH-66.03` | Escoteiro **com limite de escopo**; o resto se registra. | Dentro do escopo? SIM = cumpre |
+| `FH-66.04` | **Proibido propagar padrão não conforme** por consistência local. | Propagou? NÃO = cumpre |
+| `FH-66.05` | Dívida crítica bloqueia funcionalidade nova na área. | Existe crítica aberta? NÃO = cumpre |
+| `FH-66.06` | Depreciação com substituto, prazo e migração. | Os três? SIM = cumpre |
+| `FH-66.07` | Mudança perceptível comunicada com transição. | Comunicada? SIM = cumpre |
+| `FH-66.08` | **Dívida sem prazo é proibida.** | Tem prazo válido? SIM = cumpre |
+| `FH-66.09` | Inventário mantido no Anexo F. | Atualizado? SIM = cumpre |
+| `FH-66.10` | Remoção segue ciclo de depreciação, nunca abrupta. | Seguiu? SIM = cumpre |
+
+---
+
+## Capítulo 67 — Evolução Contínua e Pesquisa
+
+📄 [`L8-C67-evolucao-e-pesquisa.md`](L8-C67-evolucao-e-pesquisa.md)
+
+| Artigo | Enunciado | Verificação |
+| --- | --- | --- |
+| `FH-67.01` | Nenhuma decisão por fonte única de evidência. | Combina fontes? SIM = cumpre |
+| `FH-67.02` | Volume de pedidos não é justificativa. | Apoia-se nele? NÃO = cumpre |
+| `FH-67.03` | Experimento nunca degrada os quatro desempates transversais. | Degrada? NÃO = cumpre |
+| `FH-67.04` | Constituição é filtro obrigatório antes de construir. | Passou nos quatro testes? SIM = cumpre |
+| `FH-67.05` | Efeito esperado e verificação declarados **antes**. | Declarados? SIM = cumpre |
+| `FH-67.06` | Resultado negativo gera reversão ou correção — nunca normalização. | Gerou decisão? SIM = cumpre |
+| `FH-67.07` | Pesquisa respeita minimização; sem dado de terceiro. | Respeita? SIM = cumpre |
+| `FH-67.08` | Aprendizado vira precedente ou artigo. | Virou? SIM = cumpre |
+| `FH-67.09` | Todas as variantes testadas são **conformes**. | São? SIM = cumpre |
+| `FH-67.10` | Mudança contrária ao Livro I só por emenda MAIOR. | Existe emenda? SIM = cumpre |
+
+---
+
 ## Capítulo 68 — Protocolo para Agentes de IA
 
 📄 [`L8-C68-protocolo-para-agentes.md`](L8-C68-protocolo-para-agentes.md)
@@ -661,6 +1535,9 @@ expansão · maturidade · risco · saída.
 | `FH-68.13` | Conflito Constituição × `AGENTS.md` → §0.13; lei vence ambos. | Resolveu pela precedência? SIM = cumpre |
 | `FH-68.14` | Ambiguidade: adotar a leitura que mais protege o usuário e **declarar** a interpretação. | Declarou? SIM = cumpre |
 | `FH-68.15` | Terceira ocorrência da mesma lacuna → sinalizar emenda obrigatória. | Contador incrementado e emenda sinalizada? SIM = cumpre |
+| `FH-68.16` | Agente atua em **alçada 1**; propõe e escala nas demais; nunca autoaprova. | Autoaprovou alçada 2+? NÃO = cumpre |
+| `FH-68.17` | Antes de entregar: checklist do tipo + **oito bloqueios absolutos**. | Ambos verificados? SIM = cumpre |
+| `FH-68.18` | Achado fora de escopo vira dívida registrada; nunca correção silenciosa nem propagação de padrão não conforme. | Registrou e não propagou? SIM = cumpre |
 
 **Bloco de Conformidade (obrigatório em toda entrega):** artigos aplicados •
 decisões constitucionais • interpretações adotadas • lacunas encontradas •
@@ -687,5 +1564,5 @@ tarefa, independentemente de capítulo:
 
 ---
 
-*Anexo B v1.5.0 — Onda 4 concluída (Livros 0, I, II e III completos).
-Próxima atualização: Onda 5 (Capítulos 41–51 — Comportamento do Sistema).*
+*Anexo B v2.1.0 — **Constituição completa.** 68 capítulos, 712 artigos, 6 anexos.
+Capítulo 68 revisado (v1.1.0) após o corpo completo.*

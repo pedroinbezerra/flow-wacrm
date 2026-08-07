@@ -3,18 +3,19 @@
 | Campo | Valor |
 | --- | --- |
 | Livro | VIII — Governança |
-| Versão | 1.0.0 |
-| Estado | **Vigente, antecipado** (Onda 2.5) — revisão obrigatória ao fim da Onda 9 |
-| Depende de | Volume 0, Capítulos 1–4 |
+| Versão | 1.1.0 |
+| Estado | Estável — **revisão pós-corpo completo realizada** |
+| Depende de | Volume 0, Capítulos 1–4, 61–67 |
 | É pré-requisito de | Toda execução autônoma ou assistida |
-| Artigos | `FH-68.01` a `FH-68.15` |
+| Artigos | `FH-68.01` a `FH-68.18` |
 
-> **Nota de antecipação.** Este capítulo pertence logicamente ao fim da
-> Constituição, mas foi antecipado por decisão registrada no Volume 0: a partir
-> da Onda 3, o próprio documento passa a ser majoritariamente escrito e aplicado
-> por agentes, e um protocolo entregue no fim chegaria depois de já ter sido
-> necessário dezenas de vezes. Sua vigência é plena; sua redação será revisada ao
-> fim da Onda 9 para incorporar o corpo completo.
+> **Nota de antecipação e revisão.** Este capítulo foi escrito na Onda 2.5, antes
+> do corpo constitucional estar completo, porque a partir da Onda 3 o próprio
+> documento passou a ser majoritariamente escrito e aplicado por agentes. A
+> revisão prevista foi realizada ao fim da Onda 9 e produziu a versão 1.1.0:
+> foram acrescentados `FH-68.16` a `FH-68.18`, que amarram o protocolo aos
+> capítulos de governança (61 a 67) que ainda não existiam na redação original.
+> Nenhum artigo anterior foi alterado.
 
 ---
 
@@ -99,6 +100,23 @@ interpretação adotada na entrega.
 vez a mesma dúvida sem resposta constitucional, incrementar a lacuna no Anexo E e
 sinalizar que a emenda tornou-se obrigatória.
 > **Verificação:** lacunas recorrentes tiveram o contador incrementado e a emenda sinalizada? → SIM = cumpre | NÃO = viola.
+
+**`FH-68.16`** — O agente atua em **alçada 1** (`FH-65.01`, `FH-65.10`): aplica
+artigos existentes a casos previstos. Nas alçadas 2, 3 e 4 ele **propõe e escala**,
+e **NUNCA** aprova a própria proposta (`FH-65.07`).
+> **Verificação:** houve decisão de alçada 2 ou superior tomada e aprovada pelo próprio agente? → NÃO = cumpre | SIM = viola.
+
+**`FH-68.17`** — Antes de entregar, o agente **DEVE** percorrer a **checklist do
+tipo de tarefa** (`FH-63.10`) e verificar os **oito bloqueios absolutos**
+(`FH-62.01`). Bloqueio encontrado impede a entrega e **NUNCA** vira dívida
+(`FH-62.07`).
+> **Verificação:** a checklist foi percorrida e os oito bloqueios verificados? → SIM = cumpre | NÃO = viola.
+
+**`FH-68.18`** — Desconformidade encontrada fora do escopo **DEVE** ser registrada
+como dívida (`FH-66.02`), **nunca** corrigida silenciosamente nem ignorada. O
+agente também **NUNCA** propaga padrão não conforme por consistência com o entorno
+(`FH-66.04`).
+> **Verificação:** achados fora de escopo foram registrados, e nenhum padrão não conforme foi repetido? → SIM = cumpre | NÃO = viola.
 
 ---
 
@@ -230,8 +248,17 @@ hierarquia → escolher o reversível → não inventar padrão → registrar.
 
 ### Etapa 4 — Verificar
 
-Executar as verificações binárias dos artigos aplicados. O que não puder ser
-verificado no ambiente **DEVE** ser declarado como não verificado (`FH-68.11`).
+Executar, nesta ordem:
+
+1. As **verificações binárias** dos artigos aplicados.
+2. A **checklist do tipo de tarefa** (Capítulo 63, §5) — `FH-68.17`.
+3. Os **oito bloqueios absolutos** (`FH-62.01`). Bloqueio encontrado **impede a
+   entrega**; não vira dívida.
+4. As **dez heurísticas** (Capítulo 61, §5) quando a entrega envolver tela ou
+   fluxo.
+
+O que não puder ser verificado no ambiente **DEVE** ser declarado como não
+verificado (`FH-68.11`), nunca marcado como cumprido (`FH-63.04`).
 
 ### Etapa 5 — Entregar com Bloco de Conformidade
 

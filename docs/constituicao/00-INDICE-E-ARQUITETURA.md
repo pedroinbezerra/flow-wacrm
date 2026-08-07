@@ -1239,7 +1239,7 @@ capítulo, desde o primeiro.
 | 10 — Promessas e confiança | ✅ Completo | `FH-10.01`–`FH-10.10` |
 | 11 — Ética e soberania | ✅ Completo | `FH-11.01`–`FH-11.12` |
 | 12 — Fronteiras do produto | ✅ Completo | `FH-12.01`–`FH-12.10` |
-| 68 — Protocolo para agentes de IA | ✅ Completo (antecipado, Onda 2.5) | `FH-68.01`–`FH-68.15` |
+| 68 — Protocolo para agentes de IA | ✅ Completo e **revisado** (v1.1.0) | `FH-68.01`–`FH-68.18` |
 | 13 — Arquétipos operacionais | ✅ Completo | `FH-13.01`–`FH-13.10` |
 | 14 — Contexto real de uso | ✅ Completo | `FH-14.01`–`FH-14.11` |
 | 15 — Psicologia cognitiva | ✅ Completo | `FH-15.01`–`FH-15.11` |
@@ -1255,14 +1255,78 @@ capítulo, desde o primeiro.
 | 25 — Jornada completa | ✅ Completo | `FH-25.01`–`FH-25.10` |
 | 26 — Onboarding | ✅ Completo | `FH-26.01`–`FH-26.10` |
 | 27 — Ciclo de vida da conta | ✅ Completo | `FH-27.01`–`FH-27.10` |
-| 28–67 | ⬜ Não iniciado | — |
-| Anexo B — Índice de artigos | ♻️ Vivo — 301 artigos indexados | — |
-| Anexo C — Matrizes de decisão | ♻️ Vivo — 16 matrizes ativas, 5 pendentes | — |
+| 41 — Sistema de estados | ✅ Completo | `FH-41.01`–`FH-41.11` |
+| 42 — Estados vazios | ✅ Completo | `FH-42.01`–`FH-42.10` |
+| 43 — Sistema de feedback | ✅ Completo | `FH-43.01`–`FH-43.10` |
+| 44 — Erros | ✅ Completo | `FH-44.01`–`FH-44.11` |
+| 45 — Confirmações e desfazer | ✅ Completo | `FH-45.01`–`FH-45.11` |
+| 46 — Desempenho percebido | ✅ Completo | `FH-46.01`–`FH-46.10` |
+| 47 — Sistema de busca | ✅ Completo | `FH-47.01`–`FH-47.10` |
+| 48 — Comandos e teclado | ✅ Completo | `FH-48.01`–`FH-48.10` |
+| 49 — Produtividade e lote | ✅ Completo | `FH-49.01`–`FH-49.10` |
+| 50 — Tempo real e colaboração | ✅ Completo | `FH-50.01`–`FH-50.10` |
+| 51 — Permissões e limites | ✅ Completo | `FH-51.01`–`FH-51.10` |
+| 28 — Fundamentos do design system | ✅ Completo | `FH-28.01`–`FH-28.10` |
+| 29 — Tokens: cor, tema e modo | ✅ Completo | `FH-29.01`–`FH-29.10` |
+| 30 — Tipografia | ✅ Completo | `FH-30.01`–`FH-30.10` |
+| 31 — Espaço, grid e ritmo | ✅ Completo | `FH-31.01`–`FH-31.10` |
+| 32 — Forma e profundidade | ✅ Completo | `FH-32.01`–`FH-32.10` |
+| 33 — Iconografia e sinalização | ✅ Completo | `FH-33.01`–`FH-33.10` |
+| 34 — Contratos de componente | ✅ Completo | `FH-34.01`–`FH-34.10` |
+| 35 — Catálogo de componentes | ✅ Completo | `FH-35.01`–`FH-35.10` |
+| 36 — Dados, densidade e escala | ✅ Completo | `FH-36.01`–`FH-36.10` |
+| 37 — Responsividade | ✅ Completo | `FH-37.01`–`FH-37.10` |
+| 38 — Acessibilidade | ✅ Completo | `FH-38.01`–`FH-38.11` |
+| 39 — Movimento e animação | ✅ Completo | `FH-39.01`–`FH-39.10` |
+| 40 — Notificação e canais | ✅ Completo | `FH-40.01`–`FH-40.10` |
+| 52 — Princípios de IA | ✅ Completo | `FH-52.01`–`FH-52.11` |
+| 53 — Padrões de interação com IA | ✅ Completo | `FH-53.01`–`FH-53.10` |
+| 54 — Automações e flows | ✅ Completo | `FH-54.01`–`FH-54.11` |
+| 55 — Personalização e adaptação | ✅ Completo | `FH-55.01`–`FH-55.10` |
+| 56 — Dados, métricas e insights | ✅ Completo | `FH-56.01`–`FH-56.10` |
+| 57 — Voz, tom e personalidade verbal | ✅ Completo | `FH-57.01`–`FH-57.10` |
+| 58 — Microcopy | ✅ Completo | `FH-58.01`–`FH-58.11` |
+| 59 — Nomenclatura | ✅ Completo | `FH-59.01`–`FH-59.10` |
+| 60 — Internacionalização | ✅ Completo | `FH-60.01`–`FH-60.10` |
+| 61 — Heurísticas | ✅ Completo | `FH-61.01`–`FH-61.10` |
+| 62 — Qualidade e definição de pronto | ✅ Completo | `FH-62.01`–`FH-62.10` |
+| 63 — Checklists de validação | ✅ Completo | `FH-63.01`–`FH-63.10` |
+| 64 — Métricas de experiência | ✅ Completo | `FH-64.01`–`FH-64.10` |
+| 65 — Governança da experiência | ✅ Completo | `FH-65.01`–`FH-65.10` |
+| 66 — Dívida de experiência | ✅ Completo | `FH-66.01`–`FH-66.10` |
+| 67 — Evolução contínua e pesquisa | ✅ Completo | `FH-67.01`–`FH-67.10` |
+| Anexo A — Glossário canônico | ♻️ Vivo — 41 termos, 12 proibidos | — |
+| Anexo B — Índice de artigos | ♻️ Vivo — 712 artigos indexados | — |
+| Anexo C — Matrizes de decisão | ♻️ Vivo — 21 matrizes, **0 pendentes** | — |
+| Anexo D — Modelos de documento | ✅ Completo — 5 modelos | — |
 | Anexo E — Registro de decisões | ♻️ Vivo — estrutura pronta, sem entradas | — |
-| Anexos A, D, F | ⬜ Não iniciado | — |
+| Anexo F — Mapa de conformidade | ♻️ Vivo — Inbox auditado, 9 dívidas: **3 corrigidas, 0 críticas abertas** | — |
 
-**Total de artigos vigentes:** 301. **Livros 0, I, II e III completos; Capítulo 68
-vigente.**
+---
+
+## ✅ Constituição completa
+
+**712 artigos · 68 capítulos · 8 livros · 6 anexos.**
+
+*Contagem verificada por varredura dos arquivos, não por soma dos relatórios de
+onda.*
+
+Todas as ondas do plano de expansão foram concluídas, incluindo a revisão do
+Capítulo 68 prevista para o fim da Onda 9.
+
+**O que permanece vivo por desenho** (`FH-04.08`, §0.14):
+
+| Artefato | Natureza |
+| --- | --- |
+| Anexo A | Cresce a cada termo novo, renomeação ou banimento |
+| Anexo B | Cresce a cada artigo novo ou emenda |
+| Anexo C | Cresce a cada nova escolha recorrente |
+| Anexo E | Cresce a cada precedente, exceção ou lacuna |
+| Anexo F | Cresce a cada dívida encontrada e diminui a cada correção |
+
+**Único débito conhecido da própria Constituição:** o Anexo F está em primeira
+passagem — cobertura parcial declarada, com o método de continuação descrito nele
+(registrado como `DIV-0004`).
 
 **Regra de consistência entre capítulos.** Ao escrever qualquer capítulo, é
 obrigatório: (a) reutilizar termos já definidos, sem criar sinônimos; (b) citar
