@@ -956,6 +956,7 @@ export interface InternalNote {
   content: string;
   created_at: string;
   updated_at: string;
+  deleted_at?: string | null;
   author_profile?: Profile;
   reactions?: InternalReaction[];
 }
@@ -1043,6 +1044,8 @@ export interface ResponseReservationState {
 export type CollaborativeEventType =
   | 'message_sent'
   | 'internal_note_created'
+  | 'internal_note_updated'
+  | 'internal_note_deleted'
   | 'collaborator_mentioned'
   | 'participant_added'
   | 'participant_removed'
@@ -1065,6 +1068,8 @@ export interface CollaborativeEventContext {
 export interface CollaborativeEventPayloadMap {
   message_sent: { message_id: string; content_text: string; sender_type: string };
   internal_note_created: { note_id?: string; content: string; mentions?: string[] };
+  internal_note_updated: { note_id: string; previous_content?: string; new_content: string };
+  internal_note_deleted: { note_id: string; deleted_content?: string };
   collaborator_mentioned: { mentioned_user_id: string; note_id?: string; message_id?: string; snippet: string };
   participant_added: { target_user_id: string; target_user_name?: string; role: ConversationParticipantRole };
   participant_removed: { target_user_id: string; target_user_name?: string };

@@ -20,6 +20,8 @@ export async function handleTimeline(
   const loggableEvents = [
     "message_sent",
     "internal_note_created",
+    "internal_note_updated",
+    "internal_note_deleted",
     "collaborator_mentioned",
     "participant_added",
     "participant_removed",

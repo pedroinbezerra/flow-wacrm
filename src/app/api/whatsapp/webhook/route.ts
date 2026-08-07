@@ -184,14 +184,41 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
+  // Transactional Outbox: Persist event payload to inbound_webhooks before ACK
+  let outboxId: string | null = null
+  try {
+    const { data: outbox } = await supabaseAdmin()
+      .from('inbound_webhooks')
+      .insert({
+        provider: 'whatsapp',
+        payload: body,
+        status: 'processing',
+      })
+      .select('id')
+      .maybeSingle()
+    outboxId = outbox?.id ?? null
+  } catch (outboxErr) {
+    console.warn('[webhook] Failed to insert inbound_webhooks outbox record:', outboxErr)
+  }
+
   // Schedule processing with Next's post-response lifecycle hook.
-  // This keeps the fast 200 ACK for Meta while making background work
-  // less fragile on serverless runtimes than bare fire-and-forget.
   after(async () => {
     try {
       await processWebhook(body)
-    } catch (error) {
+      if (outboxId) {
+        await supabaseAdmin()
+          .from('inbound_webhooks')
+          .update({ status: 'completed', processed_at: new Date().toISOString() })
+          .eq('id', outboxId)
+      }
+    } catch (error: any) {
       console.error('Error processing webhook:', error)
+      if (outboxId) {
+        await supabaseAdmin()
+          .from('inbound_webhooks')
+          .update({ status: 'failed', error_message: error?.message || 'Processing failed' })
+          .eq('id', outboxId)
+      }
     }
   })
 

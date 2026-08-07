@@ -387,9 +387,14 @@ export default function InboxPage() {
         setResyncToken((n) => n + 1);
       }
     };
+    const onRefreshConvs = () => {
+      setResyncToken((n) => n + 1);
+    };
     document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("flowhub:refresh_conversations", onRefreshConvs);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("flowhub:refresh_conversations", onRefreshConvs);
     };
   }, []);
 

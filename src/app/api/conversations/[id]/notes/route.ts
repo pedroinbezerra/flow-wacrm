@@ -22,7 +22,10 @@ export async function GET(
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     if (!notes || notes.length === 0) return NextResponse.json([]);
 
-    const authorIds = [...new Set(notes.map((n) => n.author_id))];
+    const activeNotes = notes.filter((n: any) => !n.deleted_at);
+    if (activeNotes.length === 0) return NextResponse.json([]);
+
+    const authorIds = [...new Set(activeNotes.map((n) => n.author_id))];
     const { data: profiles } = await supabase
       .from("profiles")
       .select("user_id, full_name, avatar_url")
@@ -30,7 +33,7 @@ export async function GET(
 
     const profilesMap = new Map((profiles || []).map((p) => [p.user_id, p]));
 
-    const noteIds = notes.map((n) => n.id);
+    const noteIds = activeNotes.map((n) => n.id);
     const { data: reactions } = await supabase
       .from("internal_reactions")
       .select("*")
@@ -44,7 +47,7 @@ export async function GET(
       reactionsMap.set(r.target_id, list);
     });
 
-    const enrichedNotes = notes.map((note) => ({
+    const enrichedNotes = activeNotes.map((note) => ({
       ...note,
       author_profile: profilesMap.get(note.author_id) || null,
       reactions: reactionsMap.get(note.id) || [],

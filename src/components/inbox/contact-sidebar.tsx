@@ -61,11 +61,46 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
   }, [conversationId]);
 
   useEffect(() => {
+    if (!conversationId) {
+      setTimelineEvents([]);
+      return;
+    }
+
     fetchTimeline();
-    const handleRefresh = () => fetchTimeline();
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`timeline:conversation:${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "conversation_timeline_events",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        () => {
+          fetchTimeline();
+        }
+      )
+      .subscribe();
+
+    const handleRefresh = (e: Event) => {
+      const customEvent = e as CustomEvent<{ conversationId?: string }>;
+      if (!customEvent.detail?.conversationId || customEvent.detail.conversationId === conversationId) {
+        fetchTimeline();
+      }
+    };
+
     window.addEventListener("flowhub:refresh_notes", handleRefresh);
-    return () => window.removeEventListener("flowhub:refresh_notes", handleRefresh);
-  }, [fetchTimeline]);
+    window.addEventListener("flowhub:refresh_timeline", handleRefresh);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener("flowhub:refresh_notes", handleRefresh);
+      window.removeEventListener("flowhub:refresh_timeline", handleRefresh);
+    };
+  }, [conversationId, fetchTimeline]);
 
 
   const fetchContactData = useCallback(async () => {
@@ -408,11 +443,20 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
                   </span>
                 </div>
 
-                {(selectedEvent.metadata?.note_text || selectedEvent.metadata?.text || selectedEvent.metadata?.content) && (
+                {(selectedEvent.metadata?.note_text || selectedEvent.metadata?.text || selectedEvent.metadata?.content || selectedEvent.metadata?.new_content || selectedEvent.metadata?.deleted_content) && (
                   <div className="flex flex-col gap-1 text-xs pt-2 border-t border-border/40">
                     <span className="text-muted-foreground font-medium">Conteúdo da Nota:</span>
                     <span className="font-normal text-foreground bg-muted/60 p-2.5 rounded border border-border/40 italic">
-                      "{selectedEvent.metadata?.note_text || selectedEvent.metadata?.text || selectedEvent.metadata?.content}"
+                      "{selectedEvent.metadata?.new_content || selectedEvent.metadata?.deleted_content || selectedEvent.metadata?.note_text || selectedEvent.metadata?.text || selectedEvent.metadata?.content}"
+                    </span>
+                  </div>
+                )}
+
+                {selectedEvent.metadata?.previous_content && (
+                  <div className="flex flex-col gap-1 text-xs pt-2 border-t border-border/40">
+                    <span className="text-muted-foreground font-medium">Conteúdo Anterior:</span>
+                    <span className="font-normal text-muted-foreground bg-muted/40 p-2.5 rounded border border-border/30 line-through">
+                      "{selectedEvent.metadata.previous_content}"
                     </span>
                   </div>
                 )}
@@ -459,6 +503,18 @@ function formatTimelineNaturalAction(evt: any): { actionText: string; naturalSen
       return {
         actionText: "Criou uma nota interna",
         naturalSentence: `${actor} adicionou uma nota interna nesta conversa`,
+      };
+    }
+    case "internal_note_updated": {
+      return {
+        actionText: "Editou uma nota interna",
+        naturalSentence: `${actor} alterou o conteúdo de uma nota interna nesta conversa`,
+      };
+    }
+    case "internal_note_deleted": {
+      return {
+        actionText: "Excluiu uma nota interna",
+        naturalSentence: `${actor} excluiu uma nota interna desta conversa`,
       };
     }
     case "collaborator_mentioned": {

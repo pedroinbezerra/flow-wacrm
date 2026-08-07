@@ -1118,6 +1118,19 @@
     "whatsappNotConnected": "WhatsApp® não está conectado. Acesse Configurações para conectar sua conta.",
     "customer": "Cliente",
     "unknownContact": "Contato desconhecido",
+    "notesActions": {
+      "edit": "Editar nota",
+      "delete": "Excluir nota",
+      "edited": "(editado)",
+      "confirmDelete": "Tem certeza que deseja excluir esta nota interna?",
+      "confirmDeleteDesc": "Esta ação irá remover a nota da conversa.",
+      "save": "Salvar",
+      "cancel": "Cancelar",
+      "deleteSuccess": "Nota interna excluída com sucesso",
+      "updateSuccess": "Nota interna atualizada com sucesso",
+      "deleteError": "Erro ao excluir nota interna",
+      "updateError": "Erro ao atualizar nota interna"
+    },
     "session": {
       "noCustomerMessages": "Sem mensagens do cliente",
       "expired": "Expirado",

@@ -269,6 +269,16 @@ export function MessageThread({
     });
   }, []);
 
+  const handleNoteUpdated = useCallback((updatedNote: InternalNote) => {
+    setInternalNotes((prev) =>
+      prev.map((n) => (n.id === updatedNote.id ? { ...n, ...updatedNote } : n))
+    );
+  }, []);
+
+  const handleNoteDeleted = useCallback((deletedNoteId: string) => {
+    setInternalNotes((prev) => prev.filter((n) => n.id !== deletedNoteId));
+  }, []);
+
   const handleTimelineInserted = useCallback((newEvent: ConversationTimelineEvent) => {
     setTimelineEvents((prev) => {
       if (prev.some((e) => e.id === newEvent.id)) return prev;
@@ -280,8 +290,91 @@ export function MessageThread({
     conversationId: conversation?.id ?? null,
     enabled: Boolean(conversation?.id),
     onNoteInserted: handleNoteInserted,
+    onNoteUpdated: handleNoteUpdated,
+    onNoteDeleted: handleNoteDeleted,
     onTimelineEventInserted: handleTimelineInserted,
   });
+
+  const handleEditNote = useCallback(
+    async (noteId: string, newContent: string) => {
+      if (!conversation?.id) return;
+      const previousNotes = internalNotes;
+      const now = new Date().toISOString();
+
+      // Optimistic update
+      setInternalNotes((prev) =>
+        prev.map((n) =>
+          n.id === noteId ? { ...n, content: newContent, updated_at: now } : n
+        )
+      );
+
+      try {
+        const res = await fetch(`/api/conversations/${conversation.id}/notes/${noteId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: newContent }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || t("inbox.notesActions.updateError"));
+        }
+
+        const data: InternalNote = await res.json();
+        setInternalNotes((prev) =>
+          prev.map((n) => (n.id === noteId ? { ...n, ...data } : n))
+        );
+        toast.success(t("inbox.notesActions.updateSuccess"));
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("flowhub:refresh_timeline", {
+              detail: { conversationId: conversation.id },
+            })
+          );
+        }
+      } catch (err: any) {
+        setInternalNotes(previousNotes);
+        toast.error(err.message || t("inbox.notesActions.updateError"));
+        throw err;
+      }
+    },
+    [conversation?.id, internalNotes, t]
+  );
+
+  const handleDeleteNote = useCallback(
+    async (noteId: string) => {
+      if (!conversation?.id) return;
+      const previousNotes = internalNotes;
+
+      // Optimistic delete
+      setInternalNotes((prev) => prev.filter((n) => n.id !== noteId));
+
+      try {
+        const res = await fetch(`/api/conversations/${conversation.id}/notes/${noteId}`, {
+          method: "DELETE",
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || t("inbox.notesActions.deleteError"));
+        }
+
+        toast.success(t("inbox.notesActions.deleteSuccess"));
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("flowhub:refresh_timeline", {
+              detail: { conversationId: conversation.id },
+            })
+          );
+        }
+      } catch (err: any) {
+        setInternalNotes(previousNotes);
+        toast.error(err.message || t("inbox.notesActions.deleteError"));
+        throw err;
+      }
+    },
+    [conversation?.id, internalNotes, t]
+  );
 
   // Fetch internal notes for current conversation
   useEffect(() => {
@@ -463,30 +556,42 @@ export function MessageThread({
     (async () => {
       setLoading(true);
 
-      const { data, error } = await supabase
-        .from("messages")
-        .select("*")
-        .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true });
+      try {
+        const res = await fetch(`/api/conversations/${conversationId}/messages`);
+        if (res.ok) {
+          const payload = await res.json();
+          const list = Array.isArray(payload) ? payload : payload.messages || [];
+          if (!cancelled) {
+            onMessagesLoadedRef.current(list);
+            if (payload.clearedOrphanPreview && typeof window !== "undefined") {
+              window.dispatchEvent(new CustomEvent("flowhub:refresh_conversations"));
+            }
+          }
+        } else {
+          const { data, error } = await supabase
+            .from("messages")
+            .select("*")
+            .eq("conversation_id", conversationId)
+            .order("created_at", { ascending: true });
 
-      if (cancelled) return;
-
-      if (error) {
-        console.error("Failed to fetch messages:", error);
-      } else {
-        onMessagesLoadedRef.current(data ?? []);
+          if (!cancelled) {
+            if (error) {
+              console.error("Failed to fetch messages:", error);
+            } else {
+              onMessagesLoadedRef.current(data ?? []);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error loading messages:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      if (!cancelled) setLoading(false);
     })();
 
     return () => {
       cancelled = true;
     };
-    // `resyncToken` is included so the parent can force a refetch when
-    // the realtime channel reconnects or the tab regains focus —
-    // realtime is best-effort and any message events sent while the WS
-    // was disconnected or throttled are otherwise lost.
   }, [conversationId, resyncToken]);
 
   // Fallback pull while a thread is open. Realtime is still the primary
@@ -501,20 +606,28 @@ export function MessageThread({
     const poll = async () => {
       if (document.visibilityState !== "visible") return;
 
-      const { data, error } = await supabase
-        .from("messages")
-        .select("*")
-        .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true });
+      try {
+        const res = await fetch(`/api/conversations/${conversationId}/messages`);
+        if (res.ok) {
+          const payload = await res.json();
+          const list = Array.isArray(payload) ? payload : payload.messages || [];
+          if (!cancelled) {
+            onMessagesLoadedRef.current(list);
+          }
+        } else {
+          const { data, error } = await supabase
+            .from("messages")
+            .select("*")
+            .eq("conversation_id", conversationId)
+            .order("created_at", { ascending: true });
 
-      if (cancelled) return;
-
-      if (error) {
-        console.error("Polling messages failed:", error);
-        return;
+          if (!cancelled && !error) {
+            onMessagesLoadedRef.current((data ?? []) as Message[]);
+          }
+        }
+      } catch (err) {
+        console.error("Polling messages failed:", err);
       }
-
-      onMessagesLoadedRef.current((data ?? []) as Message[]);
     };
 
     const timerId = window.setInterval(() => {
@@ -1656,6 +1769,8 @@ export function MessageThread({
                           key={`note-${item.data.id}`}
                           note={item.data}
                           currentUserId={user?.id}
+                          onEditNote={handleEditNote}
+                          onDeleteNote={handleDeleteNote}
                         />
                       );
                     }

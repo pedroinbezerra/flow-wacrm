@@ -25,10 +25,13 @@ export function useTotalUnread(): number {
 
     // Initial load. RLS scopes this to the signed-in user automatically —
     // no explicit user_id filter needed here.
+    // Initial load: Only fetch conversations where unread_count > 0.
+    // Leverages the partial index idx_conversations_unread_by_account.
     (async () => {
       const { data, error } = await supabase
         .from("conversations")
-        .select("id, unread_count");
+        .select("id, unread_count")
+        .gt("unread_count", 0);
       if (cancelled || error || !data) return;
 
       const map = new Map<string, number>();
