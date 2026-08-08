@@ -32,6 +32,7 @@ import {
   X,
   Zap,
   Sparkles,
+  FileText,
 } from "lucide-react";
 
 
@@ -103,6 +104,7 @@ const navItems: NavItem[] = [
   { href: "/pipelines", labelKey: "navigation.pipelines", icon: GitBranch },
   { href: "/broadcasts", labelKey: "navigation.broadcasts", icon: Radio },
   { href: "/automations", labelKey: "navigation.automations", icon: Zap },
+  { href: "/processes/document-delivery", labelKey: "navigation.documentDelivery", icon: FileText },
   { href: "/flows", labelKey: "navigation.flows", icon: Workflow },
   { href: "/ai-assistant", labelKey: "navigation.aiAssistant", icon: Sparkles },
 ];

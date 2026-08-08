@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { useTranslation } from '@/hooks/use-translation';
 import { toast } from 'sonner';
+import { sanitizeCpfCnpj } from '@/lib/validation/fiscal';
 import type { Contact, Tag, ContactTag } from '@/types';
 import {
   findExistingContact,
@@ -53,6 +54,7 @@ export function ContactForm({
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [cpfCnpj, setCpfCnpj] = useState('');
   const [company, setCompany] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -74,6 +76,7 @@ export function ContactForm({
       setName(contact?.name ?? '');
       setPhone(contact?.phone ?? '');
       setEmail(contact?.email ?? '');
+      setCpfCnpj(contact?.cpf_cnpj ?? '');
       setCompany(contact?.company ?? '');
       setSelectedTagIds(contactTags.map((ct) => ct.tag_id));
       setDupMatch(null);
@@ -155,6 +158,7 @@ export function ContactForm({
             name: name.trim() || null,
             phone: phone.trim(),
             email: email.trim() || null,
+            cpf_cnpj: sanitizeCpfCnpj(cpfCnpj) || null,
             company: company.trim() || null,
             updated_at: new Date().toISOString(),
           })
@@ -169,6 +173,7 @@ export function ContactForm({
             name: name.trim() || null,
             phone: phone.trim(),
             email: email.trim() || null,
+            cpf_cnpj: sanitizeCpfCnpj(cpfCnpj) || null,
             company: company.trim() || null,
           })
           .select('id')
@@ -311,6 +316,22 @@ export function ContactForm({
               placeholder={t("contacts.form.emailExample")}
               className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cf-cpf-cnpj" className="text-muted-foreground">
+              CPF / CNPJ
+            </Label>
+            <Input
+              id="cf-cpf-cnpj"
+              value={cpfCnpj}
+              onChange={(e) => setCpfCnpj(e.target.value)}
+              placeholder="000.000.000-00 ou 00.000.000/0001-00"
+              className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Utilizado para identificação automática no processo de entrega de documentos.
+            </p>
           </div>
 
           <div className="space-y-2">

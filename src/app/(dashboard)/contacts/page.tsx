@@ -162,7 +162,7 @@ export default function ContactsPage() {
 
       if (term) {
         const like = `%${term}%`;
-        query = query.or(`name.ilike.${like},phone.ilike.${like},email.ilike.${like}`);
+        query = query.or(`name.ilike.${like},phone.ilike.${like},email.ilike.${like},cpf_cnpj.ilike.${like}`);
       }
 
       const { data, count: exactCount, error } = await query;
@@ -544,6 +544,7 @@ export default function ContactsPage() {
               </TableHead>
               <TableHead className="text-muted-foreground">{t("contacts.table.name")}</TableHead>
               <TableHead className="text-muted-foreground">{t("contacts.table.phone")}</TableHead>
+              <TableHead className="text-muted-foreground hidden md:table-cell">CPF / CNPJ</TableHead>
               <TableHead className="text-muted-foreground hidden md:table-cell">{t("contacts.table.email")}</TableHead>
               <TableHead className="text-muted-foreground hidden lg:table-cell">{t("contacts.table.company")}</TableHead>
               <TableHead className="text-muted-foreground hidden md:table-cell">{t("contacts.table.tags")}</TableHead>
@@ -554,7 +555,7 @@ export default function ContactsPage() {
           <TableBody>
             {loading ? (
               <TableRow className="border-border">
-                <TableCell colSpan={8} className="text-center py-12">
+                <TableCell colSpan={9} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2">
                     <Loader2 className="size-6 animate-spin text-primary" />
                     <p className="text-sm text-muted-foreground">{t("contacts.loading")}</p>
@@ -563,7 +564,7 @@ export default function ContactsPage() {
               </TableRow>
             ) : contacts.length === 0 ? (
               <TableRow className="border-border">
-                <TableCell colSpan={8} className="text-center py-12">
+                <TableCell colSpan={9} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2">
                     <Users className="size-8 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">
@@ -611,6 +612,9 @@ export default function ContactsPage() {
                   </TableCell>
                   <TableCell className="text-muted-foreground font-mono text-xs">
                     {contact.phone}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground hidden md:table-cell text-xs font-mono">
+                    {contact.cpf_cnpj || <span className="text-muted-foreground/50">-</span>}
                   </TableCell>
                   <TableCell className="text-muted-foreground hidden md:table-cell text-sm">
                     {contact.email || <span className="text-muted-foreground">-</span>}

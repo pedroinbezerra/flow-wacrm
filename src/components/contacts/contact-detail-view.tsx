@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatCurrency } from '@/lib/currency';
+import { sanitizeCpfCnpj, formatCpfCnpj } from '@/lib/validation/fiscal';
 import { toast } from 'sonner';
 import type { Contact, Tag, ContactTag, ContactNote, CustomField, ContactCustomValue, Deal } from '@/types';
 import {
@@ -66,6 +67,7 @@ export function ContactDetailView({
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  const [editCpfCnpj, setEditCpfCnpj] = useState('');
   const [editCompany, setEditCompany] = useState('');
   const [savingDetails, setSavingDetails] = useState(false);
 
@@ -180,6 +182,7 @@ export function ContactDetailView({
       setEditName(data.name ?? '');
       setEditPhone(data.phone);
       setEditEmail(data.email ?? '');
+      setEditCpfCnpj(data.cpf_cnpj ?? '');
       setEditCompany(data.company ?? '');
     }
     setLoading(false);
@@ -278,6 +281,7 @@ export function ContactDetailView({
         name: editName.trim() || null,
         phone: editPhone.trim(),
         email: editEmail.trim() || null,
+        cpf_cnpj: sanitizeCpfCnpj(editCpfCnpj) || null,
         company: editCompany.trim() || null,
         updated_at: new Date().toISOString(),
       })
@@ -455,6 +459,11 @@ export function ContactDetailView({
                         {contact.email}
                       </span>
                     )}
+                    {contact.cpf_cnpj && (
+                      <span className="font-mono text-xs text-foreground bg-muted px-1.5 py-0.5 rounded">
+                        CPF/CNPJ: {formatCpfCnpj(contact.cpf_cnpj)}
+                      </span>
+                    )}
                     {contact.company && (
                       <span className="flex items-center gap-1">
                         <Building2 className="size-3" />
@@ -543,6 +552,15 @@ export function ContactDetailView({
                       value={editEmail}
                       onChange={(e) => setEditEmail(e.target.value)}
                       className="bg-muted border-border text-foreground h-8 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-muted-foreground text-xs">CPF / CNPJ</Label>
+                    <Input
+                      value={editCpfCnpj}
+                      onChange={(e) => setEditCpfCnpj(e.target.value)}
+                      placeholder="000.000.000-00 ou 00.000.000/0001-00"
+                      className="bg-muted border-border text-foreground h-8 text-sm font-mono"
                     />
                   </div>
                   <div className="space-y-1.5">

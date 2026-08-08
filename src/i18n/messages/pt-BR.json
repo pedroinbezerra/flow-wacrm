@@ -228,6 +228,7 @@
     "pipelines": "Pipelines",
     "flows": "Fluxos",
     "automations": "Automações",
+    "documentDelivery": "Entrega de Documentos",
     "aiAssistant": "Atendimento IA",
     "inbox": "Caixa de entrada",
     "settings": "Configurações",
@@ -2174,6 +2175,77 @@
       "step3Title": "3º Atendente Humano",
       "step3Desc": "Assume a conversa quando a IA aciona a transferência.",
       "activeFlowsWarning": "Você possui {count} fluxo(s) ativo(s) que intercepta(m) mensagens antes da IA:"
+    }
+  },
+  "documentDelivery": {
+    "title": "Entrega Automática de Documentos",
+    "subtitle": "Processo pronto para entrega automática de faturas, holerites e documentos armazenados em repositórios externos aos clientes.",
+    "newProcess": "Novo Processo de Entrega",
+    "emergencyPause": "Pausar Todos os Processos",
+    "resumeAll": "Reativar Processos",
+    "metrics": {
+      "delivered": "Documentos Entregues",
+      "pendingReview": "Pendentes de Revisão",
+      "confidenceRate": "Taxa de Confiança Médio",
+      "timeSaved": "Tempo Economizado"
+    },
+    "wizard": {
+      "title": "Assistente de Entrega de Documentos",
+      "subtitle": "Configure o processo em poucos minutos informando a origem, regras de identificação e template de envio.",
+      "step1": "1. Origem",
+      "step2": "2. Pasta",
+      "step3": "3. Identificação",
+      "step4": "4. Canal",
+      "step5": "5. Template",
+      "step6": "6. Ativação",
+      "step1Title": "Onde estão armazenados os seus documentos?",
+      "step1Subtitle": "O FlowHub não armazena seus arquivos permanentemente. Nós apenas os acessamos durante o envio.",
+      "step2Title": "Selecione a pasta a ser monitorada",
+      "step2Subtitle": "Quando um novo arquivo surgir nesta pasta, o processo será iniciado automaticamente.",
+      "step3Title": "Como devemos identificar o cliente destinatário?",
+      "step3Subtitle": "Defina as regras determinísticas e, se desejado, ative a IA como apoio secundário.",
+      "step4Title": "Qual canal de envio você deseja utilizar?",
+      "step4Subtitle": "Escolha o meio de comunicação oficial para entregar os documentos aos clientes.",
+      "step5Title": "Selecione o Template Meta para envio",
+      "step5Subtitle": "O envio por WhatsApp exige a aprovação prévia de templates com cabeçalho de documento na Meta.",
+      "step6Title": "Revisão e Ativação do Processo",
+      "step6Subtitle": "Confira o resumo das configurações. Por segurança, o processo é criado desligado por padrão.",
+      "sources": {
+        "googleDrive": "Google Drive",
+        "onedrive": "Microsoft OneDrive",
+        "dropbox": "Dropbox",
+        "s3": "Amazon S3",
+        "webhook": "Webhook / API"
+      },
+      "rules": {
+        "cpfCnpjFilename": "CPF ou CNPJ no nome do arquivo (Recomendado)",
+        "filenamePattern": "Expressão / Padrão no nome do arquivo",
+        "folderName": "Nome da pasta do cliente",
+        "enableOcr": "Utilizar OCR para leitura de PDFs/imagens",
+        "enableAi": "Utilizar IA para apoio na identificação (Opcional)",
+        "confidenceThreshold": "Limite mínimo de confiança para envio automático"
+      }
+    },
+    "pendencies": {
+      "title": "Pendências para Revisão Manual",
+      "subtitle": "Documentos com identificação incerta ou abaixo do limite de confiança retidos para sua proteção.",
+      "empty": "Nenhuma pendência para revisão manual no momento. Todos os documentos estão seguros!",
+      "approveAndSend": "Aprovar e Enviar",
+      "reject": "Rejeitar Documento",
+      "selectContact": "Selecionar Contato do CRM",
+      "reason": "Motivo da retenção",
+      "confidence": "Confiança"
+    },
+    "audit": {
+      "title": "Histórico de Auditoria & Trilha de Execução",
+      "subtitle": "Registros completos de leitura, extração, custos de IA e disparos sem reter o arquivo.",
+      "colTimestamp": "Data/Hora",
+      "colFileName": "Nome do Arquivo",
+      "colStrategy": "Estratégia",
+      "colRecipient": "Destinatário",
+      "colChannel": "Canal",
+      "colStatus": "Status do Envio",
+      "colAiDetails": "Detalhes de IA (Tokens/Custo)"
     }
   }
 }

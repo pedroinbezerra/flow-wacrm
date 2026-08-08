@@ -280,6 +280,7 @@ export function ImportModal({
           phone: row.phone,
           name: row.name || null,
           email: row.email || null,
+          cpf_cnpj: row.cpf_cnpj || null,
           company: row.company || null,
         }));
 

@@ -204,6 +204,7 @@ export interface Contact {
   phone_normalized?: string;
   name?: string;
   email?: string;
+  cpf_cnpj?: string | null;
   company?: string;
   avatar_url?: string;
   opt_out?: boolean;

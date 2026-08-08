@@ -7,6 +7,7 @@ export interface ParsedContactRow {
   phone: string;
   name?: string;
   email?: string;
+  cpf_cnpj?: string;
   company?: string;
   /** Tag names from the optional `tags` column (comma/semicolon separated). */
   tagNames: string[];
@@ -56,6 +57,7 @@ export function parseContactCsv(text: string): ParseContactCsvResult {
 
   const nameIdx = headers.indexOf('name');
   const emailIdx = headers.indexOf('email');
+  const cpfCnpjIdx = headers.findIndex(h => ['cpf_cnpj', 'cpf', 'cnpj', 'cpf/cnpj'].includes(h));
   const companyIdx = headers.indexOf('company');
   const tagsIdx = headers.indexOf('tags');
 
@@ -78,6 +80,10 @@ export function parseContactCsv(text: string): ParseContactCsvResult {
       email:
         emailIdx >= 0
           ? values[emailIdx]?.replace(/["']/g, '').trim() || undefined
+          : undefined,
+      cpf_cnpj:
+        cpfCnpjIdx >= 0
+          ? values[cpfCnpjIdx]?.replace(/["']/g, '').trim() || undefined
           : undefined,
       company:
         companyIdx >= 0
