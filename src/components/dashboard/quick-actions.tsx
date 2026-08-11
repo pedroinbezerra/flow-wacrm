@@ -18,8 +18,8 @@ interface Action {
 
 const ACTIONS: (t: ReturnType<typeof useTranslation>['t']) => Action[] = (t) => [
   { label: t('dashboard.quickAction.newContact'), href: '/contacts', icon: UserPlus, tint: 'text-primary' },
-  { label: t('dashboard.quickAction.newDeal'), href: '/pipelines', icon: Briefcase, tint: 'text-blue-400' },
-  { label: t('dashboard.quickAction.newBroadcast'), href: '/broadcasts/new', icon: Radio, tint: 'text-amber-400' },
+  { label: t('dashboard.quickAction.newDeal'), href: '/pipelines', icon: Briefcase, tint: 'text-primary' },
+  { label: t('dashboard.quickAction.newBroadcast'), href: '/broadcasts/new', icon: Radio, tint: 'text-primary' },
   { label: t('dashboard.quickAction.newAutomation'), href: '/automations/new', icon: Zap, tint: 'text-primary' },
 ]
 

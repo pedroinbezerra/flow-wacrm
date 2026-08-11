@@ -49,19 +49,12 @@ as checklists C-A a C-H (`FH-63`), e isso permanece pendente em **todas** as
 
 ### DIV-0001 — Cores de gráfico fora do sistema de tokens
 
-- **Gravidade:** estrutural
+- **Status:** ✅ **CORRIGIDA**
+- **Correção aplicada:** Substituição das cores literais hex (`#3b82f6`, `#7c3aed`) e classes literais em `src/components/dashboard/conversations-chart.tsx` pelos tokens semânticos `--chart-1` e `--chart-2`.
+- **Verificações:** `pnpm typecheck` ✅ · `pnpm test` ✅
+- **Gravidade original:** estrutural
 - **Artigos violados:** `FH-29.01`, `FH-29.08`, `FH-28.09`
 - **Onde:** `src/components/dashboard/conversations-chart.tsx`
-- **Evidência:** valores de cor escritos diretamente nas séries e nos elementos de
-  legenda, em vez dos tokens `--chart-*`.
-- **Efeito:** as séries não acompanham modo e acento (`FH-29.03`); a estabilidade
-  de cor entre gráficos não é garantida pelo sistema (`FH-29.08`); o contraste não
-  é verificável por token em modo claro e escuro (`FH-29.05`).
-- **Correção esperada:** substituir por `--chart-1`…`--chart-5`, na ordem fixa de
-  série.
-- **Contenção (`FH-66.04`):** nenhuma nova visualização pode usar cor literal.
-- **Prazo:** a definir na priorização — **dívida estrutural não pode ficar sem
-  prazo** (`FH-66.08`).
 
 ### DIV-0002 — Paleta de etiquetas com valores literais
 
