@@ -664,17 +664,17 @@ function TriggerCard({
     // Card width: full on mobile, fixed 320px on sm+. The canvas wrapper
     // (max-w-2xl + px-4) keeps this tidy on tablet/desktop.
     <div className="z-10 w-full max-w-[320px] sm:w-80">
-      <div className="rounded-lg border border-border border-l-4 border-l-blue-500 bg-card shadow-lg">
+      <div className="rounded-lg border border-border border-l-4 border-l-primary bg-card shadow-lg">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           className="flex w-full items-center gap-3 px-4 py-3 text-left"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-500/10 text-blue-400">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
             <Zap className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] uppercase tracking-wide text-blue-300">{t("automations.trigger")}</div>
+            <div className="text-[11px] uppercase tracking-wide text-primary">{t("automations.trigger")}</div>
             <div className="truncate text-sm font-medium text-foreground">
               {triggerOptions.find((o) => o.value === type)?.label ?? type}
             </div>
@@ -1017,7 +1017,7 @@ function ConditionBranches({
       <BranchColumn label={t("automations.yes")} color="text-primary">
         <StepList {...props} steps={yes} parentPath={yesPath} />
       </BranchColumn>
-      <BranchColumn label={t("automations.no")} color="text-rose-400">
+      <BranchColumn label={t("automations.no")} color="text-destructive">
         <StepList {...props} steps={no} parentPath={noPath} />
       </BranchColumn>
     </div>

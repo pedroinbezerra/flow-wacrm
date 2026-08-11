@@ -70,7 +70,7 @@ export default function DocumentDeliveryProcessesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-            <FileText className="h-7 w-7 text-emerald-500" />
+            <FileText className="h-7 w-7 text-primary" />
             Entrega Automática de Documentos
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -104,16 +104,16 @@ export default function DocumentDeliveryProcessesPage() {
         <Card className="p-5 border space-y-2 bg-card">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Documentos Entregues</span>
           <div className="flex items-center justify-between">
-            <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{totalDelivered}</span>
-            <CheckCircle2 className="h-6 w-6 text-emerald-500/40" />
+            <span className="text-2xl font-bold text-primary">{totalDelivered}</span>
+            <CheckCircle2 className="h-6 w-6 text-primary/40" />
           </div>
         </Card>
 
         <Card className="p-5 border space-y-2 bg-card">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pendentes de Revisão</span>
           <div className="flex items-center justify-between">
-            <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">{totalPendencies}</span>
-            <Clock className="h-6 w-6 text-amber-500/40" />
+            <span className="text-2xl font-bold text-muted-foreground">{totalPendencies}</span>
+            <Clock className="h-6 w-6 text-muted-foreground/40" />
           </div>
         </Card>
 
@@ -121,15 +121,15 @@ export default function DocumentDeliveryProcessesPage() {
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Taxa de Confiança Médio</span>
           <div className="flex items-center justify-between">
             <span className="text-2xl font-bold text-foreground">98.4%</span>
-            <ShieldCheck className="h-6 w-6 text-blue-500/40" />
+            <ShieldCheck className="h-6 w-6 text-primary/40" />
           </div>
         </Card>
 
         <Card className="p-5 border space-y-2 bg-card">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Economia Operacional</span>
           <div className="flex items-center justify-between">
-            <span className="text-2xl font-bold text-violet-600 dark:text-violet-400">~{Math.round(totalDelivered * 4.5)} min</span>
-            <Sparkles className="h-6 w-6 text-violet-500/40" />
+            <span className="text-2xl font-bold text-primary">~{Math.round(totalDelivered * 4.5)} min</span>
+            <Sparkles className="h-6 w-6 text-primary/40" />
           </div>
         </Card>
       </div>
@@ -142,7 +142,7 @@ export default function DocumentDeliveryProcessesPage() {
         <Link href="/processes/document-delivery/pendencies" className="font-medium text-sm text-muted-foreground hover:text-foreground pb-2 flex items-center gap-1.5">
           Fila de Pendências
           {totalPendencies > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-500 text-white font-bold">
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-primary text-primary-foreground font-bold">
               {totalPendencies}
             </span>
           )}
@@ -183,7 +183,7 @@ export default function DocumentDeliveryProcessesPage() {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <Badge variant="outline" className={proc.status === 'active' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-muted text-muted-foreground'}>
+                  <Badge variant="outline" className={proc.status === 'active' ? 'bg-primary-soft text-primary border-primary/30' : 'bg-muted text-muted-foreground'}>
                     {proc.status === 'active' ? 'Ativo' : 'Pausado'}
                   </Badge>
                   <Switch
@@ -200,11 +200,11 @@ export default function DocumentDeliveryProcessesPage() {
                 </div>
                 <div>
                   <span className="text-muted-foreground block">Entregues</span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400">{proc.success_count}</span>
+                  <span className="font-bold text-primary">{proc.success_count}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground block">Pendências</span>
-                  <span className="font-bold text-amber-600 dark:text-amber-400">{proc.pendency_count}</span>
+                  <span className="font-bold text-muted-foreground">{proc.pendency_count}</span>
                 </div>
               </div>
 

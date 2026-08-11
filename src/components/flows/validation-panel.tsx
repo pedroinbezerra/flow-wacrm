@@ -49,14 +49,14 @@ export function ValidationPanel() {
     <div
       className={cn(
         "rounded-lg border bg-background p-3",
-        errors.length > 0 ? "border-red-500/40" : "border-amber-500/40",
+        errors.length > 0 ? "border-destructive/40" : "border-primary/40",
       )}
     >
       <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
         {errors.length > 0 ? (
-          <CircleAlert className="h-4 w-4 text-red-400" />
+          <CircleAlert className="h-4 w-4 text-destructive" />
         ) : (
-          <CircleAlert className="h-4 w-4 text-amber-400" />
+          <CircleAlert className="h-4 w-4 text-primary" />
         )}
         {t("flows.validationSummary", { errors: errors.length, warnings: warnings.length })}
       </div>
@@ -84,9 +84,9 @@ export function IssueLine({
 }) {
   const { t } = useTranslation();
   const tone =
-    issue.severity === "error" ? "text-red-300" : "text-amber-300";
+    issue.severity === "error" ? "text-destructive" : "text-primary";
   const iconTone =
-    issue.severity === "error" ? "text-red-400" : "text-amber-400";
+    issue.severity === "error" ? "text-destructive" : "text-primary";
   const body = (
     <>
       <CircleAlert className={cn("mt-0.5 h-3 w-3 shrink-0", iconTone)} />

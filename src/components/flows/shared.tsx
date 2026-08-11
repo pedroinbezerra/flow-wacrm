@@ -76,12 +76,12 @@ export function getNodeMeta(
     start: {
       label: t("flows.start"),
       icon: PlayCircle,
-      color: "text-emerald-400",
+      color: "text-primary",
     },
     send_message: {
       label: t("flows.sendMessage"),
       icon: MessageCircle,
-      color: "text-sky-400",
+      color: "text-primary",
     },
     send_buttons: {
       label: t("flows.sendButtons"),
@@ -91,32 +91,32 @@ export function getNodeMeta(
     send_list: {
       label: t("flows.sendList"),
       icon: ListPlus,
-      color: "text-indigo-400",
+      color: "text-primary",
     },
     send_media: {
       label: t("flows.sendMedia"),
       icon: Paperclip,
-      color: "text-cyan-400",
+      color: "text-primary",
     },
     collect_input: {
       label: t("flows.collectInput"),
       icon: Inbox,
-      color: "text-teal-400",
+      color: "text-primary",
     },
     condition: {
       label: t("flows.ifElse"),
       icon: GitFork,
-      color: "text-fuchsia-400",
+      color: "text-primary",
     },
     set_tag: {
       label: t("flows.tagContact"),
       icon: Tag,
-      color: "text-pink-400",
+      color: "text-primary",
     },
     handoff: {
       label: t("flows.handoffToAgent"),
       icon: UserPlus,
-      color: "text-amber-400",
+      color: "text-primary",
     },
     end: {
       label: t("flows.end"),
@@ -132,11 +132,11 @@ export const NODE_META: Record<
   NodeType,
   { label: string; icon: typeof Workflow; color: string }
 > = {
-  start: { label: "Início", icon: PlayCircle, color: "text-emerald-400" },
+  start: { label: "Início", icon: PlayCircle, color: "text-primary" },
   send_message: {
     label: "Enviar mensagem",
     icon: MessageCircle,
-    color: "text-sky-400",
+    color: "text-primary",
   },
   send_buttons: {
     label: "Enviar botões",
@@ -146,32 +146,32 @@ export const NODE_META: Record<
   send_list: {
     label: "Enviar lista",
     icon: ListPlus,
-    color: "text-indigo-400",
+    color: "text-primary",
   },
   send_media: {
     label: "Enviar mídia",
     icon: Paperclip,
-    color: "text-cyan-400",
+    color: "text-primary",
   },
   collect_input: {
     label: "Coletar entrada",
     icon: Inbox,
-    color: "text-teal-400",
+    color: "text-primary",
   },
   condition: {
     label: "Se / senão",
     icon: GitFork,
-    color: "text-fuchsia-400",
+    color: "text-primary",
   },
   set_tag: {
     label: "Marcar contato",
     icon: Tag,
-    color: "text-pink-400",
+    color: "text-primary",
   },
   handoff: {
     label: "Transferir para agente",
     icon: UserPlus,
-    color: "text-amber-400",
+    color: "text-primary",
   },
   end: { label: "Fim", icon: Flag, color: "text-muted-foreground" },
 };
