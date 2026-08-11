@@ -41,8 +41,8 @@ interface ConversationListBoardFlags {
 
 const STATUS_COLORS: Record<ConversationStatus, string> = {
   open: "bg-primary",
-  pending: "bg-muted-foreground/70",
-  closed: "bg-muted/60",
+  pending: "bg-amber-500",
+  closed: "bg-muted-foreground",
 };
 
 type InboxFilter =
@@ -350,7 +350,7 @@ function ConversationItem({
     <button
       onClick={handleClick}
       className={cn(
-        "flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/50",
+        "flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
         isActive && "border-l-2 border-primary bg-muted/70"
       )}
     >
@@ -382,21 +382,21 @@ function ConversationItem({
           <div className="flex shrink-0 items-center gap-1.5">
             {conversation.ai_handler_status === "human" ? (
               <span title="Atendimento Humano">
-                <User className="h-3 w-3 text-muted-foreground" />
+                <User className="h-3 w-3 text-amber-500" />
               </span>
             ) : (
               <span title="Atendimento IA Ativo">
-                <Bot className="h-3 w-3 text-primary" />
+                <Bot className="h-3 w-3 text-emerald-500" />
               </span>
             )}
             {boardFlags?.mention_active && (
               <span title={t("boards.mentioned")}>
-                <AtSign className="h-3 w-3 text-destructive" />
+                <AtSign className="h-3 w-3 text-rose-500" />
               </span>
             )}
             {boardFlags?.awaiting_return && (
               <span title={t("boards.awaitingReturn")}>
-                <Clock3 className="h-3 w-3 text-muted-foreground" />
+                <Clock3 className="h-3 w-3 text-amber-500" />
               </span>
             )}
             {(boardFlags?.priority_rank ?? 0) > 0 && (

@@ -103,7 +103,7 @@ export function HelpRequestModal({
             <DialogTitle>{t("inbox.help.title")}</DialogTitle>
           </div>
           <DialogDescription className="text-xs">
-            Notifique integrantes de um setor ou um colaborador específico para colaborar nesta conversa sem criar um novo atendimento.
+            {t("inbox.help.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -117,7 +117,7 @@ export function HelpRequestModal({
               className="flex-1 gap-1.5 text-xs"
             >
               <Building2 className="h-3.5 w-3.5" />
-              Por Setor
+              {t("inbox.help.bySector")}
             </Button>
             <Button
               type="button"
@@ -127,7 +127,7 @@ export function HelpRequestModal({
               className="flex-1 gap-1.5 text-xs"
             >
               <User className="h-3.5 w-3.5" />
-              Por Colaborador
+              {t("inbox.help.byTeammate")}
             </Button>
           </div>
 
@@ -165,13 +165,12 @@ export function HelpRequestModal({
             </div>
           )}
 
-
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">{t("inbox.help.context")}</Label>
             <Textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Ex: @Dani consegue verificar o estorno deste pagamento?"
+              placeholder={t("inbox.help.notePlaceholder")}
               className="text-xs min-h-[70px]"
             />
           </div>
@@ -179,16 +178,16 @@ export function HelpRequestModal({
 
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-            Cancelar
+            {t("common.cancel")}
           </Button>
           <Button
             size="sm"
             onClick={handleSubmit}
             disabled={submitting || (targetType === "user" && !selectedUserId)}
-            className="gap-1"
+            className="gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <HelpCircle className="h-3.5 w-3.5" />
-            Enviar Solicitação
+            {t("inbox.help.sendRequest")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -12,12 +12,14 @@ import { ContactSidebar } from "@/components/inbox/contact-sidebar";
 import { toast } from "sonner";
 import { WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/use-translation";
 
 // Remembers the agent's show/hide choice for the desktop contact panel
 // across reloads and sessions (device-scoped, like the theme prefs).
 const CONTACT_PANEL_STORAGE_KEY = "flowhub:inbox:contact-panel-open";
 
 export default function InboxPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   /**
@@ -574,17 +576,16 @@ export default function InboxPage() {
       {/* WhatsApp connection banner — in the flex column, not absolute,
           so it pushes the panels down instead of overlapping them. */}
       {whatsappConnected === false && (
-        <div className="flex shrink-0 flex-col items-start gap-1 border-b border-primary/20 bg-primary-soft px-4 py-2 text-left sm:flex-row sm:items-center sm:justify-center sm:gap-2 sm:text-center">
-          <WifiOff className="h-4 w-4 text-primary" />
-          <p className="text-xs text-primary">
-            WhatsApp® não está conectado. Acesse{" "}
+        <div className="flex shrink-0 flex-col items-start gap-1 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 text-left sm:flex-row sm:items-center sm:justify-center sm:gap-2 sm:text-center">
+          <WifiOff className="h-4 w-4 text-amber-500" />
+          <p className="text-xs text-amber-500">
+            {t("inbox.whatsappNotConnected")}{" "}
             <Link
               href="/settings?tab=whatsapp"
-              className="font-semibold underline hover:text-primary-hover transition-colors"
+              className="font-semibold underline hover:text-amber-400 transition-colors"
             >
-              Configurações
-            </Link>{" "}
-            para conectar sua conta.
+              {t("navigation.settings")}
+            </Link>
           </p>
         </div>
       )}

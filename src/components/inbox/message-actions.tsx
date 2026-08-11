@@ -114,7 +114,7 @@ export function MessageActions({
           type="button"
           onClick={handleReply}
           className="flex h-5 w-5 items-center justify-center rounded-full text-popover-foreground hover:bg-muted hover:text-foreground"
-          aria-label="Reply"
+          aria-label={t("inbox.reply")}
         >
           <CornerUpLeft className="h-3.5 w-3.5" />
         </button>
@@ -122,7 +122,7 @@ export function MessageActions({
           type="button"
           onClick={handleCopy}
           className="flex h-5 w-5 items-center justify-center rounded-full text-popover-foreground hover:bg-muted hover:text-foreground"
-          aria-label="Copy"
+          aria-label={t("common.copy")}
         >
           <Copy className="h-3.5 w-3.5" />
         </button>

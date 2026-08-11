@@ -51,7 +51,7 @@ interface UrlButtonSlot {
 }
 
 const categoryColors: Record<string, string> = {
-  Marketing: "bg-primary-soft text-primary border-primary/30",
+  Marketing: "bg-primary/10 text-primary border-primary/20",
   Utility: "bg-muted text-muted-foreground border-border",
   Authentication: "bg-secondary text-secondary-foreground border-border",
 };
@@ -335,15 +335,15 @@ export function TemplatePicker({
                 onClick={resetSelection}
                 className="border-border text-popover-foreground hover:bg-muted"
               >
-                <ArrowLeft className="h-4 w-4" />
-                Back
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                {t("common.back")}
               </Button>
               <Button
                 disabled={!canConfirm}
                 onClick={confirm}
                 className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
-                Send template
+                {t("inbox.sendTemplate")}
               </Button>
             </>
           ) : (
@@ -352,7 +352,7 @@ export function TemplatePicker({
               onClick={() => handleOpenChange(false)}
               className="border-border text-popover-foreground hover:bg-muted"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
           )}
         </DialogFooter>

@@ -220,10 +220,10 @@ export function InternalNoteCard({
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger className="inline-flex items-center cursor-help">
-                    <StickyNote className="h-3.5 w-3.5 text-primary-foreground/80 fill-primary-foreground/20 shrink-0" />
+                    <StickyNote className="h-3.5 w-3.5 text-amber-500 fill-amber-500/30 shrink-0" />
                   </TooltipTrigger>
                   <TooltipContent side="top" className="text-[11px] font-medium">
-                    Nota interna (visível apenas para a equipe)
+                    {t("inbox.notes.internalNoteTooltip")}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

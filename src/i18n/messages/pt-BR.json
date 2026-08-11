@@ -68,6 +68,63 @@
     "appTitle": "Flow Hub",
     "appDescription": "Template CRM auto-hospedável para WhatsApp"
   },
+  "home": {
+    "hero": {
+      "tagline": "Fazer o extraordinário parecer natural.",
+      "title": "Sua empresa não precisa de cinco ferramentas diferentes para vender pelo WhatsApp.",
+      "subtitle": "Pare de alternar entre abas, planilhas e sistemas separados. O FlowHub reúne atendimento, equipe, inteligência e vendas em um único ambiente onde tudo simplesmente flui.",
+      "primaryCta": "Começar Agora",
+      "secondaryCta": "Ver Como Flui",
+      "dashboardCta": "Ir para o Dashboard"
+    },
+    "flow": {
+      "badge": "O Conceito de Flow",
+      "title": "Ausência de atrito. A interface desaparece, a intenção permanece.",
+      "subtitle": "Flow é quando uma ação leva naturalmente à próxima, sem interromper o raciocínio da sua equipe nem exigir que a pessoa descubra como fazer.",
+      "cards": {
+        "noContextSwitch": {
+          "title": "Sem troca de contexto",
+          "desc": "Histórico do contato, notas da equipe, etapas do funil e documentos no mesmo plano visual. Nada fica espalhado em ferramentas separadas."
+        },
+        "silentIntelligence": {
+          "title": "Inteligência que orienta",
+          "desc": "A IA atende com o conhecimento real da sua empresa e passa a conversa para a equipe com contexto completo, sem ruído."
+        },
+        "noInterruption": {
+          "title": "Trabalho leve e contínuo",
+          "desc": "Sem modais bloqueantes ou confirmações desnecessárias. O atendimento e a gestão comercial fluem do primeiro contato ao resultado."
+        }
+      }
+    },
+    "hub": {
+      "badge": "O Conceito de Hub",
+      "title": "O ponto de convergência onde tudo se encontra",
+      "subtitle": "Pessoas, conversas, informações, processos e ações conectados em uma única experiência.",
+      "pillars": {
+        "person": "Contatos & Histórico",
+        "conversation": "Conversas da Equipe",
+        "process": "Processos & Funis",
+        "result": "Clareza de Resultados"
+      }
+    },
+    "trust": {
+      "badge": "Paz de Espírito & Controle",
+      "title": "Tranquilidade para sua equipe, controle total da sua operação.",
+      "subtitle": "Construído para empresas que exigem transparência de custos, proteção de dados e infraestrutura sólida.",
+      "byok": "Você no Controle (Conexões Diretas)",
+      "privacy": "Seus Dados Continuam Sendo Seus (Sem Tomar Posse)",
+      "security": "Seu Espaço Permanece Seu (Isolamento de Dados)",
+      "lgpd": "Transparência por Princípio (Privacidade Nativa)"
+    },
+    "cta": {
+      "badge": "Comece Hoje Mesmo",
+      "title": "Sua nova experiência de trabalho começa aqui.",
+      "subtitle": "Experimente o FlowHub gratuitamente e sinta a diferença de um ambiente projetado para retirar esforço do seu caminho.",
+      "startNow": "Criar Conta Grátis",
+      "alreadyUser": "Já tem uma conta? Entrar",
+      "motto": "FlowHub — Fazer o extraordinário parecer natural."
+    }
+  },
   "auth": {
     "login": {
       "title": "Entrar",
@@ -1244,8 +1301,10 @@
       "connectionError": "Sem conexão para criar a nota. Tente novamente.",
       "streamTitle": "Notas internas",
       "empty": "Nenhuma nota interna nesta conversa.",
-      "writing": "Escrevendo nota"
+      "writing": "Escrevendo nota",
+      "internalNoteTooltip": "Nota interna (visível apenas para a equipe)"
     },
+    "reply": "Responder",
     "collaboration": {
       "participants": "Participantes:",
       "noParticipants": "Nenhum participante adicionado",
@@ -1272,6 +1331,11 @@
     },
     "help": {
       "title": "Solicitar ajuda no atendimento",
+      "description": "Notifique integrantes de um setor ou um colaborador específico para colaborar nesta conversa sem criar um novo atendimento.",
+      "bySector": "Por setor",
+      "byTeammate": "Por colaborador",
+      "notePlaceholder": "Ex: @Dani consegue verificar o estorno deste pagamento?",
+      "sendRequest": "Enviar solicitação",
       "sector": "Setor",
       "sectorPlaceholder": "Escolha um setor",
       "teammate": "Colaborador",
