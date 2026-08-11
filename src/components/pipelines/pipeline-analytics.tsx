@@ -109,13 +109,13 @@ export function PipelineAnalytics({ stages, deals }: PipelineAnalyticsProps) {
           tooltip={t("pipelines.metricPipelineValueHint")}
         />
         <Metric
-          icon={<Target className="h-4 w-4 text-blue-400" />}
+          icon={<Target className="h-4 w-4 text-primary" />}
           label={t("pipelines.metricAvgDealSize")}
           value={formatCurrency(stats.avgValue, defaultCurrency)}
           tooltip={t("pipelines.metricAvgDealSizeHint")}
         />
         <Metric
-          icon={<TrendingUp className="h-4 w-4 text-purple-400" />}
+          icon={<TrendingUp className="h-4 w-4 text-primary" />}
           label={t("pipelines.metricWeightedValue")}
           value={formatCurrency(stats.weightedValue, defaultCurrency)}
           tooltip={t("pipelines.metricWeightedValueHint")}
@@ -127,7 +127,7 @@ export function PipelineAnalytics({ stages, deals }: PipelineAnalyticsProps) {
           tooltip={t("pipelines.metricWonThisMonthHint")}
         />
         <Metric
-          icon={<XCircle className="h-4 w-4 text-red-400" />}
+          icon={<XCircle className="h-4 w-4 text-destructive" />}
           label={t("pipelines.metricLostThisMonth")}
           value={String(stats.lostThisMonth)}
           tooltip={t("pipelines.metricLostThisMonthHint")}

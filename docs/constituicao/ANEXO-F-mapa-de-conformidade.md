@@ -80,13 +80,12 @@ as checklists C-A a C-H (`FH-63`), e isso permanece pendente em **todas** as
 
 ### DIV-0003 — Cor de fallback literal em cartão de negócio
 
-- **Gravidade:** pontual
+- **Status:** ✅ **CORRIGIDA**
+- **Correção aplicada:** Substituição da cor hex literal `#94a3b8` pelo token neutro `var(--border)` como fallback em `src/components/pipelines/deal-card.tsx`.
+- **Verificações:** `pnpm typecheck` ✅ · `pnpm test` ✅
+- **Gravidade original:** pontual
 - **Artigos violados:** `FH-29.01`
 - **Onde:** `src/components/pipelines/deal-card.tsx`
-- **Evidência:** valor literal usado como cor de fallback quando a etapa não tem
-  cor definida.
-- **Correção esperada:** usar token neutro do sistema como fallback.
-- **Prazo:** a definir.
 
 ### DIV-0004 — Ausência de auditoria de conformidade
 
