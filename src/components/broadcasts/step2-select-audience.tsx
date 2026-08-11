@@ -486,7 +486,7 @@ export function Step2SelectAudience({
             </div>
 
             {csvError && (
-              <p className="mt-3 text-xs text-red-400">{csvError}</p>
+              <p className="mt-3 text-xs text-destructive">{csvError}</p>
             )}
           </div>
 
@@ -536,7 +536,7 @@ export function Step2SelectAudience({
       {/* Exclude list — applies regardless of audience type */}
       <div className="rounded-xl border border-border bg-card/50 p-4">
         <div className="mb-3 flex items-center gap-2">
-          <X className="h-4 w-4 text-red-400" />
+          <X className="h-4 w-4 text-destructive" />
           <p className="text-sm font-medium text-foreground">
             {t('broadcasts.excludeTagsTitle')}
           </p>
@@ -554,7 +554,7 @@ export function Step2SelectAudience({
                   onClick={() => toggleExcludeTag(tag.id)}
                   className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-all ${
                     isExcluded
-                      ? 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300'
+                      ? 'border-destructive/30 bg-destructive/10 text-destructive'
                       : 'border-border bg-muted text-muted-foreground hover:border-border'
                   }`}
                 >
