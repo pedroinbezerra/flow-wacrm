@@ -179,8 +179,8 @@ function sortBoardLanes(lanes: ConversationBoardLaneConfig[] = []): Conversation
 }
 
 const STATUS_OPTIONS: (t: ReturnType<typeof useTranslation>["t"]) => { label: string; value: ConversationStatus; color: string }[] = (t) => [
-  { label: t("inbox.status.open"), value: "open", color: "text-emerald-400" },
-  { label: t("inbox.status.pending"), value: "pending", color: "text-red-400" },
+  { label: t("inbox.status.open"), value: "open", color: "text-primary" },
+  { label: t("inbox.status.pending"), value: "pending", color: "text-destructive" },
   { label: t("inbox.status.closed"), value: "closed", color: "text-muted-foreground" },
 ];
 
@@ -1432,8 +1432,8 @@ export function MessageThread({
               className={cn(
                 "h-7 text-[11px] font-medium gap-1 px-2.5 rounded-md transition-all shadow-2xs whitespace-nowrap",
                 conversation.ai_handler_status === "human"
-                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20"
-                  : "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:bg-amber-500/20"
+                  ? "border-primary/40 bg-primary-soft text-primary hover:bg-primary-soft-2"
+                  : "border-border bg-muted/60 text-muted-foreground hover:bg-muted"
               )}
             >
               {conversation.ai_handler_status === "human" ? (
@@ -1572,7 +1572,7 @@ export function MessageThread({
               variant="outline"
               className={cn(
                 "gap-1 border-border text-[10px] font-medium px-2 py-0.5 whitespace-nowrap shrink-0",
-                sessionInfo.expired ? "text-red-400 border-red-500/30 bg-red-500/10" : "text-primary border-primary/30 bg-primary/10"
+                sessionInfo.expired ? "text-destructive border-destructive/30 bg-destructive/10" : "text-primary border-primary/30 bg-primary-soft"
               )}
             >
               <Clock className="h-3 w-3" />
@@ -1585,8 +1585,8 @@ export function MessageThread({
               className={cn(
                 "gap-1 text-[10px] font-medium px-2 py-0.5 border-border whitespace-nowrap shrink-0",
                 conversation.ai_handler_status === "human"
-                  ? "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300"
-                  : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                  ? "border-primary/40 bg-primary-soft text-primary"
+                  : "border-border bg-muted text-muted-foreground"
               )}
             >
               {conversation.ai_handler_status === "human" ? (
@@ -1621,7 +1621,7 @@ export function MessageThread({
               className={cn(
                 "inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-medium whitespace-nowrap transition-colors",
                 defaultBoardItem?.awaiting_return
-                  ? "bg-amber-500/20 text-amber-400 font-semibold"
+                  ? "bg-primary-soft text-primary font-semibold"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 updatingBoardFlags && "opacity-60"
               )}
@@ -1638,7 +1638,7 @@ export function MessageThread({
               className={cn(
                 "inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-medium whitespace-nowrap transition-colors",
                 (defaultBoardItem?.priority_rank ?? 0) > 0
-                  ? "bg-red-500/20 text-red-400 font-semibold"
+                  ? "bg-destructive/15 text-destructive font-semibold"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 updatingBoardFlags && "opacity-60"
               )}
@@ -1652,9 +1652,9 @@ export function MessageThread({
               type="button"
               onClick={() => setHelpModalOpen(true)}
               title={t("inbox.collaboration.helpTooltip")}
-              className="inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-medium whitespace-nowrap text-amber-500 hover:bg-amber-500/10 transition-colors"
+              className="inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-medium whitespace-nowrap text-primary hover:bg-primary-soft transition-colors"
             >
-              <HelpCircle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+              <HelpCircle className="h-3.5 w-3.5 shrink-0 text-primary" />
               <span>{t("inbox.collaboration.requestHelp")}</span>
             </button>
           </div>
@@ -1846,9 +1846,9 @@ export function MessageThread({
 
       {/* Smart Response Control Warning Banner */}
       {reservationState.is_reserved && reservationState.reserved_by_user_id !== user?.id && (
-        <div className="px-4 py-2 bg-amber-500/15 border-t border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs flex items-center justify-between animate-in slide-in-from-bottom-2">
+        <div className="px-4 py-2 bg-primary-soft border-t border-primary/30 text-foreground text-xs flex items-center justify-between animate-in slide-in-from-bottom-2">
           <div className="flex items-center gap-2">
-            <Lock className="h-4 w-4 text-amber-600 shrink-0" />
+            <Lock className="h-4 w-4 text-primary shrink-0" />
             <span>
               <strong>{reservationState.reserved_by_name}</strong> está preparando uma resposta ao cliente. Revise seu texto antes de enviar.
             </span>

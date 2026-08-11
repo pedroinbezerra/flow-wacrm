@@ -464,7 +464,7 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
                 {selectedEvent.metadata?.reason && (
                   <div className="flex flex-col gap-1 text-xs pt-2 border-t border-border/40">
                     <span className="text-muted-foreground font-medium">Motivo do Pedido de Ajuda:</span>
-                    <span className="font-normal text-foreground bg-amber-500/10 text-amber-700 dark:text-amber-300 p-2.5 rounded border border-amber-500/30">
+                    <span className="font-normal text-foreground bg-primary-soft text-primary p-2.5 rounded border border-primary/30">
                       "{selectedEvent.metadata?.reason}"
                     </span>
                   </div>

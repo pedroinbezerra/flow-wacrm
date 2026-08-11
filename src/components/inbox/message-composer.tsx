@@ -554,11 +554,11 @@ export function MessageComposer({
           className={cn(
             "px-2.5 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5",
             mode === "note"
-              ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 font-semibold"
+              ? "bg-primary-soft text-primary font-semibold"
               : "text-muted-foreground hover:bg-muted"
           )}
         >
-          <StickyNote className="h-3.5 w-3.5 text-amber-500" />
+          <StickyNote className="h-3.5 w-3.5 text-primary" />
           Nota Interna
         </button>
       </div>
@@ -582,14 +582,14 @@ export function MessageComposer({
         </div>
       )}
       {sessionExpired && (
-        <div className="mb-2 flex items-center justify-between rounded-lg bg-amber-500/10 px-3 py-2">
-          <p className="text-xs text-amber-400">
+        <div className="mb-2 flex items-center justify-between rounded-lg bg-primary-soft border border-primary/20 px-3 py-2">
+          <p className="text-xs text-primary">
             {t("inbox.composer.sessionExpiredBanner")}
           </p>
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-xs text-amber-400 hover:text-amber-300"
+            className="h-7 text-xs text-primary hover:text-primary-hover"
             onClick={onOpenTemplates}
           >
             <LayoutTemplate className="mr-1 h-3 w-3" />
@@ -643,7 +643,7 @@ export function MessageComposer({
       ) : recording ? (
         // Recording bar — replaces the composer while the mic is live.
         <div className="flex items-center gap-3 rounded-xl border border-border bg-muted px-4 py-2.5">
-          <span className="flex h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-red-500" />
+          <span className="flex h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />
           <span className="flex-1 text-sm text-foreground">
             {t("inbox.composer.recording", {
               current: formatDuration(recordSeconds),

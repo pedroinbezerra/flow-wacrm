@@ -41,8 +41,8 @@ interface ConversationListBoardFlags {
 
 const STATUS_COLORS: Record<ConversationStatus, string> = {
   open: "bg-primary",
-  pending: "bg-amber-500",
-  closed: "bg-muted-foreground",
+  pending: "bg-muted-foreground/70",
+  closed: "bg-muted/60",
 };
 
 type InboxFilter =
@@ -382,21 +382,21 @@ function ConversationItem({
           <div className="flex shrink-0 items-center gap-1.5">
             {conversation.ai_handler_status === "human" ? (
               <span title="Atendimento Humano">
-                <User className="h-3 w-3 text-amber-400" />
+                <User className="h-3 w-3 text-muted-foreground" />
               </span>
             ) : (
               <span title="Atendimento IA Ativo">
-                <Bot className="h-3 w-3 text-emerald-400" />
+                <Bot className="h-3 w-3 text-primary" />
               </span>
             )}
             {boardFlags?.mention_active && (
               <span title={t("boards.mentioned")}>
-                <AtSign className="h-3 w-3 text-rose-500" />
+                <AtSign className="h-3 w-3 text-destructive" />
               </span>
             )}
             {boardFlags?.awaiting_return && (
               <span title={t("boards.awaitingReturn")}>
-                <Clock3 className="h-3 w-3 text-amber-500" />
+                <Clock3 className="h-3 w-3 text-muted-foreground" />
               </span>
             )}
             {(boardFlags?.priority_rank ?? 0) > 0 && (

@@ -51,9 +51,9 @@ interface UrlButtonSlot {
 }
 
 const categoryColors: Record<string, string> = {
-  Marketing: "bg-purple-600/20 text-purple-400 border-purple-600/30",
-  Utility: "bg-blue-600/20 text-blue-400 border-blue-600/30",
-  Authentication: "bg-amber-600/20 text-amber-400 border-amber-600/30",
+  Marketing: "bg-primary-soft text-primary border-primary/30",
+  Utility: "bg-muted text-muted-foreground border-border",
+  Authentication: "bg-secondary text-secondary-foreground border-border",
 };
 
 function categoryLabel(category: MessageTemplate["category"], t: ReturnType<typeof useTranslation>["t"]): string {

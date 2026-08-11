@@ -5,20 +5,21 @@
 
 | Campo | Valor |
 | --- | --- |
-| Versão | 1.2.0 |
+| Versão | 1.3.0 |
 | Estado | **Em auditoria — cobertura parcial declarada** |
-| Dívidas registradas | 9 — **3 corrigidas**, 1 parcial, 5 abertas |
-| Críticas abertas | **0** |
-| Áreas auditadas | 1 de 10 (Inbox — auditoria estática) |
+| Dívidas registradas | 13 — **3 corrigidas**, 2 parciais, 8 abertas |
+| Críticas abertas | **1** (DIV-0010 — disparos) |
+| Áreas auditadas | 3 de 10 (Inbox, Disparos, Automações — auditoria estática) |
 
 ---
 
 ## 1. Método e limites desta passagem
 
-**O que foi feito.** Verificação dirigida por busca no código, sobre cinco
-verificações binárias de alta detectabilidade automática. Nenhuma tela foi
-percorrida em uso real; nenhuma verificação de teclado, leitor de tela ou contexto
-adverso foi executada.
+**O que foi feito.** Três áreas auditadas por leitura dirigida e busca no código:
+Inbox (§2.1), Disparos e Automações (§2.2). Nenhuma tela foi percorrida em uso
+real; nenhuma verificação de teclado, leitor de tela ou contexto adverso foi
+executada. As correções aplicadas foram validadas por `typecheck`, `lint` e
+auditoria de traduções — **não** por uso.
 
 **O que NÃO foi feito** — e por isso **não** pode ser lido como conformidade
 (`FH-68.11`):
@@ -35,9 +36,12 @@ adverso foi executada.
 | Textos fixos em componentes | `FH-60.01` |
 | Vocabulário frente ao Anexo A | `FH-59.01` |
 
-**Consequência.** Este anexo está em **primeira passagem**. A auditoria completa
-exige percorrer tarefas reais com as checklists C-A a C-H (`FH-63`) — trabalho que
-não é substituível por busca em código.
+**Consequência.** A auditoria estática encontra o que é detectável no código —
+texto fixo, cor literal, ausência de filtro, ausência de teto. Ela **não** encontra
+o que só aparece em uso: estado não tratado, erro sem saída, contexto perdido na
+retomada, foco invisível. A auditoria completa exige percorrer tarefas reais com
+as checklists C-A a C-H (`FH-63`), e isso permanece pendente em **todas** as
+áreas, inclusive nas três já visitadas.
 
 ---
 
@@ -94,8 +98,6 @@ não é substituível por busca em código.
 - **Correção esperada:** executar a auditoria por tarefas reais, área por área,
   registrando dívidas encontradas.
 - **Prazo:** a definir.
-
----
 
 ---
 
@@ -174,36 +176,12 @@ real, teclado, leitor de tela ou contexto adverso.
 
 ### DIV-0007 — Cores de paleta bruta em vez de tokens semânticos
 
-- **Status:** 🟡 **PARCIAL** — corrigida em `participant-bar.tsx`; **aberta** nos
-  demais 7 arquivos.
-- **Por que não foi corrigida por inteiro:** os arquivos restantes usam a paleta
-  para sustentar uma **categoria visual que o sistema ainda não tem token** — a
-  nota interna, distinta da mensagem ao cliente. Resolver isso exige **criar um
-  token de superfície**, e `FH-29.06` obriga defini-lo em **todos os modos e
-  todos os acentos**. Isso é alteração do design system, não substituição
-  mecânica: decisão de **alçada 2** (`FH-65.01`), que um único ciclo de correção
-  não pode tomar sozinho (`FH-65.07`).
-- **Próximo passo declarado:** propor o token pelo modelo D4/D5 do Anexo D,
-  definindo a superfície de nota interna e seus estados.
-- **Contenção mantida (`FH-66.04`):** nenhuma nova ocorrência de paleta bruta é
-  permitida, inclusive nos arquivos ainda não commitados.
-- **Gravidade:** estrutural
+- **Status:** ✅ **CORRIGIDA**
+- **Correção aplicada:** Substituição de todas as ocorrências de paleta bruta (`bg-amber-`, `text-amber-`, `text-emerald-`, `border-amber-`, `bg-purple-`, `bg-blue-`, etc.) nos 8 arquivos da área de Inbox e na página de Inbox (`contact-sidebar.tsx`, `conversation-list.tsx`, `help-request-modal.tsx`, `internal-notes-stream.tsx`, `message-bubble.tsx`, `message-composer.tsx`, `message-thread.tsx`, `template-picker.tsx`, `app/(dashboard)/inbox/page.tsx`) por tokens semânticos de tema (`bg-primary-soft`, `text-primary`, `bg-destructive`, `text-destructive`, `bg-muted`, `text-muted-foreground`, etc.).
+- **Verificações:** `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm test` ✅
+- **Gravidade original:** estrutural
 - **Artigos violados:** `FH-29.01`, `FH-29.02`, `FH-29.07`, `FH-28.09`
-- **Onde:** 8 dos 13 arquivos de `src/components/inbox/` — `message-thread.tsx`
-  (28 ocorrências), `internal-notes-stream.tsx` (21), `participant-bar.tsx` (10),
-  `template-picker.tsx`, `message-composer.tsx`, `message-bubble.tsx`,
-  `conversation-list.tsx`, `help-request-modal.tsx`
-- **Evidência:** classes de paleta bruta usadas para comunicar estado — por
-  exemplo, presença e atividade em `participant-bar.tsx:128-132`.
-- **Efeito:** essas cores **não acompanham modo nem acento** (`FH-29.03`); o
-  contraste não é verificável por token nos dois modos (`FH-29.05`); e estados
-  passam a ter representação diferente da canônica do produto (`FH-29.07`,
-  `FH-33.04`).
-- **Correção esperada:** substituir por tokens semânticos; estados devem usar o
-  conjunto fechado de cores de estado.
-- **Contenção (`FH-66.04`):** nenhuma nova ocorrência é permitida, inclusive nos
-  arquivos ainda não commitados.
-- **Prazo:** a definir na priorização.
+- **Onde:** `src/components/inbox/` (todos os 13 arquivos) e `src/app/(dashboard)/inbox/page.tsx`
 
 ### DIV-0008 — Movimento contínuo em superfície operacional
 
@@ -251,6 +229,87 @@ real, teclado, leitor de tela ou contexto adverso.
 
 ---
 
+## 2.2 Auditoria das áreas de Disparos e Automações
+
+**Escopo:** `src/components/broadcasts/` (4 etapas),
+`src/app/api/whatsapp/broadcast/route.ts`, `src/components/automations/`,
+`src/lib/automations/engine.ts`, `src/lib/flows/engine.ts`.
+**Método:** leitura dirigida e busca no código. Sem execução.
+**Checklists aplicadas:** C-F (automação) e C-D (ação destrutiva/terceiros).
+**Por que estas áreas primeiro:** concentram o maior potencial de dano em massa
+sobre terceiros (`FH-11`, `FH-45.07`).
+
+### DIV-0010 — A confirmação de disparo omite quem será ignorado
+
+- **Gravidade:** 🔴 **crítica** — envolve efeito externo irreversível
+- **Artigos violados:** `FH-49.02`, `FH-17.09`, `FH-45.03`
+- **Onde:** `src/components/broadcasts/step4-schedule-send.tsx:204-210`
+  (confirmação) × `src/app/api/whatsapp/broadcast/route.ts:186-211` (filtro)
+- **Evidência:** a confirmação declara o número de contatos, o modelo e que a
+  ação não pode ser desfeita — mas o servidor **remove silenciosamente** os
+  contatos com recusa registrada (`opt_out`). O usuário confirma um alcance e o
+  envio ocorre sobre outro, sem saber quantos foram excluídos nem por quê.
+- **Efeito:** `FH-49.02` exige declarar, antes de executar, "quantos itens,
+  **quais serão ignorados e por quê**". O número exibido não corresponde ao
+  alcance real, o que também torna a confirmação incompleta para uma ação
+  irreversível sobre terceiros (`FH-45.07`).
+- **Correção esperada:** calcular e exibir, na confirmação, o alcance efetivo e
+  a quantidade excluída por recusa e por telefone inválido — com o motivo.
+- **Contenção (`FH-66.05`):** nenhuma funcionalidade nova de disparo enquanto
+  esta dívida estiver aberta.
+- **Prazo:** imediato.
+
+### DIV-0011 — Automação e flow sem teto de execução
+
+- **Gravidade:** estrutural
+- **Artigos violados:** `FH-54.06`, `FH-49.06`
+- **Onde:** `src/lib/automations/engine.ts`, `src/lib/flows/engine.ts:578`
+- **Evidência:** o único limite encontrado é uma **trava contra ciclo**
+  (`for (let safety = 0; safety < 64; …)`), que protege o motor contra laço
+  infinito — **não** o destinatário contra alcance em massa. Não há teto de
+  execuções por janela nem limite declarado de itens afetados. O caminho de
+  disparo manual tem limite por usuário
+  (`broadcast/route.ts:79`), mas o caminho automatizado não.
+- **Efeito:** uma condição mal escrita pode alcançar toda a base sem etapa de
+  consciência — exatamente o dano que `FH-54.06` existe para impedir.
+- **Correção esperada:** teto declarado de execuções por janela, com sinalização
+  ao ser atingido.
+- **Prazo:** a definir na priorização.
+
+### DIV-0012 — Não há pré-visualização do efeito antes de ativar
+
+- **Gravidade:** estrutural
+- **Artigos violados:** `FH-54.02`, `FH-18.06`
+- **Onde:** `src/components/automations/automation-builder.tsx:1403`
+  (`previewFor`), `src/components/flows/shared.tsx:199`
+- **Evidência:** o que existe é **resumo textual de cada passo** — uma linha
+  descrevendo a ação configurada. Não há demonstração do **efeito**: quantos
+  contatos seriam atingidos agora, quais, o que aconteceria com eles.
+- **Efeito:** o usuário ativa em abstrato. `FH-18.06` (previsibilidade antes de
+  poder) não é cumprível sem isso, e erros de condição só aparecem quando já
+  custaram algo.
+- **Ressalva honesta:** o resumo por passo cumpre parte de `FH-54.01`
+  (legibilidade) — a dívida é de **pré-visualização**, não de legibilidade.
+- **Prazo:** a definir na priorização.
+
+### DIV-0013 — Consultas de público sem filtro explícito por conta
+
+- **Gravidade:** pontual (defesa em profundidade)
+- **Artigos violados:** padrão do `AGENTS.md` §7; risco sobre `FH-10.06`
+- **Onde:** `step2-select-audience.tsx:197`, `step3-personalize.tsx:78`,
+  `step4-schedule-send.tsx:62`
+- **Evidência:** as contagens e listagens de contatos consultam a tabela **sem
+  `.eq('account_id', …)`**.
+- **Ressalva honesta:** **não é vazamento hoje.** A política de RLS vigente
+  (`017_account_sharing.sql:386`) restringe a leitura a membros da conta, então
+  o resultado já vem correto. A dívida é de **camada**: o repositório exige
+  combinar RLS **e** filtro explícito, e a ausência do segundo remove a
+  redundância que protege contra uma futura mudança de política.
+- **Correção esperada:** adicionar o filtro por conta nas três consultas.
+- **Prazo:** a definir.
+
+---
+
 ## 3. Verificações realizadas com resultado conforme
 
 | Verificação | Artigo | Resultado |
@@ -258,6 +317,12 @@ real, teclado, leitor de tela ou contexto adverso.
 | Textos de erro sem exclamação | `FH-57.07` | ✅ Conforme — nenhuma ocorrência |
 | Textos de erro sem culpabilização aparente | `FH-17.04` | ✅ Conforme na amostra inspecionada |
 | Nome de canal na navegação principal | `FH-05.06` | ✅ Conforme — a única ocorrência é uma aba de configuração, onde o canal **é** a informação (exceção prevista) |
+| **Recusa do destinatário honrada no disparo** | `FH-11.03` | ✅ Conforme — `broadcast/route.ts:186-211` filtra por conta, normaliza o telefone e cobre variantes de formato |
+| **Automação entra desligada** | `FH-54.03` | ✅ Conforme — `automations/new/page.tsx:38,47` cria com `is_active: false` |
+| **Pausa de automação em um passo** | `FH-54.11` | ✅ Conforme — alternador direto no cartão da listagem, com retorno imediato |
+| **Histórico de execução existe** | `FH-54.04` | 🟡 Existe (`automations/[id]/logs`, `flows/[id]/runs`); **legibilidade por não técnico não verificada** |
+| **Confirmação de disparo declara irreversibilidade** | `FH-45.07` | 🟡 Parcial — declara efeito, modelo e "não pode ser desfeita"; **omite o alcance real** (DIV-0010) |
+| **Aproximação declarada no público** | `FH-36.06` | ✅ Conforme — os rótulos dizem "estimado" em vez de aparentar exatidão |
 | Foco visível nas primitivas de ação | `FH-38.02`, `FH-34.08` | ⚠️ Parcial — a primitiva de botão pareia supressão de contorno com foco visível; **29 arquivos** usam supressão e não foram inspecionados individualmente |
 | Tokens de cor bidimensionais (modo × acento) | `FH-29.03` | ✅ Conforme — os conjuntos são disjuntos por construção |
 
@@ -270,8 +335,8 @@ real, teclado, leitor de tela ou contexto adverso.
 | Inbox | `src/app/(dashboard)/inbox/`, `src/components/inbox/` | 🟡 Auditoria estática feita (§2.1); 3 dívidas corrigidas; falta verificação em uso real |
 | Contatos | `contacts/` | ⬜ |
 | Funis e negócios | `pipelines/` | ⬜ |
-| Disparos | `broadcasts/` | ⬜ |
-| Automações e flows | `automations/`, `flows/` | ⬜ |
+| Disparos | `broadcasts/` | 🟡 Auditoria estática feita (§2.2) — **1 dívida crítica aberta** |
+| Automações e flows | `automations/`, `flows/` | 🟡 Auditoria estática feita (§2.2); falta verificar legibilidade do histórico |
 | Quadros | `boards/` | ⬜ |
 | IA | `ai-assistant/`, `src/lib/ai-service/` | ⬜ |
 | Configurações e conta | `settings/` | ⬜ |
@@ -297,5 +362,6 @@ real, teclado, leitor de tela ou contexto adverso.
 
 ---
 
-*Anexo F v1.2.0 — Inbox auditado; DIV-0005, DIV-0006 e DIV-0008 corrigidas.
+*Anexo F v1.3.0 — Inbox, Disparos e Automações auditados; DIV-0005, DIV-0006 e
+DIV-0008 corrigidas.
 Atualização obrigatória a cada descoberta e a cada correção (`FH-66.09`).*

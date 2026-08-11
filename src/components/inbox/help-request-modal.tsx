@@ -98,7 +98,7 @@ export function HelpRequestModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="flex items-center gap-2 text-amber-600">
+          <div className="flex items-center gap-2 text-primary">
             <HelpCircle className="h-5 w-5" />
             <DialogTitle>{t("inbox.help.title")}</DialogTitle>
           </div>
@@ -185,7 +185,7 @@ export function HelpRequestModal({
             size="sm"
             onClick={handleSubmit}
             disabled={submitting || (targetType === "user" && !selectedUserId)}
-            className="gap-1 bg-amber-600 hover:bg-amber-700 text-white"
+            className="gap-1"
           >
             <HelpCircle className="h-3.5 w-3.5" />
             Enviar Solicitação
