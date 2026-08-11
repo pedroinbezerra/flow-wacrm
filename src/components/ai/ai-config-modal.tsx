@@ -207,7 +207,7 @@ export function AIConfigModal({ open, onOpenChange, onSuccess }: AIConfigModalPr
       <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-violet-500/10 text-violet-500">
+            <div className="p-2 rounded-lg bg-primary-soft text-primary">
               <Sparkles className="h-5 w-5" />
             </div>
             <div>
@@ -220,8 +220,8 @@ export function AIConfigModal({ open, onOpenChange, onSuccess }: AIConfigModalPr
         </DialogHeader>
 
         {!canManageAI ? (
-          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 space-y-2">
-            <div className="flex items-center gap-2 font-semibold text-xs">
+          <div className="p-4 rounded-xl bg-primary-soft border border-primary/30 text-primary space-y-2">
+            <div className="flex items-center gap-2 font-semibold text-xs text-primary">
               <Shield className="h-4 w-4" />
               <span>Acesso Restrito</span>
             </div>
@@ -272,15 +272,15 @@ export function AIConfigModal({ open, onOpenChange, onSuccess }: AIConfigModalPr
 
             {/* Aviso de Provedor Customizado / Externo */}
             {isCustomProvider && (
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 space-y-2.5 text-xs">
-                <div className="flex items-start gap-2 font-semibold text-amber-800 dark:text-amber-300">
-                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+              <div className="p-3 rounded-xl bg-primary-soft border border-primary/30 text-primary space-y-2.5 text-xs">
+                <div className="flex items-start gap-2 font-semibold text-primary">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
                   <span>Provedor de IA Externo / Customizado</span>
                 </div>
                 <p className="text-xs leading-relaxed text-muted-foreground">
                   Você está usando um provedor de IA diferente da OpenAI oficial. A Flow Hub não tem relação contratual nem visibilidade sobre esse fornecedor — a responsabilidade pela contratação, segurança e uso dos dados enviados a ele é sua.
                 </p>
-                <div className="flex items-center gap-2 pt-1 border-t border-amber-500/20">
+                <div className="flex items-center gap-2 pt-1 border-t border-primary/20">
                   <Checkbox
                     id="modal-confirm-custom-provider"
                     checked={customProviderConfirmed}
@@ -301,7 +301,7 @@ export function AIConfigModal({ open, onOpenChange, onSuccess }: AIConfigModalPr
                   Chave de API (BYOK - Bring Your Own Key)
                 </Label>
                 {hasKey && (
-                  <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-500 border-emerald-500/20 gap-1">
+                  <Badge variant="outline" className="text-[10px] bg-primary-soft text-primary border-primary/30 gap-1">
                     <CheckCircle2 className="h-3 w-3" /> Chave Configurada ({maskedKey})
                   </Badge>
                 )}
@@ -480,7 +480,7 @@ export function AIConfigButton({ className, label = "Configurar IA" }: { classNa
         onClick={() => setOpen(true)}
         className={className}
       >
-        <Sparkles className="h-3.5 w-3.5 mr-1.5 text-violet-500" />
+        <Sparkles className="h-3.5 w-3.5 mr-1.5 text-primary" />
         {label}
       </Button>
 
