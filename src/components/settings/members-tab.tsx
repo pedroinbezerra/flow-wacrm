@@ -570,7 +570,7 @@ export function MembersTab() {
         <DialogContent className="bg-popover border-border sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-popover-foreground">
-              <AlertTriangle className="size-4 text-amber-400" />
+              <AlertTriangle className="size-4 text-destructive" />
               {t('settings.members.removeMember')}
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
@@ -592,7 +592,7 @@ export function MembersTab() {
             <Button
               onClick={handleRemove}
               disabled={!!pendingMemberAction}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              variant="destructive"
             >
               {pendingMemberAction ? (
                 <>

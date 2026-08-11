@@ -275,9 +275,9 @@ export function BillingPanel() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge variant="default" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 gap-1"><CheckCircle2 className="h-3 w-3" /> Assinatura Ativa</Badge>;
+        return <Badge variant="default" className="bg-primary-soft text-primary border-primary/30 gap-1"><CheckCircle2 className="h-3 w-3" /> Assinatura Ativa</Badge>;
       case "trialing":
-        return <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 gap-1"><Calendar className="h-3 w-3" /> Período de Teste (Trial)</Badge>;
+        return <Badge variant="outline" className="bg-primary-soft text-primary border-primary/30 gap-1"><Calendar className="h-3 w-3" /> Período de Teste (Trial)</Badge>;
       case "past_due":
         return <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" /> Cobrança Pendente / Inadimplente</Badge>;
       case "canceled":
@@ -316,7 +316,7 @@ export function BillingPanel() {
               <div
                 className={cn(
                   "h-full transition-all rounded-full",
-                  pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-primary"
+                  pct >= 100 ? "bg-destructive" : pct >= 80 ? "bg-primary" : "bg-primary"
                 )}
                 style={{ width: `${Math.min(pct, 100)}%` }}
               />
@@ -325,7 +325,7 @@ export function BillingPanel() {
               <span
                 className={cn(
                   "font-medium",
-                  pct >= 100 ? "text-red-500 font-bold" : pct >= 80 ? "text-amber-500 font-bold" : "text-muted-foreground"
+                  pct >= 100 ? "text-destructive font-bold" : pct >= 80 ? "text-primary font-bold" : "text-muted-foreground"
                 )}
               >
                 {pct >= 100 ? "Limite Atingido" : pct >= 80 ? "Próximo do Limite" : `${pct}% consumido`}
@@ -342,7 +342,7 @@ export function BillingPanel() {
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-1 text-[10px] text-emerald-500 font-medium pt-1">
+          <div className="flex items-center gap-1 text-[10px] text-primary font-medium pt-1">
             <CheckCircle2 className="h-3 w-3" />
             Uso Ilimitado
           </div>
@@ -472,7 +472,7 @@ export function BillingPanel() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-bold flex items-center gap-2">
-            <Zap className="h-4 w-4 text-amber-500" />
+            <Zap className="h-4 w-4 text-primary" />
             Recursos Adicionais Contratados (Add-ons)
           </CardTitle>
           <CardDescription>
@@ -576,7 +576,7 @@ export function BillingPanel() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-bold flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-emerald-500" />
+            <ShieldCheck className="h-4 w-4 text-primary" />
             Dados Fiscais & Faturamento (CPF/CNPJ)
           </CardTitle>
           <CardDescription>
@@ -720,7 +720,7 @@ export function BillingPanel() {
                 }`}
               >
                 <span>Cobrança Anual</span>
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-emerald-500/20 text-emerald-400 font-bold border-0">
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary-soft text-primary font-bold border-0">
                   Desconto
                 </Badge>
               </button>
@@ -749,7 +749,7 @@ export function BillingPanel() {
                         <span className="text-xs font-normal text-muted-foreground"> / {selectedCycle === "yearly" ? "ano" : "mês"}</span>
                       </div>
                       {selectedCycle === "yearly" && (
-                        <p className="text-[11px] text-emerald-500 font-medium pt-0.5">
+                        <p className="text-[11px] text-primary font-medium pt-0.5">
                           ~ R$ {(displayPrice / 12).toLocaleString("pt-BR", { minimumFractionDigits: 2 })} / mês no plano anual
                         </p>
                       )}
@@ -829,14 +829,14 @@ export function BillingPanel() {
 
           {checkoutData?.pix ? (
             <div className="flex flex-col items-center justify-center space-y-4 p-5 border border-border rounded-xl bg-card">
-              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full">
+              <div className="flex items-center gap-2 text-xs font-semibold text-primary bg-primary-soft px-3 py-1 rounded-full">
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 PIX Gerado Instantaneamente
               </div>
 
               {/* QR Code Image */}
               {checkoutData.pix.encodedImage && (
-                <div className="p-3 bg-white rounded-xl shadow-inner border border-zinc-200">
+                <div className="p-3 bg-card rounded-xl shadow-inner border border-border">
                   <img
                     src={`data:image/png;base64,${checkoutData.pix.encodedImage}`}
                     alt="PIX QR Code"
