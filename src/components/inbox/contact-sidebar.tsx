@@ -103,31 +103,68 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
   }, [conversationId, fetchTimeline]);
 
 
+  const [fullTimelineOpen, setFullTimelineOpen] = useState(false);
+
   const fetchContactData = useCallback(async () => {
     if (!contact) return;
 
     const supabase = createClient();
 
-    // Fetch deals, notes, and tags in parallel
-    const [dealsRes, notesRes, tagsRes] = await Promise.all([
-      supabase
-        .from("deals")
-        .select("*, stage:pipeline_stages(*)")
-        .eq("contact_id", contact.id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("contact_notes")
-        .select("*")
-        .eq("contact_id", contact.id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("contact_tags")
-        .select("id, tag_id, tags(*)")
-        .eq("contact_id", contact.id),
+    const dealsPromise = supabase
+      .from("deals")
+      .select("*, stage:pipeline_stages(*)")
+      .eq("contact_id", contact.id)
+      .order("created_at", { ascending: false });
+
+    const notesPromise = supabase
+      .from("contact_notes")
+      .select("*")
+      .eq("contact_id", contact.id)
+      .order("created_at", { ascending: false });
+
+    const tagsPromise = supabase
+      .from("contact_tags")
+      .select("id, tag_id, tags(*)")
+      .eq("contact_id", contact.id);
+
+    const internalNotesPromise = conversationId
+      ? supabase
+          .from("internal_notes")
+          .select("*")
+          .eq("conversation_id", conversationId)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: null, error: null });
+
+    const [dealsRes, notesRes, tagsRes, internalNotesRes] = await Promise.all([
+      dealsPromise,
+      notesPromise,
+      tagsPromise,
+      internalNotesPromise,
     ]);
 
     if (dealsRes.data) setDeals(dealsRes.data);
-    if (notesRes.data) setNotes(notesRes.data);
+
+    // Unify contact_notes and internal_notes into a single sorted feed
+    const contactNotesList = (notesRes.data || []).map((n: any) => ({
+      id: n.id,
+      note_text: n.note_text,
+      created_at: n.created_at,
+      source: "contact" as const,
+    }));
+
+    const internalNotesList = (internalNotesRes?.data || []).map((n: any) => ({
+      id: n.id,
+      note_text: n.note_text,
+      created_at: n.created_at,
+      source: "internal" as const,
+    }));
+
+    const combinedNotes = [...contactNotesList, ...internalNotesList].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    setNotes(combinedNotes as any);
+
     if (tagsRes.data) {
       const mapped = tagsRes.data
         .filter((ct: Record<string, unknown>) => ct.tags)
@@ -137,7 +174,7 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
         }));
       setTags(mapped);
     }
-  }, [contact]);
+  }, [contact, conversationId]);
 
   // Load on contact change. setContactData/setTags run inside async
   // Supabase callbacks, not synchronously in the effect body.
@@ -179,11 +216,14 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
       .single();
 
     if (!error && data) {
-      setNotes((prev) => [data, ...prev]);
+      setNotes((prev) => [{ ...data, source: "contact" }, ...prev]);
       setNewNote("");
+      window.dispatchEvent(
+        new CustomEvent("flowhub:refresh_notes", { detail: { conversationId } })
+      );
     }
     setAddingNote(false);
-  }, [contact, newNote, accountId]);
+  }, [contact, newNote, accountId, conversationId]);
 
   if (!contact) {
     return (
@@ -198,54 +238,38 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
 
   return (
     <div className="flex h-full w-full flex-col bg-card overflow-hidden">
-      <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
-        {/* Contact Info */}
-        <div className="flex flex-col items-center text-center">
+      {/* Header do Hub Contextual */}
+      <div className="flex h-13 min-h-[52px] items-center justify-between border-b border-border px-4 py-2 bg-card/50">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Contexto do Cliente
+        </h3>
+        {contact.company && (
+          <span className="text-[11px] text-muted-foreground truncate max-w-[120px]">
+            {contact.company}
+          </span>
+        )}
+      </div>
 
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted text-lg font-semibold text-foreground">
-              {contact.avatar_url ? (
-                <img
-                  src={contact.avatar_url}
-                  alt={displayName}
-                  className="h-16 w-16 rounded-full object-cover"
-                />
-              ) : (
-                initials
-              )}
-            </div>
-            <h3 className="mt-3 text-sm font-semibold text-foreground">
-              {displayName}
-            </h3>
-            {contact.company && (
-              <p className="text-xs text-muted-foreground">{contact.company}</p>
-            )}
-          </div>
-
-          {/* Phone */}
-          <div className="mt-4 space-y-2">
+      <div className="flex-1 overflow-y-auto p-4 scrollbar-thin space-y-4">
+        {/* Quick Actions (Copy Phone / Email) */}
+        {(contact.phone || contact.email) && (
+          <div className="flex items-center gap-2 rounded-md bg-muted/30 p-2 text-xs">
             <button
               onClick={handleCopyPhone}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted"
+              className="flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground"
+              title="Copiar telefone"
             >
-              <Phone className="h-4 w-4 text-muted-foreground" />
-              <span className="flex-1 text-left">{contact.phone}</span>
-              {copied ? (
-                <Check className="h-3 w-3 text-primary" />
-              ) : (
-                <Copy className="h-3 w-3 text-muted-foreground" />
-              )}
+              <Phone className="h-3.5 w-3.5" />
+              <span className="font-mono text-[11px]">{contact.phone}</span>
+              {copied ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3 opacity-60" />}
             </button>
-
             {contact.email && (
-              <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="truncate">{contact.email}</span>
-              </div>
+              <span className="text-muted-foreground truncate border-l border-border/60 pl-2">
+                {contact.email}
+              </span>
             )}
           </div>
-
-          {/* Divider */}
-          <div className="my-4 border-t border-border" />
+        )}
 
           {/* Tags */}
           <div>
@@ -366,17 +390,24 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
 
           <div className="my-4 border-t border-border" />
 
-          {/* Timeline Events */}
+          {/* Timeline Events (Compact Top 4) */}
           <div>
-            <div className="flex items-center gap-2 px-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              <History className="h-3.5 w-3.5 text-primary" />
-              <span>Linha do Tempo</span>
+            <div className="flex items-center justify-between px-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <History className="h-3.5 w-3.5 text-primary" />
+                <span>Linha do Tempo</span>
+              </div>
+              {timelineEvents.length > 0 && (
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  {timelineEvents.length} {timelineEvents.length === 1 ? "evento" : "eventos"}
+                </span>
+              )}
             </div>
             <div className="mt-2 space-y-2">
               {timelineEvents.length === 0 ? (
                 <p className="px-1 text-xs text-muted-foreground italic">Nenhum evento registrado ainda</p>
               ) : (
-                timelineEvents.map((evt) => {
+                timelineEvents.slice(0, 4).map((evt) => {
                   const { actionText, naturalSentence } = formatTimelineNaturalAction(evt);
 
                   return (
@@ -403,10 +434,70 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
                   );
                 })
               )}
+
+              {timelineEvents.length > 4 && (
+                <button
+                  type="button"
+                  onClick={() => setFullTimelineOpen(true)}
+                  className="w-full mt-2 py-2 px-3 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/15 rounded-lg border border-primary/20 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <History className="h-3.5 w-3.5" />
+                  <span>Ver linha do tempo completa ({timelineEvents.length})</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Full Timeline Modal */}
+      <Dialog open={fullTimelineOpen} onOpenChange={setFullTimelineOpen}>
+        <DialogContent className="sm:max-w-xl bg-card border-border max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <History className="h-5 w-5 text-primary" />
+              Linha do Tempo Completa do Atendimento
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Histórico cronológico completo de todas as ações e eventos desta conversa.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 my-2 scrollbar-thin">
+            {timelineEvents.map((evt) => {
+              const { actionText, naturalSentence } = formatTimelineNaturalAction(evt);
+              return (
+                <div
+                  key={evt.id}
+                  className="flex items-start justify-between rounded-lg bg-muted/40 p-3 text-xs border border-border/50 hover:bg-muted/70 transition-colors"
+                >
+                  <div className="space-y-1 min-w-0 flex-1 pr-3">
+                    <div className="flex items-center gap-2 text-[11px]">
+                      <span className="font-semibold text-foreground">{evt.actor_name || "Sistema"}</span>
+                      <span className="text-muted-foreground">•</span>
+                      <span className="text-muted-foreground font-mono">
+                        {format(new Date(evt.created_at), "dd/MM/yyyy 'às' HH:mm:ss")}
+                      </span>
+                    </div>
+                    <p className="text-xs text-foreground/90 font-medium">{naturalSentence}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFullTimelineOpen(false);
+                      setSelectedEvent({ ...evt, actionText, naturalSentence });
+                    }}
+                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+                    title="Detalhes"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Event Details Dialog */}
       <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>

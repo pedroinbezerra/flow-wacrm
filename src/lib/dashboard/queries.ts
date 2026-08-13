@@ -9,6 +9,7 @@ import {
 } from './date-utils'
 import type {
   ActivityItem,
+  AttentionGroup,
   ConversationsSeriesPoint,
   MetricsBundle,
   PipelineDonutData,
@@ -16,6 +17,7 @@ import type {
   ResponseTimeBucket,
   ResponseTimeSummary,
 } from './types'
+import { formatRelativeTime } from './relative-time'
 
 // ------------------------------------------------------------
 // All client-side aggregation. RLS scopes every query to the
@@ -404,4 +406,232 @@ export async function loadActivity(db: DB, t: Translator, limit = 20): Promise<A
   return items
     .sort((a, b) => (a.at > b.at ? -1 : a.at < b.at ? 1 : 0))
     .slice(0, limit)
+}
+
+// --- 6. Attention queue --------------------------------------------------
+// Four domains that already exist elsewhere in the product (Inbox,
+// Pipelines, Automations, Document Delivery), summarised into one card
+// each. Each sub-loader fails independently and silently — a broken
+// source shouldn't take down the ones that work. See
+// docs/evolucao-experiencia/01-home-dashboard.md for the rationale.
+
+const STALLED_DEAL_DAYS = 5
+const AUTOMATION_FAILURE_LOOKBACK_DAYS = 2
+const CONVERSATION_LOOKBACK_DAYS = 14
+
+export async function loadAttentionQueue(db: DB, t: Translator): Promise<AttentionGroup[]> {
+  const groups = await Promise.all([
+    loadUnansweredConversations(db, t),
+    loadStalledDeals(db, t),
+    loadFailingAutomations(db, t),
+    loadPendingDocuments(db, t),
+  ])
+  return groups.filter((g): g is AttentionGroup => g !== null)
+}
+
+async function loadUnansweredConversations(db: DB, t: Translator): Promise<AttentionGroup | null> {
+  try {
+    const { data: openConvos, error: convError } = await db
+      .from('conversations')
+      .select('id, contact_id, contacts(name, phone)')
+      .eq('status', 'open')
+      .limit(500)
+    if (convError) throw convError
+
+    const convos = (openConvos ?? []) as unknown as Array<{
+      id: string
+      contact_id: string | null
+      contacts: { name: string | null; phone: string }[] | { name: string | null; phone: string } | null
+    }>
+    if (convos.length === 0) return null
+
+    const openIds = new Set(convos.map((c) => c.id))
+    const contactById = new Map(
+      convos.map((c) => {
+        const contact = Array.isArray(c.contacts) ? c.contacts[0] : c.contacts
+        return [c.id, contact] as const
+      }),
+    )
+
+    // Same window and unfiltered fetch shape as loadResponseTime — the
+    // last row seen per conversation (rows arrive sorted asc) is its
+    // most recent message inside the window.
+    const lookback = daysAgoStart(CONVERSATION_LOOKBACK_DAYS - 1).toISOString()
+    const { data: msgs, error: msgError } = await db
+      .from('messages')
+      .select('conversation_id, sender_type, created_at')
+      .gte('created_at', lookback)
+      .order('conversation_id', { ascending: true })
+      .order('created_at', { ascending: true })
+    if (msgError) throw msgError
+
+    const lastByConv = new Map<string, { sender_type: string; created_at: string }>()
+    for (const row of (msgs ?? []) as { conversation_id: string; sender_type: string; created_at: string }[]) {
+      if (!openIds.has(row.conversation_id)) continue
+      lastByConv.set(row.conversation_id, row)
+    }
+
+    const pending: { at: string; who: string }[] = []
+    for (const [convId, last] of lastByConv) {
+      if (last.sender_type !== 'customer') continue
+      const contact = contactById.get(convId)
+      pending.push({
+        at: last.created_at,
+        who: contact?.name || contact?.phone || t('dashboard.attention.unknownContact'),
+      })
+    }
+    if (pending.length === 0) return null
+
+    pending.sort((a, b) => (a.at < b.at ? -1 : 1)) // longest wait first
+    const oldest = pending[0]
+
+    return {
+      kind: 'conversation',
+      count: pending.length,
+      headline: t(
+        pending.length === 1 ? 'dashboard.attention.conversations.one' : 'dashboard.attention.conversations.many',
+        { count: pending.length },
+      ),
+      detail: t('dashboard.attention.conversations.detail', {
+        name: oldest.who,
+        time: formatRelativeTime(oldest.at, t),
+      }),
+      href: '/inbox',
+    }
+  } catch (err) {
+    console.error('[dashboard] attention: unanswered conversations failed:', err)
+    return null
+  }
+}
+
+async function loadStalledDeals(db: DB, t: Translator): Promise<AttentionGroup | null> {
+  try {
+    const threshold = daysAgoStart(STALLED_DEAL_DAYS).toISOString()
+    const [{ count }, { data: oldestRows, error }] = await Promise.all([
+      db
+        .from('deals')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'open')
+        .lt('updated_at', threshold),
+      db
+        .from('deals')
+        .select('id, title, updated_at, stage:pipeline_stages(name)')
+        .eq('status', 'open')
+        .lt('updated_at', threshold)
+        .order('updated_at', { ascending: true })
+        .limit(1),
+    ])
+    if (error) throw error
+    if (!count) return null
+
+    const rows = (oldestRows ?? []) as unknown as Array<{
+      id: string
+      title: string
+      updated_at: string
+      stage: { name: string }[] | { name: string } | null
+    }>
+    const oldest = rows[0]
+    const stage = oldest ? (Array.isArray(oldest.stage) ? oldest.stage[0] : oldest.stage) : null
+
+    return {
+      kind: 'deal',
+      count,
+      headline: t(count === 1 ? 'dashboard.attention.deals.one' : 'dashboard.attention.deals.many', { count }),
+      detail: t('dashboard.attention.deals.detail', {
+        title: oldest?.title ?? '',
+        stage: stage?.name || t('dashboard.attention.deals.noStage'),
+      }),
+      href: '/pipelines',
+    }
+  } catch (err) {
+    console.error('[dashboard] attention: stalled deals failed:', err)
+    return null
+  }
+}
+
+async function loadFailingAutomations(db: DB, t: Translator): Promise<AttentionGroup | null> {
+  try {
+    const lookback = daysAgoStart(AUTOMATION_FAILURE_LOOKBACK_DAYS - 1).toISOString()
+    const [{ count }, { data: recentRows, error }] = await Promise.all([
+      db
+        .from('automation_logs')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'failed')
+        .gte('created_at', lookback),
+      db
+        .from('automation_logs')
+        .select('id, created_at, automation:automations(name)')
+        .eq('status', 'failed')
+        .gte('created_at', lookback)
+        .order('created_at', { ascending: false })
+        .limit(1),
+    ])
+    if (error) throw error
+    if (!count) return null
+
+    const rows = (recentRows ?? []) as unknown as Array<{
+      id: string
+      created_at: string
+      automation: { name: string }[] | { name: string } | null
+    }>
+    const mostRecent = rows[0]
+    const automation = mostRecent
+      ? Array.isArray(mostRecent.automation)
+        ? mostRecent.automation[0]
+        : mostRecent.automation
+      : null
+
+    return {
+      kind: 'automation',
+      count,
+      headline: t(
+        count === 1 ? 'dashboard.attention.automations.one' : 'dashboard.attention.automations.many',
+        { count },
+      ),
+      detail: t('dashboard.attention.automations.detail', {
+        name: automation?.name || t('dashboard.attention.automations.unknown'),
+      }),
+      href: '/automations',
+    }
+  } catch (err) {
+    console.error('[dashboard] attention: failing automations failed:', err)
+    return null
+  }
+}
+
+async function loadPendingDocuments(db: DB, t: Translator): Promise<AttentionGroup | null> {
+  try {
+    const [{ count }, { data: oldestRows, error }] = await Promise.all([
+      db
+        .from('document_delivery_pendencies')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending'),
+      db
+        .from('document_delivery_pendencies')
+        .select('id, file_name, created_at')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true })
+        .limit(1),
+    ])
+    if (error) throw error
+    if (!count) return null
+
+    const oldest = (oldestRows ?? [])[0] as { id: string; file_name: string; created_at: string } | undefined
+
+    return {
+      kind: 'pendency',
+      count,
+      headline: t(
+        count === 1 ? 'dashboard.attention.pendencies.one' : 'dashboard.attention.pendencies.many',
+        { count },
+      ),
+      detail: t('dashboard.attention.pendencies.detail', {
+        file: oldest?.file_name || t('dashboard.attention.pendencies.unknown'),
+      }),
+      href: '/processes/document-delivery/pendencies',
+    }
+  } catch (err) {
+    console.error('[dashboard] attention: pending documents failed:', err)
+    return null
+  }
 }

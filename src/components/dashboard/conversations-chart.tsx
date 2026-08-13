@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useElementWidth } from './use-element-width'
 import { MessageSquare } from 'lucide-react'
 import type { ConversationsSeriesPoint } from '@/lib/dashboard/types'
 import { useTranslation } from '@/hooks/use-translation'
@@ -19,13 +20,12 @@ interface ConversationsChartProps {
 }
 
 // ------------------------------------------------------------
-// Layout constants. The SVG renders into a fixed viewBox and scales
-// via CSS (preserveAspectRatio default). Everything inside uses
-// viewBox coordinates so the drawing math stays simple even as the
-// container resizes.
+// Layout constants. The viewBox WIDTH is measured from the container
+// at runtime (see useElementWidth) so one SVG unit equals one CSS
+// pixel — a fixed width here would letterbox the drawing and leave
+// dead space on both sides of a full-width card.
 // ------------------------------------------------------------
-const VB_W = 760
-const VB_H = 240
+const VB_H = 170
 const PADDING = { top: 16, right: 16, bottom: 28, left: 40 }
 
 export function ConversationsChart({ series, loading, range, onRangeChange }: ConversationsChartProps) {
@@ -45,6 +45,16 @@ export function ConversationsChart({ series, loading, range, onRangeChange }: Co
     )
     // De-dupe when the series is flat 0.
     return { maxY: ceil, niceTicks: Array.from(new Set(ticks)) }
+  }, [data])
+
+  // A line over 30 mostly-empty days reads as "broken chart". The
+  // totals are what the user can actually act on, so they lead and the
+  // line becomes supporting evidence (§4.6 da direção artística).
+  const totals = useMemo(() => {
+    const arr = data ?? []
+    const incoming = arr.reduce((s, p) => s + p.incoming, 0)
+    const outgoing = arr.reduce((s, p) => s + p.outgoing, 0)
+    return { incoming, outgoing, all: incoming + outgoing }
   }, [data])
 
   return (
@@ -73,24 +83,53 @@ export function ConversationsChart({ series, loading, range, onRangeChange }: Co
         </div>
       </header>
 
-      <div className="p-5">
-        {loading || !data ? (
+      {loading || !data ? (
+        <div className="p-5">
           <Skeleton className="h-[240px] w-full" />
-        ) : data.every((p) => p.incoming === 0 && p.outgoing === 0) ? (
+        </div>
+      ) : data.every((p) => p.incoming === 0 && p.outgoing === 0) ? (
+        <div className="p-5">
           <EmptyState
             icon={MessageSquare}
             title={t('dashboard.noMessageActivity')}
             hint={t('dashboard.sendReceiveHint')}
           />
-        ) : (
-          <LineSvg data={data} maxY={maxY} ticks={niceTicks} />
-        )}
-      </div>
+        </div>
+      ) : (
+        <>
+          <div className="px-5 pb-1 pt-4">
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-semibold tabular-nums text-foreground">
+                {totals.all.toLocaleString()}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {t('dashboard.conversationsSummary.inPeriod', { days: range })}
+              </span>
+            </div>
+            {/* Doubles as the chart legend — the split is already the
+                thing a legend would explain, so a separate legend row
+                would just restate it (§6.4 da direção artística). */}
+            <div className="mt-1 flex items-center gap-4 text-xs text-muted-foreground tabular-nums">
+              <LegendDot
+                color="#3b82f6"
+                label={t('dashboard.conversationsSummary.incomingCount', {
+                  count: totals.incoming.toLocaleString(),
+                })}
+              />
+              <LegendDot
+                color="#7c3aed"
+                label={t('dashboard.conversationsSummary.outgoingCount', {
+                  count: totals.outgoing.toLocaleString(),
+                })}
+              />
+            </div>
+          </div>
+          <div className="px-5 pb-5 pt-2">
+            <LineSvg data={data} maxY={maxY} ticks={niceTicks} t={t} />
+          </div>
+        </>
+      )}
 
-      <footer className="flex items-center gap-4 border-t border-border px-5 py-3 text-xs text-muted-foreground">
-        <LegendDot color="#3b82f6" label={t('dashboard.incomingLabel')} />
-        <LegendDot color="#7c3aed" label={t('dashboard.outgoingLabel')} />
-      </footer>
     </section>
   )
 }
@@ -103,10 +142,12 @@ function LineSvg({
   data,
   maxY,
   ticks,
+  t,
 }: {
   data: ConversationsSeriesPoint[]
   maxY: number
   ticks: number[]
+  t: (key: string, params?: Record<string, string | number>) => string
 }) {
   // Hover state: both the snapped index AND the tooltip's pixel
   // offset inside the wrapper div. They're stored together so the
@@ -116,6 +157,7 @@ function LineSvg({
   const [hover, setHover] = useState<{ idx: number; tooltipLeftPx: number } | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
+  const VB_W = useElementWidth(wrapRef)
 
   const chartW = VB_W - PADDING.left - PADDING.right
   const chartH = VB_H - PADDING.top - PADDING.bottom
@@ -191,11 +233,13 @@ function LineSvg({
   const labelStride = Math.max(1, Math.ceil(data.length / 6))
 
   return (
-    <div ref={wrapRef} className="relative w-full">
+    <div ref={wrapRef} className="relative w-full" style={{ height: VB_H }}>
+      {VB_W > 0 && (
       <svg
         ref={svgRef}
         viewBox={`0 0 ${VB_W} ${VB_H}`}
-        className="h-[240px] w-full"
+        width={VB_W}
+        height={VB_H}
         role="img"
         aria-label="Conversations per day"
       >
@@ -275,6 +319,7 @@ function LineSvg({
           </g>
         )}
       </svg>
+      )}
 
       {/* Tooltip — absolute-positioned div so we get crisp text, not
           SVG-rendered text. The left offset comes from the CTM-based
@@ -289,11 +334,11 @@ function LineSvg({
           <div className="mt-1 flex flex-col gap-0.5">
             <span className="flex items-center gap-1.5 text-blue-300">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-500" />
-              {hovered.incoming} incoming
+              {t('dashboard.conversationsSummary.incomingCount', { count: hovered.incoming })}
             </span>
             <span className="flex items-center gap-1.5 text-primary">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-              {hovered.outgoing} outgoing
+              {t('dashboard.conversationsSummary.outgoingCount', { count: hovered.outgoing })}
             </span>
           </div>
         </div>

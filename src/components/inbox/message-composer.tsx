@@ -555,7 +555,7 @@ export function MessageComposer({
 
 
   return (
-    <div className="border-t border-border bg-card p-3 relative">
+    <div className="p-3.5 relative border-t border-border/80 bg-card/90 backdrop-blur-xs transition-colors">
       {/* Mode Selector Tabs */}
       <div id="tour-inbox-notes" className="flex items-center gap-1 mb-2 border-b border-border/40 pb-1">
         <button
@@ -758,12 +758,12 @@ export function MessageComposer({
             }
             disabled={readOnly || (mode === "message" && sessionExpired)}
             rows={1}
-            // Textarea keeps its own inline title — the GatedButton
-            // wrapping pattern doesn't apply to non-button inputs.
-            // The placeholder text also surfaces the read-only state.
             title={readOnly ? t("inbox.composer.readOnlySend") : undefined}
             className={cn(
-              "flex-1 resize-none rounded-xl border border-border bg-muted px-4 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none transition-colors focus:border-primary/50",
+              "flex-1 resize-none rounded-xl border bg-muted px-4 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none transition-all",
+              mode === "note"
+                ? "border-amber-500/50 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50"
+                : "border-border focus:border-primary/50 focus:ring-1 focus:ring-primary/30",
               (readOnly || (mode === "message" && sessionExpired)) && "cursor-not-allowed opacity-50"
             )}
           />
@@ -774,7 +774,12 @@ export function MessageComposer({
             gateReason="send messages"
             disabled={!text.trim() || sending || (mode === "message" && (sessionExpired || readOnly))}
             onClick={handleSend}
-            className="h-9 w-9 shrink-0 bg-primary p-0 hover:bg-primary/90 disabled:opacity-40"
+            className={cn(
+              "h-9 w-9 shrink-0 p-0 transition-colors disabled:opacity-40",
+              mode === "note"
+                ? "bg-amber-500 text-amber-950 hover:bg-amber-400 font-semibold shadow-xs"
+                : "bg-primary text-primary-foreground hover:bg-primary/90"
+            )}
           >
             <Send className="h-4 w-4" />
           </GatedButton>

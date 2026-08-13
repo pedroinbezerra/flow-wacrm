@@ -1,5 +1,6 @@
 export const PASSWORD_POLICY_MIN_LENGTH = 8;
 export const PASSWORD_POLICY_MAX_LENGTH = 72;
+export const PASSWORD_POLICY_MAX_PASSWORD = PASSWORD_POLICY_MAX_LENGTH;
 
 export interface PasswordChecks {
   minLength: boolean;

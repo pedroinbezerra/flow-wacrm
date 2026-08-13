@@ -73,7 +73,15 @@ export default function ForgotPasswordPage() {
               <span className="text-foreground">{email}</span>. {t("auth.forgotPassword.checkEmail.description2")}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-3">
+            <p className="text-center text-xs text-muted-foreground">
+              {t("auth.forgotPassword.checkEmail.codeHint")}
+            </p>
+            <Link href={`/reset-password?email=${encodeURIComponent(email)}`}>
+              <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                {t("auth.forgotPassword.checkEmail.useCode")}
+              </Button>
+            </Link>
             <Link href="/login">
               <Button
                 variant="outline"

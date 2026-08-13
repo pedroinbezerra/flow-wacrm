@@ -57,10 +57,22 @@ Ao trabalhar na Landing, os dois se aplicam: o Volume I define o conteúdo e a
 sequência; o Volume II define a execução visual. Em divergência entre eles, vence o
 Volume II, que é o que está alinhado à Constituição.
 
+**Liberdade de solução, em `docs/LIBERDADE-DE-SOLUCAO.md`.** Documento irmão do
+Princípio Fundador: não cria regra, mas estabelece que a implementação atual é
+contexto para compreensão, não autoridade sobre a experiência. Ao alterar ou
+evoluir qualquer fluxo — pontual ou amplo — pergunte primeiro se a estrutura
+atual (telas, etapas, navegação, sequência) é a melhor forma de entregar o
+resultado exigido pela Constituição, ou apenas um hábito de implementação.
+Liberdade criativa vale sobre a **forma**; as garantias da Constituição (regras
+de negócio, segurança, tenancy, privacidade, contratos, integridade de dados)
+continuam intocáveis. Onde essa liberdade é exercida de forma ampla, o
+resultado se registra como Mapa de Evolução em `docs/evolucao-experiencia/`.
+
 Regras de precedência:
 
-- `docs/PRINCIPIO-FUNDADOR.md` **nunca vence conflito**. Se parecer contradizer um
-  artigo, o artigo vence e a carta deve ser emendada.
+- `docs/PRINCIPIO-FUNDADOR.md` e `docs/LIBERDADE-DE-SOLUCAO.md` **nunca vencem
+  conflito**. Se parecerem contradizer um artigo, o artigo vence e a carta deve
+  ser emendada.
 - Conflito sobre **o que construir** → vence a Constituição.
 - Conflito sobre **direção artística de uma página** → vence
   `docs/direcao-criativa/VOLUME-II-direcao-de-arte-de-paginas.md`.

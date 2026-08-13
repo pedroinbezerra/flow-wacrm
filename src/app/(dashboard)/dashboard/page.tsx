@@ -2,39 +2,24 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useAuth } from '@/hooks/use-auth'
 import { useTranslation } from '@/hooks/use-translation'
-import { formatCurrency } from '@/lib/currency'
-import {
-  MessageSquare,
-  UserPlus,
-  DollarSign,
-  Send,
-  Sparkles,
-} from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 
 import {
-  loadActivity,
+  loadAttentionQueue,
   loadConversationsSeries,
-  loadMetrics,
-  loadPipelineDonut,
   loadResponseTime,
 } from '@/lib/dashboard/queries'
 import type {
-  ActivityItem,
+  AttentionGroup,
   ConversationsSeriesPoint,
-  MetricsBundle,
-  PipelineDonutData,
   ResponseTimeSummary,
 } from '@/lib/dashboard/types'
 
-import { MetricCard } from '@/components/dashboard/metric-card'
-import { SkeletonCard } from '@/components/dashboard/skeleton'
 import { QuickActions } from '@/components/dashboard/quick-actions'
+import { AttentionQueue } from '@/components/dashboard/attention-queue'
 import { ConversationsChart } from '@/components/dashboard/conversations-chart'
-import { PipelineDonut } from '@/components/dashboard/pipeline-donut'
 import { ResponseTimeChart } from '@/components/dashboard/response-time-chart'
-import { ActivityFeed } from '@/components/dashboard/activity-feed'
 import { OnboardingChecklist } from "@/components/onboarding/onboarding-checklist"
 
 type RangeDays = 7 | 30 | 90
@@ -71,17 +56,18 @@ function JourneyTriggerButton({ onClick }: { onClick: () => void }) {
 }
 
 export default function DashboardPage() {
-  const { defaultCurrency } = useAuth()
   const { t } = useTranslation()
   // Keep a stable ref for `t` so the data-fetching effect doesn't re-run
   // on every render. The `t` closure is recreated each render (new object
   // identity) but its output is always the same (static pt-BR dictionary).
   const tRef = useRef(t)
   tRef.current = t
-  const [metrics, setMetrics] = useState<MetricsBundle | null>(null)
-  const [metricsLoading, setMetricsLoading] = useState(true)
 
   const [checklistOpen, setChecklistOpen] = useState<boolean>(true)
+  // Distinguishes "open because nothing dismissed it yet" from "open
+  // because the user just asked for it". A finished checklist only
+  // renders in the second case — see OnboardingChecklist.
+  const [checklistOpenedByUser, setChecklistOpenedByUser] = useState(false)
 
   useEffect(() => {
     try {
@@ -94,7 +80,13 @@ export default function DashboardPage() {
     try {
       localStorage.setItem("flow_onboarding_checklist_dismissed", "false")
     } catch (_e) {}
+    setChecklistOpenedByUser(true)
     setChecklistOpen(true)
+  }
+
+  const handleChecklistOpenChange = (next: boolean) => {
+    setChecklistOpen(next)
+    if (!next) setChecklistOpenedByUser(false)
   }
 
   const [range, setRange] = useState<RangeDays>(30)
@@ -108,43 +100,30 @@ export default function DashboardPage() {
   })
   const [seriesLoading, setSeriesLoading] = useState(true)
 
-  const [pipeline, setPipeline] = useState<PipelineDonutData | null>(null)
-  const [pipelineLoading, setPipelineLoading] = useState(true)
-
   const [responseTime, setResponseTime] = useState<ResponseTimeSummary | null>(null)
   const [responseTimeLoading, setResponseTimeLoading] = useState(true)
 
-  const [activity, setActivity] = useState<ActivityItem[]>([])
-  const [activityLoading, setActivityLoading] = useState(true)
+  const [attention, setAttention] = useState<AttentionGroup[] | null>(null)
+  const [attentionLoading, setAttentionLoading] = useState(true)
 
-  // Fetch initial bundle (metrics, activity, response-time, 30d series)
+  // Fetch initial bundle (attention queue, activity, response-time, 30d series)
   useEffect(() => {
     const db = createClient()
 
-    loadMetrics(db)
-      .then(setMetrics)
-      .catch((err) => console.error('[dashboard] metrics failed:', err))
-      .finally(() => setMetricsLoading(false))
+    loadAttentionQueue(db, tRef.current)
+      .then(setAttention)
+      .catch((err) => console.error('[dashboard] attention queue failed:', err))
+      .finally(() => setAttentionLoading(false))
 
     loadConversationsSeries(db, 30)
       .then((s) => setSeries((prev) => ({ ...prev, 30: s })))
       .catch((err) => console.error('[dashboard] series failed:', err))
       .finally(() => setSeriesLoading(false))
 
-    loadPipelineDonut(db)
-      .then(setPipeline)
-      .catch((err) => console.error('[dashboard] pipeline failed:', err))
-      .finally(() => setPipelineLoading(false))
-
     loadResponseTime(db)
       .then(setResponseTime)
       .catch((err) => console.error('[dashboard] response time failed:', err))
       .finally(() => setResponseTimeLoading(false))
-
-    loadActivity(db, tRef.current, 50)
-      .then(setActivity)
-      .catch((err) => console.error('[dashboard] activity failed:', err))
-      .finally(() => setActivityLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -183,102 +162,34 @@ export default function DashboardPage() {
       </div>
 
       {/* Checklist de Implantação e Jornada de Onboarding */}
-      <OnboardingChecklist open={checklistOpen} onOpenChange={setChecklistOpen} />
+      <OnboardingChecklist
+        open={checklistOpen}
+        onOpenChange={handleChecklistOpenChange}
+        openedByUser={checklistOpenedByUser}
+      />
 
-      {/* Metric cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {metricsLoading || !metrics ? (
-          Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
-        ) : (
-          <>
-            <MetricCard
-              title={t("dashboard.activeConversations")}
-              value={metrics.activeConversations.current.toLocaleString()}
-              icon={MessageSquare}
-              delta={{
-                sign: metrics.activeConversations.previous,
-                label: deltaLabel(t, metrics.activeConversations.previous, 'dashboard.vsYesterday'),
-              }}
-            />
-            <MetricCard
-              title={t("dashboard.newContactsToday")}
-              value={metrics.newContactsToday.current.toLocaleString()}
-              icon={UserPlus}
-              delta={{
-                sign:
-                  metrics.newContactsToday.current - metrics.newContactsToday.previous,
-                label: deltaLabel(
-                  t,
-                  metrics.newContactsToday.current - metrics.newContactsToday.previous,
-                  'dashboard.vsYesterday',
-                ),
-              }}
-            />
-            <MetricCard
-              title={t("dashboard.openDealsValue")}
-              value={formatCurrency(metrics.openDealsValue, defaultCurrency)}
-              icon={DollarSign}
-              subtitle={`${metrics.openDealsCount} ${metrics.openDealsCount === 1 ? t("dashboard.openDeal") : t("dashboard.openDeals")}`}
-            />
-            <MetricCard
-              title={t("dashboard.messagesSentToday")}
-              value={metrics.messagesSentToday.current.toLocaleString()}
-              icon={Send}
-              delta={{
-                sign:
-                  metrics.messagesSentToday.current - metrics.messagesSentToday.previous,
-                label: deltaLabel(
-                  t,
-                  metrics.messagesSentToday.current - metrics.messagesSentToday.previous,
-                  'dashboard.vsYesterday',
-                ),
-              }}
-            />
-          </>
-        )}
-      </div>
+      {/* Fila de Atenção — "o que precisa de você agora". Vem antes de
+          tudo o mais de propósito: é a tarefa dominante da tela.
+          Ver docs/evolucao-experiencia/01-home-dashboard.md. */}
+      <AttentionQueue groups={attention} loading={attentionLoading} />
 
       {/* Quick actions */}
       <QuickActions />
 
-      {/* Charts row */}
-      {/* items-stretch (the grid default) stretches the two columns to
-          match the tallest sibling; adding h-full on each wrapper and
-          on the inner panels makes both cards actually fill that
-          stretched height so their rounded borders line up. Without
-          this, the pipeline card rendered at its natural (shorter)
-          height while the line chart drove the row height. */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <div className="h-full lg:col-span-3">
-          <ConversationsChart
-            series={series}
-            loading={seriesLoading}
-            range={range}
-            onRangeChange={handleRangeChange}
-          />
-        </div>
-        <div className="h-full lg:col-span-2">
-          <PipelineDonut
-            data={pipeline}
-            loading={pipelineLoading}
-            currency={defaultCurrency}
-          />
-        </div>
-      </div>
+      {/* Conversas ao longo do tempo e tempo médio de resposta — os dois
+          gráficos validados como úteis (ver "Nota de implementação" no
+          mapa de evolução). Os quatro cartões de métrica e o donut de
+          pipeline que existiam aqui foram removidos: cada número já vive
+          no lar canônico dele (Inbox, Contacts, Pipelines — FH-22.03) e
+          nenhum deixava o usuário agir, só mostrava contagem. */}
+      <ConversationsChart
+        series={series}
+        loading={seriesLoading}
+        range={range}
+        onRangeChange={handleRangeChange}
+      />
 
-      {/* Response time */}
       <ResponseTimeChart data={responseTime} loading={responseTimeLoading} />
-
-      {/* Activity feed */}
-      <ActivityFeed items={activity} loading={activityLoading} />
     </div>
   )
-}
-
-// ------------------------------------------------------------
-
-function deltaLabel(t: ReturnType<typeof useTranslation>['t'], delta: number, suffixKey: string): string {
-  if (delta === 0) return `${t("dashboard.noChange")} ${t(suffixKey)}`
-  const sign = delta > 0 ? '+' : ''
-  return `${sign}${delta.toLocaleString()} ${t(suffixKey)}`
 }

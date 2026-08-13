@@ -143,7 +143,11 @@
       "signUp": "Inscrever-se",
       "signIn": "Entrar",
       "error": "Falha ao entrar. Tente novamente.",
-      "invalidCredentials": "E-mail ou senha incorretos."
+      "invalidCredentials": "E-mail ou senha incorretos.",
+      "errors": {
+        "linkExpired": "O link que você usou expirou ou já foi utilizado. Solicite um novo.",
+        "unauthorized": "Sua sessão expirou ou o acesso não foi autorizado. Entre novamente para continuar."
+      }
     },
     "signup": {
       "title": "Criar conta",
@@ -194,7 +198,9 @@
       "checkEmail": {
         "title": "Verifique seu e-mail",
         "description1": "Enviamos um link para redefinir a senha para",
-        "description2": "Verifique sua caixa de entrada."
+        "description2": "Verifique sua caixa de entrada.",
+        "codeHint": "Se o botão do e-mail não funcionar, use o código de redefinição que veio na mesma mensagem.",
+        "useCode": "Usar o código do e-mail"
       }
     },
     "resetPassword": {
@@ -213,9 +219,17 @@
       "passwordTooLong": "A senha deve possuir no máximo 72 caracteres.",
       "passwordRequirementsNotMet": "A senha deve conter maiúscula, minúscula, número e símbolo.",
       "invalidSessionTitle": "Link inválido ou expirado",
-      "invalidSessionDescription": "Não foi possível verificar a solicitação de redefinição de senha. Solicite um novo link.",
+      "invalidSessionDescription": "O link deste e-mail não abriu sua sessão de redefinição. Use o código de 8 dígitos enviado na mesma mensagem para continuar.",
+      "codeEntryTitle": "Informe o código de redefinição",
+      "codeEntryDescription": "Cole o e-mail da conta e o código de 8 dígitos que enviamos por e-mail para continuar.",
       "requestNewLink": "Solicitar novo link",
-      "error": "Falha ao redefinir senha. O link pode ter expirado ou ser inválido."
+      "error": "Falha ao redefinir senha. O link pode ter expirado ou ser inválido.",
+      "codeLabel": "Código de redefinição",
+      "codePlaceholder": "00000000",
+      "verifyCode": "Confirmar código",
+      "verifyingCode": "Verificando...",
+      "codeInvalid": "Código inválido ou expirado. Confira o e-mail mais recente e tente novamente.",
+      "requestNewLinkInstead": "Não tenho mais o código — enviar novo e-mail"
     },
     "join": {
       "title": "Entrar na equipe",
@@ -361,6 +375,23 @@
     "outgoingLabel": "Saídas",
     "avgResponseTime": "Tempo Médio de Primeira Resposta",
     "responseTimeDescription": "Minutos para responder à primeira mensagem não respondida de um cliente, por dia da semana",
+    "responseVerdict": {
+      "within": "dentro da meta de {target}",
+      "over": "{factor}× acima da meta de {target}",
+      "noTarget": "sem meta definida",
+      "thisWeekLabel": "esta semana",
+      "lastWeekLabel": "semana passada",
+      "noDataThisWeek": "Sem respostas registradas esta semana",
+      "comparedToLastWeek": "Semana passada: {value}",
+      "faster": "{delta} mais rápido que a semana passada",
+      "slower": "{delta} mais lento que a semana passada",
+      "noSamples": "sem dados"
+    },
+    "conversationsSummary": {
+      "inPeriod": "mensagens nos últimos {days} dias",
+      "incomingCount": "{count} recebidas",
+      "outgoingCount": "{count} enviadas"
+    },
     "target": "meta {minutes}m",
     "editTargetTitle": "Configurar Meta de Atendimento",
     "editTargetDesc": "Defina a meta de tempo para a primeira resposta da equipe (em minutos).",
@@ -373,6 +404,35 @@
     "weightedValue": "Valor Ponderado",
     "wonThisMonth": "Ganho Este Mês",
     "lostThisMonth": "Perdido Este Mês",
+    "attention": {
+      "title": "Precisa de você",
+      "allClearTitle": "Tudo em dia",
+      "allClearDescription": "Nenhuma conversa, negócio, automação ou pendência esperando por você agora.",
+      "unknownContact": "um contato",
+      "conversations": {
+        "one": "{count} conversa aguardando resposta",
+        "many": "{count} conversas aguardando resposta",
+        "detail": "Há mais tempo: {name} — {time}"
+      },
+      "deals": {
+        "one": "{count} negócio parado",
+        "many": "{count} negócios parados",
+        "detail": "Mais antigo: \"{title}\" em {stage}",
+        "noStage": "sem estágio"
+      },
+      "automations": {
+        "one": "{count} automação falhou recentemente",
+        "many": "{count} automações falharam recentemente",
+        "detail": "Mais recente: {name}",
+        "unknown": "Automação"
+      },
+      "pendencies": {
+        "one": "{count} documento aguardando revisão",
+        "many": "{count} documentos aguardando revisão",
+        "detail": "Mais antigo: \"{file}\"",
+        "unknown": "documento"
+      }
+    },
     "quickAction": {
       "newContact": "Novo Contato",
       "newDeal": "Novo Negócio",

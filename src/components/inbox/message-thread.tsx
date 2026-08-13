@@ -35,7 +35,7 @@ import {
   PanelLeft,
   PanelRight,
   Pin,
-
+  MoreHorizontal,
   Clock3,
   FolderKanban,
   Bot,
@@ -184,17 +184,8 @@ const STATUS_OPTIONS: (t: ReturnType<typeof useTranslation>["t"]) => { label: st
   { label: t("inbox.status.closed"), value: "closed", color: "text-muted-foreground" },
 ];
 
-/**
- * WhatsApp-style doodle background applied to the chat area (both the
- * active thread and the empty state). The SVG tile lives at
- * `/public/inbox-doodle.svg`; the slate-950 colour sits underneath so
- * the doodles read as a subtle pattern rather than a stark grid.
- *
- * Defined once at module scope so the two render paths can't drift —
- * if we ever switch the asset, both spots update together.
- */
-const DOODLE_BG_CLASSES =
-  "bg-background bg-[url('/inbox-doodle.svg')] bg-repeat";
+/** Fundo limpo e continuo sem padrões ruidosos para legibilidade perfeita */
+const DOODLE_BG_CLASSES = "bg-background";
 
 export function MessageThread({
   conversation,
@@ -1384,43 +1375,54 @@ export function MessageThread({
     // clipped and the hover toolbar overlaps the Tags panel. Letting the
     // root shrink lets the bubbles' break-words / max-w caps apply.
     <div className={cn("flex min-w-0 flex-1 flex-col", DOODLE_BG_CLASSES)}>
-      {/* 2-Tier Clean Header Toolbar */}
-      <div className="flex flex-col border-b border-border bg-card shrink-0">
-
-        {/* Tier 1: Primary Header Bar */}
-        <div className="flex h-14 items-center justify-between gap-2 px-3 sm:px-4 border-b border-border/40">
-          {/* Left Side: Panel 2 Toggle, Contact Avatar & Info */}
-          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-            {onToggleListPanel && (
-              <button
-                type="button"
-                onClick={onToggleListPanel}
-                title={listPanelOpen ? "Recolher lista de conversas" : "Expandir lista de conversas"}
-                className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:flex"
-              >
-                {listPanelOpen ? <PanelLeftClose className="h-4.5 w-4.5" /> : <PanelLeftOpen className="h-4.5 w-4.5" />}
-              </button>
-            )}
+      {/* Single-Row Smart Header (52px height) */}
+      <div className="flex h-13 min-h-[52px] items-center justify-between gap-3 border-b border-border bg-card/95 px-4 backdrop-blur-xs shrink-0">
+          {/* Left Side: Contact Info & Status Pills */}
+          <div className="flex items-center gap-2.5 min-w-0">
             {onBack && (
               <button
                 type="button"
                 onClick={onBack}
-                aria-label={t("inbox.backToConversations")}
+                aria-label={t("inbox.backToList")}
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
               >
                 <ArrowLeft className="h-4 w-4" />
               </button>
             )}
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary ring-1 ring-primary/20">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary ring-1 ring-primary/20">
               {displayName.charAt(0).toUpperCase()}
             </div>
-            <div className="min-w-0 shrink">
+            <div className="min-w-0 flex items-center gap-2">
               <h2 className="truncate text-xs font-semibold text-foreground">{displayName}</h2>
-              <p className="truncate text-[11px] text-muted-foreground">{contact.phone}</p>
+              <span className="hidden sm:inline text-[11px] text-muted-foreground truncate">{contact.phone}</span>
+            </div>
+
+            {/* Subtle Pills for Session & AI */}
+            <div className="hidden md:flex items-center gap-1.5 ml-1">
+              <Badge
+                variant="outline"
+                className={cn(
+                  "gap-1 border-border/60 text-[10px] font-normal px-1.5 py-0 shrink-0",
+                  sessionInfo.expired ? "text-red-400 border-red-500/30 bg-red-500/10" : "text-muted-foreground"
+                )}
+              >
+                <Clock className="h-3 w-3" />
+                {sessionInfo.remaining}
+              </Badge>
+
+              {conversation.ai_handler_status === "human" ? (
+                <Badge variant="outline" className="text-[10px] font-normal px-1.5 py-0 border-amber-500/30 text-amber-500 bg-amber-500/10 shrink-0">
+                  <User className="h-2.5 w-2.5 mr-0.5" /> Humano
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-[10px] font-normal px-1.5 py-0 border-emerald-500/30 text-emerald-500 bg-emerald-500/10 shrink-0">
+                  <Bot className="h-2.5 w-2.5 mr-0.5" /> IA Ativa
+                </Badge>
+              )}
             </div>
           </div>
 
-          {/* Right Side: Core Actions (AI Handoff, Status, Assignee, Panel 3 Toggle) */}
+          {/* Right Side: Core Actions & Secondary Actions Menu */}
           <div className="flex items-center gap-1.5 shrink-0">
             {/* AI Handoff CTA */}
             <Button
@@ -1449,7 +1451,7 @@ export function MessageThread({
               )}
             </Button>
 
-            {/* Ticket Management (Status & Assignment) */}
+            {/* Status & Assignee Selector */}
             <div className="flex items-center gap-0.5 rounded-md border border-border/60 bg-muted/40 p-0.5">
               <DropdownMenu>
                 <DropdownMenuTrigger
@@ -1538,6 +1540,37 @@ export function MessageThread({
               </DropdownMenu>
             </div>
 
+            {/* Secondary Actions Dropdown (...) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                title="Ações secundárias"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 border-border bg-popover">
+                <DropdownMenuItem onClick={handleOpenLinkBoard} className="text-xs gap-2">
+                  <FolderKanban className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span>{t("inbox.board.addToBoard")}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleToggleAwaitingReturn} disabled={updatingBoardFlags} className="text-xs gap-2">
+                  <Clock3 className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span>{t("boards.awaitingReturn")}</span>
+                  {defaultBoardItem?.awaiting_return && <Check className="ml-auto h-3.5 w-3.5 text-amber-500" />}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleTogglePriority} disabled={updatingBoardFlags} className="text-xs gap-2">
+                  <Pin className={cn("h-3.5 w-3.5 text-muted-foreground", (defaultBoardItem?.priority_rank ?? 0) > 0 && "fill-current text-red-500")} />
+                  <span>{t("boards.priority")}</span>
+                  {(defaultBoardItem?.priority_rank ?? 0) > 0 && <Check className="ml-auto h-3.5 w-3.5 text-red-500" />}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setHelpModalOpen(true)} className="text-xs gap-2 text-amber-500">
+                  <HelpCircle className="h-3.5 w-3.5 text-amber-500" />
+                  <span>{t("inbox.collaboration.requestHelp")}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {onRefresh && (
               <button
                 type="button"
@@ -1555,119 +1588,23 @@ export function MessageThread({
               <button
                 type="button"
                 onClick={onToggleContactPanel}
-                title={contactPanelOpen ? "Recolher detalhes e timeline" : "Expandir detalhes e timeline"}
+                title={contactPanelOpen ? "Recolher detalhes do cliente" : "Expandir detalhes do cliente"}
                 className="hidden lg:flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
-                {contactPanelOpen ? <PanelRightClose className="h-4.5 w-4.5" /> : <PanelRightOpen className="h-4.5 w-4.5" />}
+                {contactPanelOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
               </button>
             )}
           </div>
         </div>
 
-        {/* Tier 2: Secondary Action Toolbar Bar (CRM Tools, Help, Badges) */}
-        <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-muted/20 overflow-x-auto scrollbar-none text-xs">
-          <div className="flex items-center gap-1.5 shrink-0">
-            {/* Session Timer Badge */}
-            <Badge
-              variant="outline"
-              className={cn(
-                "gap-1 border-border text-[10px] font-medium px-2 py-0.5 whitespace-nowrap shrink-0",
-                sessionInfo.expired ? "text-red-400 border-red-500/30 bg-red-500/10" : "text-primary border-primary/30 bg-primary/10"
-              )}
-            >
-              <Clock className="h-3 w-3" />
-              {sessionInfo.remaining}
-            </Badge>
-
-            {/* AI Status Badge */}
-            <Badge
-              variant="outline"
-              className={cn(
-                "gap-1 text-[10px] font-medium px-2 py-0.5 border-border whitespace-nowrap shrink-0",
-                conversation.ai_handler_status === "human"
-                  ? "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300"
-                  : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-              )}
-            >
-              {conversation.ai_handler_status === "human" ? (
-                <>
-                  <User className="h-3 w-3" /> Humano
-                </>
-              ) : (
-                <>
-                  <Bot className="h-3 w-3" /> IA Ativa
-                </>
-              )}
-            </Badge>
-
-            <div className="h-3.5 w-[1px] bg-border/60 shrink-0 mx-0.5" />
-
-            {/* Board CTA */}
-            <button
-              type="button"
-              onClick={handleOpenLinkBoard}
-              title={t("inbox.board.addToBoard")}
-              className="inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-medium whitespace-nowrap text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <FolderKanban className="h-3.5 w-3.5 shrink-0" />
-              <span>{t("inbox.board.addToBoard")}</span>
-            </button>
-
-            {/* Aguardando retorno toggle */}
-            <button
-              type="button"
-              onClick={handleToggleAwaitingReturn}
-              disabled={updatingBoardFlags}
-              className={cn(
-                "inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-medium whitespace-nowrap transition-colors",
-                defaultBoardItem?.awaiting_return
-                  ? "bg-amber-500/20 text-amber-400 font-semibold"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                updatingBoardFlags && "opacity-60"
-              )}
-            >
-              <Clock3 className="h-3.5 w-3.5 shrink-0" />
-              <span>{t("boards.awaitingReturn")}</span>
-            </button>
-
-            {/* Prioridade toggle */}
-            <button
-              type="button"
-              onClick={handleTogglePriority}
-              disabled={updatingBoardFlags}
-              className={cn(
-                "inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-medium whitespace-nowrap transition-colors",
-                (defaultBoardItem?.priority_rank ?? 0) > 0
-                  ? "bg-red-500/20 text-red-400 font-semibold"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                updatingBoardFlags && "opacity-60"
-              )}
-            >
-              <Pin className={cn("h-3.5 w-3.5 shrink-0", (defaultBoardItem?.priority_rank ?? 0) > 0 && "fill-current")} />
-              <span>{t("boards.priority")}</span>
-            </button>
-
-            {/* Solicitar Ajuda */}
-            <button
-              type="button"
-              onClick={() => setHelpModalOpen(true)}
-              title={t("inbox.collaboration.helpTooltip")}
-              className="inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-medium whitespace-nowrap text-amber-500 hover:bg-amber-500/10 transition-colors"
-            >
-              <HelpCircle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-              <span>{t("inbox.collaboration.requestHelp")}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Participant Presence Bar */}
-
-      <ParticipantBar
-        conversationId={conversation?.id ?? ""}
-        activePresences={activeParticipants}
-        currentUserId={user?.id}
-      />
+        {/* Participant Presence Bar */}
+        {activeParticipants.length > 0 && (
+          <ParticipantBar
+            conversationId={conversation?.id ?? ""}
+            activePresences={activeParticipants}
+            currentUserId={user?.id}
+          />
+        )}
 
       <Dialog open={linkBoardOpen} onOpenChange={setLinkBoardOpen}>
         <DialogContent>

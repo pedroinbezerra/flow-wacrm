@@ -9,7 +9,7 @@
 | Campo | Valor |
 | --- | --- |
 | Versão | 1.0.0 |
-| Entradas ativas | 0 |
+| Entradas ativas | 1 |
 | Exceções vigentes | 0 |
 | Lacunas abertas | 0 |
 
@@ -95,8 +95,19 @@ O contador é cumulativo e não reinicia por troca de pessoa, de time ou de agen
 
 ## Precedentes
 
-*Nenhum registro. O primeiro precedente será criado quando houver o primeiro
-conflito real entre artigos.*
+### PRE-0001 — Invariância Estrutural e Sinalização Atmosférica de Destino de Ação
+
+- **Data:** 2026-08-13
+- **Responsável:** Responsável de Produto & Antigravity Agent
+- **Artigos envolvidos:** `FH-13.02` (Prioridade do Operador), `L2-C15` (Psicologia Cognitiva & Carga Cognitiva), `L2-C16` (Hábito e Fluência), `FH-57.11` (Comunicação Sem Fricção)
+- **Situação:** Ao alternar modos de ação no mesmo componente de entrada que possuem destinos/impactos distintos (ex.: enviar mensagem pública ao cliente vs. registrar nota interna confidencial na conversa), a interface precisa tornar o destino evidente sem alterar a estrutura, os ícones ou a posição dos controles.
+- **Critério aplicado:** *Princípio da Invariância Estrutural e Mínima Carga Cognitiva*. A estrutura física (posição do textarea, botões de ação e ícones de envio) deve permanecer rigorosamente idêntica para evitar a perda do mapa mental e a curva de aprendizado. O destino da ação é comunicado exclusivamente por acentos cromáticos sutis (borda/foco do campo e tom do botão de ação).
+- **Decisão:**
+  1. **Estrutura e Iconografia Invariantes:** O campo de texto, a área de escrita e a iconografia de envio (`Send`) não mudam de posição, tamanho ou formato ao alternar modos de uso.
+  2. **Indicação Semântica por Acento:** O destino da ação (ex.: cliente = tom `primary`; nota interna = tom `amber`) é indicado apenas pela variação cromática do acento da borda/foco do campo de texto e da cor do botão principal.
+  3. **Preservação de Fundo Neutro:** O interior dos campos e o container externo permanecem em tom neutro padrão (`bg-muted` e `bg-card`), evitando blocos coloridos pesados que causam ruído cognitivo e fadiga visual.
+- **Alcance:** Vincula a caixa de entrada (composer), formulários de dupla finalidade, alternadores de escopo (público vs. privado) e qualquer elemento de interface de alta frequência no FlowHub onde a mesma estrutura executa ações de públicos/destinos diferentes.
+- **Status:** vigente
 
 ---
 

@@ -37,10 +37,12 @@ const SECURITY_HEADERS = [
       "default-src 'self'",
       // Next.js needs 'unsafe-inline' for its inline hydration script
       // and 'unsafe-eval' in dev + some production optimisations.
-      // Includes Microsoft Clarity + Google Analytics + Meta Facebook SDK scripts.
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.clarity.ms https://scripts.clarity.ms https://www.googletagmanager.com https://connect.facebook.net https://www.facebook.com",
-      // Tailwind + inline style attributes on lots of components.
-      "style-src 'self' 'unsafe-inline'",
+      // Includes Microsoft Clarity + Google Analytics + Meta Facebook SDK +
+      // hCaptcha widget scripts.
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.clarity.ms https://scripts.clarity.ms https://www.googletagmanager.com https://connect.facebook.net https://www.facebook.com https://js.hcaptcha.com https://*.hcaptcha.com",
+      // Tailwind + inline style attributes on lots of components, plus
+      // hCaptcha's injected challenge styles.
+      "style-src 'self' 'unsafe-inline' https://*.hcaptcha.com",
       // Supabase public-bucket avatars, contact avatars (arbitrary
       // https URLs paste-able from the UI), OG images, data URLs for
       // tiny inline assets.
@@ -49,10 +51,10 @@ const SECURITY_HEADERS = [
       // and Supabase public-bucket audio/video the inbox renders.
       "media-src 'self' blob: https://*.supabase.co",
       "font-src 'self' data:",
-      // Supabase REST + realtime (WSS) + Microsoft Clarity + GA4 telemetry + Sentry ingest + Meta SDK.
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.clarity.ms https://*.clarity.ms https://c.bing.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.sentry.io https://connect.facebook.net https://www.facebook.com https://web.facebook.com",
-      // Meta Facebook Login popups and dialog frames.
-      "frame-src 'self' https://www.facebook.com https://web.facebook.com",
+      // Supabase REST + realtime (WSS) + Microsoft Clarity + GA4 telemetry + Sentry ingest + Meta SDK + hCaptcha verification/telemetry.
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.clarity.ms https://*.clarity.ms https://c.bing.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.sentry.io https://connect.facebook.net https://www.facebook.com https://web.facebook.com https://*.hcaptcha.com",
+      // Meta Facebook Login popups and dialog frames + hCaptcha challenge iframe.
+      "frame-src 'self' https://www.facebook.com https://web.facebook.com https://*.hcaptcha.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -100,7 +102,10 @@ const nextConfig: NextConfig = {
    * matched.
    */
 
-  allowedDevOrigins: ["127.0.0.1"],
+  // "dev.flowhub.local" (mapped to 127.0.0.1 in the OS hosts file) lets
+  // local dev pass hCaptcha's domain allowlist, which rejects bare
+  // "localhost" / "127.0.0.1" hostnames.
+  allowedDevOrigins: ["127.0.0.1", "dev.flowhub.local"],
 
   async headers() {
     return [

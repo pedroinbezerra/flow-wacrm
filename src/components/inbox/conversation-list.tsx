@@ -245,36 +245,36 @@ export function ConversationList({
     // w-full on mobile so the list occupies the whole viewport when it's
     // the single pane showing; fixed 320px on desktop where it shares the
     // row with the thread + contact sidebar.
-    <div className="flex h-full w-full flex-col border-r border-border bg-card lg:w-80">
+    <div className="flex h-full w-full flex-col border-r border-border/80 bg-card/40 backdrop-blur-xs lg:w-80">
       {/* Search + Filter */}
-      <div className="space-y-2 border-b border-border p-3">
+      <div className="space-y-2 border-b border-border/60 p-3 bg-card/60">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={handleSearchChange}
             placeholder={t("common.placeholders.searchConversations")}
-            className="border-border bg-muted pl-9 text-sm text-foreground placeholder-muted-foreground focus:border-primary/50"
+            className="border-border/60 bg-muted/50 pl-9 text-xs text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
           />
         </div>
 
         <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex items-center justify-center h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground rounded-md hover:bg-muted">
-              {activeFilter?.label ?? t("inbox.filter.all")}
-              <ChevronDown className="h-3 w-3" />
+          <DropdownMenuTrigger className="inline-flex items-center justify-center h-7 gap-1.5 px-2.5 text-xs text-muted-foreground hover:text-foreground rounded-md hover:bg-muted/60 transition-colors border border-border/40">
+              <span className="font-medium">{activeFilter?.label ?? t("inbox.filter.all")}</span>
+              <ChevronDown className="h-3 w-3 opacity-70" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="start"
-            className="border-border bg-popover"
+            className="border-border bg-popover shadow-md"
           >
             {filterOptions.map((opt) => (
               <DropdownMenuItem
                 key={opt.value}
                 onClick={() => setFilter(opt.value)}
                 className={cn(
-                  "text-sm",
+                  "text-xs font-medium",
                   filter === opt.value
-                    ? "text-primary"
+                    ? "text-primary font-semibold"
                     : "text-popover-foreground"
                 )}
               >
@@ -285,12 +285,7 @@ export function ConversationList({
         </DropdownMenu>
       </div>
 
-      {/* Conversation Items.
-          `min-h-0` is load-bearing: a flex child defaults to
-          min-height:auto, so without it this ScrollArea grows to fit
-          every conversation instead of shrinking to the remaining
-          space — the list then overflows and gets clipped by the
-          parent's overflow-hidden with no scrollbar (issue #229). */}
+      {/* Conversation Items */}
       <ScrollArea className="min-h-0 flex-1">
         {loading ? (
           <div className="flex items-center justify-center py-12">
@@ -298,10 +293,10 @@ export function ConversationList({
           </div>
         ) : filtered.length === 0 ? (
           <div className="px-4 py-12 text-center">
-            <p className="text-sm text-muted-foreground">{t("inbox.noConversationsFound")}</p>
+            <p className="text-xs text-muted-foreground">{t("inbox.noConversationsFound")}</p>
           </div>
         ) : (
-          <div className="flex flex-col">
+          <div className="flex flex-col divide-y divide-border/20">
             {filtered.map((conv) => (
               <ConversationItem
                 key={conv.id}
@@ -350,33 +345,44 @@ function ConversationItem({
     <button
       onClick={handleClick}
       className={cn(
-        "flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-        isActive && "border-l-2 border-primary bg-muted/70"
+        "flex w-full items-start gap-3 px-3 py-3 text-left transition-all duration-150 relative group",
+        isActive
+          ? "bg-primary/10 dark:bg-primary/15 font-medium border-l-3 border-primary"
+          : "hover:bg-muted/40 text-muted-foreground hover:text-foreground"
       )}
     >
-      {/* Avatar */}
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium text-foreground">
-        {contact?.avatar_url ? (
-          <img
-            src={contact.avatar_url}
-            alt={displayName}
-            className="h-10 w-10 rounded-full object-cover"
-          />
-        ) : (
-          initials
-        )}
+      {/* Avatar with Ring */}
+      <div className="relative shrink-0">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/80 text-xs font-bold text-foreground ring-1 ring-border/60">
+          {contact?.avatar_url ? (
+            <img
+              src={contact.avatar_url}
+              alt={displayName}
+              className="h-10 w-10 rounded-full object-cover"
+            />
+          ) : (
+            initials
+          )}
+        </div>
+        <span
+          className={cn(
+            "absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-background",
+            STATUS_COLORS[conversation.status]
+          )}
+          title={conversation.status}
+        />
       </div>
 
       {/* Content */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
-          <span className="truncate text-sm font-medium text-foreground">
+          <span className={cn("truncate text-xs font-semibold", isActive ? "text-foreground font-bold" : "text-foreground/90")}>
             {displayName}
           </span>
-          <span className="shrink-0 text-[10px] text-muted-foreground">{timeAgo}</span>
+          <span className="shrink-0 text-[10px] text-muted-foreground/80">{timeAgo}</span>
         </div>
-        <div className="mt-0.5 flex items-center justify-between gap-2">
-          <p className="truncate text-xs text-muted-foreground">
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <p className="truncate text-xs text-muted-foreground/90 leading-snug">
             {normalizeConversationPreview(conversation.last_message_text) || t("inbox.noMessagesYet")}
           </p>
           <div className="flex shrink-0 items-center gap-1.5">
@@ -401,21 +407,14 @@ function ConversationItem({
             )}
             {(boardFlags?.priority_rank ?? 0) > 0 && (
               <span title={t("boards.priority")}>
-                <Pin className="h-3 w-3 text-primary" />
+                <Pin className="h-3 w-3 text-primary fill-current" />
               </span>
             )}
             {conversation.unread_count > 0 && (
-              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground shadow-2xs">
                 {conversation.unread_count}
               </span>
             )}
-            <span
-              className={cn(
-                "h-2 w-2 rounded-full",
-                STATUS_COLORS[conversation.status]
-              )}
-              title={conversation.status}
-            />
           </div>
         </div>
       </div>

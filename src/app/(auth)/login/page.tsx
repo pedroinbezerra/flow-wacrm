@@ -33,20 +33,23 @@ function LoginPageInner() {
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get("invite");
 
+  const { t } = useTranslation();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  // `/auth/callback` and the Google Drive OAuth routes bounce back here
+  // with `?error=<code>` when a link expired or access was denied —
+  // surface that instead of dropping the user on a silent blank form.
   const [error, setError] = useState<string | null>(() => {
-    // Standard error parameter check
-    if (searchParams.get("error") === "invalid_session") {
-      return null;
-    }
+    const code = searchParams.get("error");
+    if (code === "link-expired") return t("auth.login.errors.linkExpired");
+    if (code === "unauthorized") return t("auth.login.errors.unauthorized");
     return null;
   });
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { t } = useTranslation();
   const supabase = createClient();
   const captchaRef = useRef<HCaptchaWidgetRef>(null);
 

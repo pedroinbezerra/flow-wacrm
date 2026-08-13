@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   CheckCircle2,
@@ -18,17 +18,31 @@ import { useTranslation } from "@/hooks/use-translation";
 interface OnboardingChecklistProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /**
+   * True only when the user reopened this from the header trigger.
+   * A finished checklist stays hidden unless it was explicitly asked
+   * for — see the auto-hide in `fetchProgress`.
+   */
+  openedByUser?: boolean;
 }
 
 export function OnboardingChecklist({
   open,
   onOpenChange,
+  openedByUser = false,
 }: OnboardingChecklistProps) {
   const { t } = useTranslation();
   const [summary, setSummary] = useState<OnboardingJourneySummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(true);
   const [dismissed, setDismissed] = useState(false);
+
+  // Read inside the fetch callback without making it re-created (and
+  // thus re-fetching) whenever the parent re-renders.
+  const onOpenChangeRef = useRef(onOpenChange);
+  onOpenChangeRef.current = onOpenChange;
+  const openedByUserRef = useRef(openedByUser);
+  openedByUserRef.current = openedByUser;
 
   // Carrega preferência do localStorage
   useEffect(() => {
@@ -53,6 +67,20 @@ export function OnboardingChecklist({
       if (res.ok) {
         const data = await res.json();
         setSummary(data);
+
+        // Um checklist 100% concluído não tem mais nada a oferecer: ele
+        // ficaria acima do trabalho do dia comemorando uma tarefa
+        // terminada a cada visita (`FH-09.04` — celebração proporcional;
+        // trivial nunca se celebra) e empurrando a tarefa dominante da
+        // tela para baixo da dobra (`FH-24.06`). Devolvemos o controle
+        // ao pai para que o gatilho do cabeçalho reapareça: continua
+        // recuperável a qualquer momento (`FH-26.03`).
+        //
+        // Feito aqui, no retorno da requisição, e não em um efeito, para
+        // não disparar setState em cascata durante a renderização.
+        if (data?.is_fully_configured && !openedByUserRef.current) {
+          onOpenChangeRef.current?.(false);
+        }
       }
     } catch (_e) {
       // Ignorar erros na busca do checklist
@@ -76,6 +104,10 @@ export function OnboardingChecklist({
   };
 
   if (dismissed || loading || !summary) return null;
+  // Guarda de renderização, além do aviso ao pai acima: evita um quadro
+  // em que o checklist concluído pisca na tela antes de o estado do pai
+  // se acomodar.
+  if (summary.is_fully_configured && !openedByUser) return null;
 
   return (
     <div

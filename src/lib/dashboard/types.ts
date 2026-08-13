@@ -65,3 +65,22 @@ export interface ActivityItem {
   /** Optional deep-link for the whole row (not all items have a target). */
   href?: string
 }
+
+// --- Attention queue -----------------------------------------------------
+// A domain the user needs to act on, summarised to one card each — never
+// the individual items. Home only informs (autonomy level 1); resolving
+// an item always happens in the area that owns it.
+
+export type AttentionKind = 'conversation' | 'deal' | 'automation' | 'pendency'
+
+export interface AttentionGroup {
+  kind: AttentionKind
+  /** How many items are waiting in this domain. */
+  count: number
+  /** Pre-formatted, e.g. "3 conversas aguardando resposta". */
+  headline: string
+  /** Pre-formatted example — the single most urgent item. */
+  detail: string
+  /** Where resolving these items actually happens. */
+  href: string
+}

@@ -49,12 +49,22 @@ PRINCÍPIO FUNDADOR  (esta carta)      → a intenção. Por que existimos
         ↓
 CONSTITUIÇÃO DO PRODUTO               → o que construir e por quê. Exigível
 docs/constituicao/                       Artigos FH-XX.NN com verificação
+        │
+        ├──→ LIBERDADE DE SOLUÇÃO       → quanta liberdade existe sobre COMO
+        │    docs/LIBERDADE-DE-SOLUCAO.md  chegar ao que a Constituição exige
+        │
         ↓
 DIREÇÃO ARTÍSTICA                     → como a página se parece
 docs/direcao-criativa/                   Volume I (landing) · Volume II (páginas)
         ↓
 AGENTS.md                             → como implementar neste repositório
 ```
+
+> Documento irmão desta carta: `docs/LIBERDADE-DE-SOLUCAO.md`. Mesma natureza —
+> carta de intenção, não citável como fundamento — mas focado especificamente
+> em quanto a implementação atual pode ser questionada e reconstruída ao
+> evoluir o produto. Leia os dois juntos antes de qualquer trabalho de
+> evolução ou reinvenção.
 
 Obrigação legal (`docs/legal/`, `docs/business-rules/`) vence todos.
 
