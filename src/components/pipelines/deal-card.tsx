@@ -51,7 +51,7 @@ export function DealCard({ deal, stage, onEdit, isOverlay }: DealCardProps) {
       <span
         aria-hidden
         className="absolute left-0 top-0 h-full w-1 rounded-l-xl"
-        style={{ backgroundColor: stage?.color || "var(--border)" }}
+        style={{ backgroundColor: stage?.color ?? "#94a3b8" }}
       />
 
       <div className="flex items-start justify-between gap-2">
@@ -65,7 +65,7 @@ export function DealCard({ deal, stage, onEdit, isOverlay }: DealCardProps) {
           </span>
         )}
         {deal.status === "lost" && (
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold text-destructive">
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold text-red-400">
             <X className="h-3 w-3" />
             {t("pipelines.statusLost")}
           </span>

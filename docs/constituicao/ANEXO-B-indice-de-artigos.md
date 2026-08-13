@@ -111,7 +111,7 @@ Toda decisão de produto **DEVE** citar os artigos aplicados (`FH-01.08`).
 | Artigo | Enunciado | Verificação |
 | --- | --- | --- |
 | `FH-01.01` | A Constituição é fonte de verdade máxima em decisão de produto. | Contradiz artigo vigente? NÃO = cumpre |
-| `FH-01.02` | Alcança toda superfície percebida: tela, e-mail, notificação, mensagem enviada em nome do usuário, texto de IA, exportação. | Alguma superfície percebida foi projetada sem consulta? NÃO = cumpre |
+| `FH-01.02` | Alcança **toda** superfície percebida, dentro e fora do produto: tela, e-mail, notificação, mensagem em nome do usuário, texto de IA, exportação, página pública, material de aquisição, onboarding e documentação ao usuário. Lista ilustrativa, nunca exaustiva. | Alguma superfície percebida foi projetada sem consulta? NÃO = cumpre |
 | `FH-01.03` | Acordo verbal, cliente, prazo e hierarquia não revogam artigo. Só emenda. | Exceção está registrada formalmente? SIM = cumpre |
 | `FH-01.04` | Quem executa é responsável por conhecer os artigos da sua tarefa. | Consegue nomear os artigos que governam a entrega? SIM = cumpre |
 | `FH-01.05` | Vincula agentes de IA nos mesmos termos que pessoas. | Agente sinalizou conflito com **DEVE**/**NUNCA** antes de implementar? SIM = cumpre |
@@ -1299,6 +1299,9 @@ versionar → pausar.
 | `FH-57.08` | Sem humor onde há dano. | Há? NÃO = cumpre |
 | `FH-57.09` | A voz da IA é a voz do produto. | Mesma voz? SIM = cumpre |
 | `FH-57.10` | O sistema não se personifica em primeira pessoa. | Personifica? NÃO = cumpre |
+| `FH-57.11` | **Característica não é mensagem:** capacidade → benefício → percepção → comunicação. Nenhuma camada repete a anterior. | Expressa a consequência, e não o nome do que foi construído? SIM = cumpre |
+| `FH-57.12` | Vale em toda comunicação ao usuário final, dentro e fora do produto. Persuasão parte da consequência. | Persuade pela consequência? SIM = cumpre |
+| `FH-57.13` | Registro do conteúdo declarado antes de escrever: técnico, funcional, benefício, experiencial ou comercial. | Declarado e a linguagem corresponde? SIM = cumpre |
 
 ---
 
@@ -1338,6 +1341,7 @@ versionar → pausar.
 | `FH-59.08` | O nome descreve significado, não implementação. | Faz sentido sem o código? SIM = cumpre |
 | `FH-59.09` | Sigla só com definição no Anexo A e explicação no primeiro uso. | Definida? SIM = cumpre |
 | `FH-59.10` | Canal ou tecnologia só onde é a informação. | Nomeia conceito? NÃO = cumpre |
+| `FH-59.11` | Termo de tecnologia, arquitetura, segurança ou conformidade nunca em comunicação ao usuário final sem justificativa registrada (Anexo A §6.1). | Aparece sem justificativa? NÃO = cumpre |
 
 ---
 

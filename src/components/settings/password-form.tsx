@@ -17,9 +17,8 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-
-const MIN_PASSWORD = 8;
-const MAX_PASSWORD = 72;
+import { PasswordRequirements } from '@/components/auth/password-requirements';
+import { validatePassword, parseSupabasePasswordError, PASSWORD_POLICY_MIN_LENGTH, PASSWORD_POLICY_MAX_PASSWORD } from '@/lib/auth/password-policy';
 
 export function PasswordForm() {
   const { profile } = useAuth();
@@ -38,14 +37,13 @@ export function PasswordForm() {
       toast.error(t('settings.password.cannotChangeWithoutEmail'));
       return;
     }
-    if (next.length < MIN_PASSWORD) {
-      setConfirmError(t('settings.password.mustBeAtLeast', { min: MIN_PASSWORD }));
+
+    const validation = validatePassword(next);
+    if (!validation.isValid) {
+      setConfirmError(validation.errors[0] || t('auth.signup.passwordRequirementsNotMet'));
       return;
     }
-    if (next.length > MAX_PASSWORD) {
-      setConfirmError(t('settings.password.passwordTooLong'));
-      return;
-    }
+
     if (next !== confirm) {
       setConfirmError(t('settings.password.passwordsDoNotMatch'));
       return;
@@ -71,7 +69,8 @@ export function PasswordForm() {
         password: next,
       });
       if (updateError) {
-        toast.error(`Falha ao atualizar senha: ${updateError.message}`);
+        const errorMsg = parseSupabasePasswordError(updateError);
+        toast.error(`Falha ao atualizar senha: ${errorMsg}`);
         return;
       }
 
@@ -80,7 +79,7 @@ export function PasswordForm() {
       setConfirm('');
       toast.success(t('settings.password.passwordUpdated'));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unknown error';
+      const msg = parseSupabasePasswordError(err);
       toast.error(msg);
     } finally {
       setSaving(false);
@@ -95,7 +94,7 @@ export function PasswordForm() {
           {t('settings.password.title')}
         </CardTitle>
         <CardDescription className="text-muted-foreground">
-          {t('settings.password.description', { min: MIN_PASSWORD })}
+          {t('settings.password.description', { min: PASSWORD_POLICY_MIN_LENGTH })}
         </CardDescription>
       </CardHeader>
 
@@ -127,8 +126,8 @@ export function PasswordForm() {
                 value={next}
                 onChange={(e) => setNext(e.target.value)}
                 autoComplete="new-password"
-                minLength={MIN_PASSWORD}
-                maxLength={MAX_PASSWORD}
+                minLength={PASSWORD_POLICY_MIN_LENGTH}
+                maxLength={72}
                 disabled={saving}
                 required
               />
@@ -143,13 +142,15 @@ export function PasswordForm() {
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 autoComplete="new-password"
-                minLength={MIN_PASSWORD}
-                maxLength={MAX_PASSWORD}
+                minLength={PASSWORD_POLICY_MIN_LENGTH}
+                maxLength={72}
                 disabled={saving}
                 required
               />
             </div>
           </div>
+
+          <PasswordRequirements password={next} className="mt-2" />
 
           {confirmError && (
             <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
@@ -177,3 +178,4 @@ export function PasswordForm() {
     </Card>
   );
 }
+

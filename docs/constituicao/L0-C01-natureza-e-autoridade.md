@@ -3,7 +3,7 @@
 | Campo | Valor |
 | --- | --- |
 | Livro | 0 — A Constituição |
-| Versão | 1.0.0 |
+| Versão | 1.0.1 |
 | Estado | Estável |
 | Depende de | Volume 0 |
 | É pré-requisito de | Todos os capítulos |
@@ -22,10 +22,16 @@ artigo vigente.
 > **Verificação:** a decisão contradiz algum artigo vigente? → NÃO = cumpre | SIM = viola.
 
 **`FH-01.02`** — A Constituição alcança **toda superfície na qual uma pessoa
-percebe o FlowHub**, sem exceção: interface web, interface móvel, e-mail
-transacional, notificação, mensagem enviada em nome do usuário, texto gerado por
-IA, mensagem de erro exposta ao usuário, conteúdo de exportação e comunicação de
-mudança de produto.
+percebe o FlowHub**, sem exceção — **dentro e fora do produto**: interface web,
+interface móvel, e-mail transacional, notificação, mensagem enviada em nome do
+usuário, texto gerado por IA, mensagem de erro exposta ao usuário, conteúdo de
+exportação, comunicação de mudança de produto, **página pública, material de
+aquisição, onboarding, documentação destinada ao usuário e qualquer outro artefato
+construído para o FlowHub que alguém venha a ver**.
+
+A enumeração é **ilustrativa, nunca exaustiva**. Superfície não listada não está
+fora: está apenas não escrita. Diante de uma superfície nova, a pergunta é se
+alguém percebe o FlowHub através dela — se sim, a Constituição alcança.
 > **Verificação:** existe superfície percebida pelo usuário nesta entrega que foi projetada sem consultar a Constituição? → NÃO = cumpre | SIM = viola.
 
 **`FH-01.03`** — Nenhum acordo verbal, decisão de reunião, pedido de cliente,

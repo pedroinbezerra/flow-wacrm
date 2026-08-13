@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -17,6 +17,9 @@ import {
 } from "@/components/ui/card";
 import { CheckCircle, UsersRound, Eye, EyeOff } from "lucide-react";
 import { FlowLogo } from "@/components/layout/flow-logo";
+import { PasswordRequirements } from "@/components/auth/password-requirements";
+import { HCaptchaWidget, HCaptchaWidgetRef, isCaptchaConfigured } from "@/components/auth/hcaptcha";
+import { validatePassword, parseSupabasePasswordError } from "@/lib/auth/password-policy";
 
 // `useSearchParams` opts the component out of static prerendering
 // unless wrapped in Suspense — same pattern as /login.
@@ -44,10 +47,12 @@ function SignupPageInner() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const supabase = createClient();
+  const captchaRef = useRef<HCaptchaWidgetRef>(null);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,13 +63,14 @@ function SignupPageInner() {
       return;
     }
 
-    if (password.length < 6) {
-      setError(t("auth.signup.passwordTooShort"));
+    const validation = validatePassword(password);
+    if (!validation.isValid) {
+      setError(validation.errors[0] || t("auth.signup.passwordRequirementsNotMet"));
       return;
     }
 
-    if (password.length > 72) {
-      setError(t("auth.signup.passwordTooLong"));
+    if (isCaptchaConfigured() && !captchaToken) {
+      setError(t("auth.signup.captchaRequired"));
       return;
     }
 
@@ -86,6 +92,7 @@ function SignupPageInner() {
           full_name: fullName,
         },
         ...(emailRedirectTo ? { emailRedirectTo } : {}),
+        ...(captchaToken ? { captchaToken } : {}),
       },
     });
 
@@ -101,12 +108,16 @@ function SignupPageInner() {
 
     if (isAlreadyRegistered) {
       setError(t("auth.signup.emailAlreadyInUse"));
+      captchaRef.current?.resetCaptcha();
+      setCaptchaToken(null);
       setLoading(false);
       return;
     }
 
     if (error) {
-      setError(t("auth.signup.error"));
+      setError(parseSupabasePasswordError(error, t("auth.signup.error")));
+      captchaRef.current?.resetCaptcha();
+      setCaptchaToken(null);
       setLoading(false);
       return;
     }
@@ -241,6 +252,7 @@ function SignupPageInner() {
                   )}
                 </button>
               </div>
+              <PasswordRequirements password={password} className="mt-1" />
             </div>
 
             <div className="flex flex-col gap-2">
@@ -273,6 +285,12 @@ function SignupPageInner() {
                 </button>
               </div>
             </div>
+
+            <HCaptchaWidget
+              ref={captchaRef}
+              onVerify={(token) => setCaptchaToken(token)}
+              onExpire={() => setCaptchaToken(null)}
+            />
 
             <Button
               type="submit"

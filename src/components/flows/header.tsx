@@ -179,11 +179,11 @@ export function EditorHeader() {
           <StatusBadge status={state.status} />
           {dirty && (
             <span
-              className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-primary"
+              className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-amber-300"
               title={t("flows.unsavedChanges")}
               aria-live="polite"
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
               {t("flows.edited")}
             </span>
           )}
@@ -365,7 +365,7 @@ function StatusBadge({ status }: { status: BuilderState["status"] }) {
   const { t } = useTranslation();
   const cls = {
     draft: "border-border bg-muted text-muted-foreground",
-    active: "border-primary/40 bg-primary-soft text-primary",
+    active: "border-emerald-600/40 bg-emerald-500/10 text-emerald-300",
     archived: "border-border bg-muted/50 text-muted-foreground",
   }[status];
 

@@ -36,6 +36,7 @@ export interface Profile {
    */
   account_role?: AccountRole;
   is_super_admin?: boolean;
+  sector?: string | null;
   created_at: string;
 }
 
@@ -172,6 +173,7 @@ export interface AccountMember {
   email: string | null;
   avatar_url: string | null;
   role: AccountRole;
+  sector?: string | null;
   joined_at: string;
 }
 

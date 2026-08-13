@@ -3,11 +3,11 @@
 | Campo | Valor |
 | --- | --- |
 | Livro | VII — Linguagem |
-| Versão | 1.0.0 |
+| Versão | 1.1.0 |
 | Estado | Estável |
 | Depende de | Capítulos 5, 20, 21, 22, 57, 58 |
 | É pré-requisito de | Capítulo 60, Anexo A |
-| Artigos | `FH-59.01` a `FH-59.10` |
+| Artigos | `FH-59.01` a `FH-59.11` |
 
 ---
 
@@ -53,6 +53,13 @@ Anexo A e explicadas no primeiro uso em cada contexto.
 **`FH-59.10`** — Nome de canal, provedor ou tecnologia aparece **apenas onde é a
 informação**, nunca como nome de conceito, entidade ou seção (`FH-05.06`).
 > **Verificação:** algum nome de canal ou tecnologia nomeia conceito ou seção? → NÃO = cumpre | SIM = viola.
+
+**`FH-59.11`** — Termos de **tecnologia, arquitetura, segurança e conformidade** —
+e suas siglas — **NUNCA** aparecem em comunicação destinada ao usuário final sem
+justificativa explícita registrada. Na documentação técnica são livres; como
+argumento, título, cartão, dica ou benefício, são proibidos (`FH-57.11`,
+`FH-59.09`). A lista vive no Anexo A, §6.
+> **Verificação:** algum termo técnico, de fornecedor ou de conformidade aparece em texto de usuário sem justificativa registrada? → NÃO = cumpre | SIM = viola.
 
 ---
 
@@ -268,3 +275,17 @@ significado. Nomear rápido é fácil; renomear é caro e cobrado do usuário.
 | Termos de código | `src/types/index.ts` |
 | Termos de banco | `supabase/migrations/` |
 | Termos do usuário | Etiquetas, campos personalizados, funis e etapas |
+
+---
+
+## 14. Histórico de emendas
+
+### v1.1.0 — Característica não é mensagem
+
+Emenda **MENOR** em cadeia (`FH-04.10`), derivada da emenda v1.1.0 do Capítulo 57,
+onde está o registro completo dos seis itens de `FH-04.02`.
+
+`FH-59.11` estende `FH-59.09` (siglas) e `FH-59.10` (nome de tecnologia) da
+**interface** para **toda comunicação ao usuário final**, e transfere o ônus:
+antes bastava definir a sigla; agora é preciso justificar sua presença. Anexo A §6
+atualizado no mesmo ciclo (`FH-04.08`).

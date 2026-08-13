@@ -125,11 +125,30 @@ export async function handleNotifications(
 
         if (data) notificationIds.push(data.id);
       } else {
-        // Notify all account members
-        const { data: members } = await supabase
+        // If a target sector is provided, notify members belonging to that sector.
+        // Fallback to all account members if no members are tagged with that sector yet.
+        let memberQuery = supabase
           .from("profiles")
           .select("user_id")
           .eq("account_id", context.account_id);
+
+        if (p.target_sector) {
+          const { data: sectorMembers } = await supabase
+            .from("profiles")
+            .select("user_id")
+            .eq("account_id", context.account_id)
+            .eq("sector", p.target_sector);
+
+          if (sectorMembers && sectorMembers.length > 0) {
+            memberQuery = supabase
+              .from("profiles")
+              .select("user_id")
+              .eq("account_id", context.account_id)
+              .eq("sector", p.target_sector);
+          }
+        }
+
+        const { data: members } = await memberQuery;
 
         if (members) {
           for (const m of members) {

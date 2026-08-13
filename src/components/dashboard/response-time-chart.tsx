@@ -105,7 +105,7 @@ export function ResponseTimeChart({
               render={
                 <button
                   type="button"
-                  className="group inline-flex items-center gap-1.5 rounded-full border border-destructive/40 bg-destructive/10 px-2.5 py-1 font-medium text-destructive tabular-nums hover:bg-destructive/20 hover:border-destructive/60 transition-all"
+                  className="group inline-flex items-center gap-1.5 rounded-full border border-rose-500/40 bg-rose-500/10 px-2.5 py-1 font-medium text-rose-300 tabular-nums hover:bg-rose-500/20 hover:border-rose-500/60 transition-all"
                   title="Clique para alterar a meta"
                 />
               }

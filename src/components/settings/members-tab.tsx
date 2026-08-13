@@ -76,12 +76,21 @@ import { InviteMemberDialog } from './invite-member-dialog';
 import { SettingsPanelHead } from './settings-panel-head';
 import { ROLE_META } from './role-meta';
 
+const SECTOR_OPTIONS = [
+  { value: "finance", label: "Financeiro" },
+  { value: "support", label: "Suporte técnico" },
+  { value: "sales", label: "Vendas e comercial" },
+  { value: "operations", label: "Operações" },
+  { value: "leadership", label: "Diretoria" },
+];
+
 interface Member {
   user_id: string;
   full_name: string;
   email: string | null;
   avatar_url: string | null;
   role: AccountRole;
+  sector?: string | null;
   joined_at: string;
 }
 
@@ -251,6 +260,44 @@ export function MembersTab() {
     }
   }
 
+  async function handleSectorChange(member: Member, nextSector: string) {
+    if (member.sector === nextSector) return;
+    const previousSector = member.sector;
+    setPendingMemberAction(member.user_id);
+    setMembers((prev) =>
+      prev.map((m) =>
+        m.user_id === member.user_id ? { ...m, sector: nextSector } : m,
+      ),
+    );
+    try {
+      const res = await fetch(`/api/account/members/${member.user_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sector: nextSector }),
+      });
+      if (!res.ok) {
+        setMembers((prev) =>
+          prev.map((m) =>
+            m.user_id === member.user_id ? { ...m, sector: previousSector } : m,
+          ),
+        );
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || "Erro ao atualizar setor");
+        return;
+      }
+      toast.success("Setor atualizado com sucesso");
+    } catch (err) {
+      setMembers((prev) =>
+        prev.map((m) =>
+          m.user_id === member.user_id ? { ...m, sector: previousSector } : m,
+        ),
+      );
+      toast.error(t('settings.members.couldNotReachServer'));
+    } finally {
+      setPendingMemberAction(null);
+    }
+  }
+
   async function handleRevoke(invite: Invitation) {
     try {
       const res = await fetch(`/api/account/invitations/${invite.id}`, {
@@ -396,17 +443,39 @@ export function MembersTab() {
                     </div>
                   </div>
 
-                  {/* Joined date stays desktop-only. The mobile row's
-                      vertical density makes the joined date noise. */}
-                  <div className="hidden sm:block text-right text-xs text-muted-foreground">
-                    {t('settings.members.joined')} {fmtDate(member.joined_at)}
-                  </div>
-
                   {/* Actions cluster. On mobile this is its own row
                       below the identity block; on desktop it sits
                       inline. Items align to the start on mobile so the
                       role dropdown lines up under the avatar. */}
                   <div className="flex items-center gap-2 sm:gap-3">
+                    {/* Sector display / editor */}
+                    {canManageMembers ? (
+                      <Select
+                        value={member.sector || ""}
+                        onValueChange={(v) => v && handleSectorChange(member, v)}
+                      >
+                        <SelectTrigger
+                          className="w-36 bg-muted border-border text-foreground text-xs"
+                          disabled={isBusy}
+                        >
+                          <SelectValue placeholder="Setor">
+                            {SECTOR_OPTIONS.find((s) => s.value === member.sector)?.label || "Sem setor"}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SECTOR_OPTIONS.map((s) => (
+                            <SelectItem key={s.value} value={s.value} className="text-xs">
+                              {s.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                        {SECTOR_OPTIONS.find((s) => s.value === member.sector)?.label || "Sem setor"}
+                      </span>
+                    )}
+
                     {/* Role display / editor. Inline Select is admin+
                         only AND not allowed on the owner row (owner
                         changes go through transfer, which lands later). */}
@@ -570,7 +639,7 @@ export function MembersTab() {
         <DialogContent className="bg-popover border-border sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-popover-foreground">
-              <AlertTriangle className="size-4 text-destructive" />
+              <AlertTriangle className="size-4 text-amber-400" />
               {t('settings.members.removeMember')}
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
@@ -592,7 +661,7 @@ export function MembersTab() {
             <Button
               onClick={handleRemove}
               disabled={!!pendingMemberAction}
-              variant="destructive"
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               {pendingMemberAction ? (
                 <>

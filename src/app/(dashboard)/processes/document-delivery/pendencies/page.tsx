@@ -54,7 +54,7 @@ export default function DocumentDeliveryPendenciesPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-            <Clock className="h-7 w-7 text-muted-foreground" />
+            <Clock className="h-7 w-7 text-amber-500" />
             Fila de Pendências para Revisão Manual
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -69,7 +69,7 @@ export default function DocumentDeliveryPendenciesPage() {
         </div>
       ) : pendencies.length === 0 ? (
         <div className="py-16 text-center space-y-4 bg-muted/20 border border-dashed rounded-xl p-8 max-w-md mx-auto">
-          <ShieldCheck className="h-12 w-12 text-primary mx-auto" />
+          <ShieldCheck className="h-12 w-12 text-emerald-500 mx-auto" />
           <div>
             <h3 className="font-semibold text-lg text-foreground">Nenhuma pendência retida</h3>
             <p className="text-sm text-muted-foreground mt-1">

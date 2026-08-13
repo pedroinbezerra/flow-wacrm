@@ -6,11 +6,11 @@
 
 | Campo | Valor |
 | --- | --- |
-| Versão | 1.0.0 |
+| Versão | 1.1.0 |
 | Termos de domínio | 15 |
 | Termos administrativos | 6 |
 | Termos da Constituição | 20 |
-| Termos proibidos | 12 |
+| Termos proibidos | 12 + 7 em comunicação (§6.1) |
 
 ---
 
@@ -125,6 +125,27 @@
 | Sistema (como sujeito de fala) | — | O produto não se personifica (`FH-57.10`) |
 | Registro, item, objeto (na interface) | Nome da entidade | Termos técnicos genéricos (`FH-59.08`) |
 
+### 6.1 Termos técnicos em comunicação ao usuário final
+
+Proibidos como argumento, título, cartão, dica, benefício ou selo (`FH-59.11`).
+Livres em documentação técnica. A coluna "Comunique" indica a consequência —
+nunca o mecanismo.
+
+| Proibido | Comunique | Motivo |
+| --- | --- | --- |
+| BYOK, BYOA, "suas chaves de API" | **Você está no controle.** Suas conexões permanecem sob seu controle | Sigla não definida convertida em benefício (`FH-59.09`) |
+| RLS, multi-tenant, "isolamento", "segurança bancária" | **Seu espaço permanece seu.** Cada operação permanece isolada e protegida | Requisito de segurança convertido em slogan (`FH-57.11`) |
+| Retenção zero, "não armazenamos" | **Seus dados continuam sendo seus.** O FlowHub trabalha com seus arquivos sem tomar posse deles | Propriedade interna convertida em claim (`FH-57.11`) |
+| LGPD, DPA, "conformidade" | **Seus dados merecem transparência.** Privacidade faz parte de como o FlowHub foi construído | Obrigação legal convertida em argumento (`FH-57.12`) |
+| Supabase, Meta, nome de fornecedor | — | Fornecedor não é benefício (`FH-59.10`) |
+| API, JWT, webhook, serverless, Redis | — | Detalhe arquitetural não é linguagem de usuário (`FH-58.03`) |
+| "API Oficial" como selo | O que ela permite ao usuário | Meio apresentado como fim (`FH-57.11`) |
+
+**Exceção.** Onde o termo **é** a informação — a tela de configuração em que a
+pessoa cola uma credencial, a página de subprocessadores, o texto legal — ele é
+correto e obrigatório (`FH-59.10`). A proibição atinge o uso **persuasivo**, não o
+uso **operacional**.
+
 ---
 
 ## 7. Termos criados pelo usuário
@@ -136,5 +157,5 @@ vocabulário **do usuário**.
 
 ---
 
-*Anexo A v1.0.0. Atualização obrigatória a cada termo novo, renomeação ou
+*Anexo A v1.1.0. Atualização obrigatória a cada termo novo, renomeação ou
 banimento (`FH-04.08`, `FH-59.04`).*

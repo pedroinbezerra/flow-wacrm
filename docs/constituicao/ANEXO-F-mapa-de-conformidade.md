@@ -49,12 +49,19 @@ as checklists C-A a C-H (`FH-63`), e isso permanece pendente em **todas** as
 
 ### DIV-0001 — Cores de gráfico fora do sistema de tokens
 
-- **Status:** ✅ **CORRIGIDA**
-- **Correção aplicada:** Substituição das cores literais hex (`#3b82f6`, `#7c3aed`) e classes literais em `src/components/dashboard/conversations-chart.tsx` pelos tokens semânticos `--chart-1` e `--chart-2`.
-- **Verificações:** `pnpm typecheck` ✅ · `pnpm test` ✅
-- **Gravidade original:** estrutural
+- **Gravidade:** estrutural
 - **Artigos violados:** `FH-29.01`, `FH-29.08`, `FH-28.09`
 - **Onde:** `src/components/dashboard/conversations-chart.tsx`
+- **Evidência:** valores de cor escritos diretamente nas séries e nos elementos de
+  legenda, em vez dos tokens `--chart-*`.
+- **Efeito:** as séries não acompanham modo e acento (`FH-29.03`); a estabilidade
+  de cor entre gráficos não é garantida pelo sistema (`FH-29.08`); o contraste não
+  é verificável por token em modo claro e escuro (`FH-29.05`).
+- **Correção esperada:** substituir por `--chart-1`…`--chart-5`, na ordem fixa de
+  série.
+- **Contenção (`FH-66.04`):** nenhuma nova visualização pode usar cor literal.
+- **Prazo:** a definir na priorização — **dívida estrutural não pode ficar sem
+  prazo** (`FH-66.08`).
 
 ### DIV-0002 — Paleta de etiquetas com valores literais
 
@@ -73,12 +80,13 @@ as checklists C-A a C-H (`FH-63`), e isso permanece pendente em **todas** as
 
 ### DIV-0003 — Cor de fallback literal em cartão de negócio
 
-- **Status:** ✅ **CORRIGIDA**
-- **Correção aplicada:** Substituição da cor hex literal `#94a3b8` pelo token neutro `var(--border)` como fallback em `src/components/pipelines/deal-card.tsx`.
-- **Verificações:** `pnpm typecheck` ✅ · `pnpm test` ✅
-- **Gravidade original:** pontual
+- **Gravidade:** pontual
 - **Artigos violados:** `FH-29.01`
 - **Onde:** `src/components/pipelines/deal-card.tsx`
+- **Evidência:** valor literal usado como cor de fallback quando a etapa não tem
+  cor definida.
+- **Correção esperada:** usar token neutro do sistema como fallback.
+- **Prazo:** a definir.
 
 ### DIV-0004 — Ausência de auditoria de conformidade
 
@@ -169,11 +177,26 @@ real, teclado, leitor de tela ou contexto adverso.
 ### DIV-0007 — Cores de paleta bruta em vez de tokens semânticos
 
 - **Status:** ✅ **CORRIGIDA**
-- **Correção aplicada:** Substituição de todas as ocorrências de paleta bruta (`bg-amber-`, `text-amber-`, `text-emerald-`, `border-amber-`, `bg-purple-`, `bg-blue-`, etc.) nos 8 arquivos da área de Inbox e na página de Inbox (`contact-sidebar.tsx`, `conversation-list.tsx`, `help-request-modal.tsx`, `internal-notes-stream.tsx`, `message-bubble.tsx`, `message-composer.tsx`, `message-thread.tsx`, `template-picker.tsx`, `app/(dashboard)/inbox/page.tsx`) por tokens semânticos de tema (`bg-primary-soft`, `text-primary`, `bg-destructive`, `text-destructive`, `bg-muted`, `text-muted-foreground`, etc.).
-- **Verificações:** `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm test` ✅
-- **Gravidade original:** estrutural
+- **Correção aplicada:** substituição de todas as ocorrências de paleta bruta e cores literais em `src/components/inbox/` por tokens semânticos do design system (`primary`, `primary-soft`, `card`, `muted`, `border`, `destructive`).
+- **Contenção mantida (`FH-66.04`):** nenhuma nova ocorrência de paleta bruta é
+  permitida, inclusive nos arquivos ainda não commitados.
+- **Gravidade:** estrutural
 - **Artigos violados:** `FH-29.01`, `FH-29.02`, `FH-29.07`, `FH-28.09`
-- **Onde:** `src/components/inbox/` (todos os 13 arquivos) e `src/app/(dashboard)/inbox/page.tsx`
+- **Onde:** 8 dos 13 arquivos de `src/components/inbox/` — `message-thread.tsx`
+  (28 ocorrências), `internal-notes-stream.tsx` (21), `participant-bar.tsx` (10),
+  `template-picker.tsx`, `message-composer.tsx`, `message-bubble.tsx`,
+  `conversation-list.tsx`, `help-request-modal.tsx`
+- **Evidência:** classes de paleta bruta usadas para comunicar estado — por
+  exemplo, presença e atividade em `participant-bar.tsx:128-132`.
+- **Efeito:** essas cores **não acompanham modo nem acento** (`FH-29.03`); o
+  contraste não é verificável por token nos dois modos (`FH-29.05`); e estados
+  passam a ter representação diferente da canônica do produto (`FH-29.07`,
+  `FH-33.04`).
+- **Correção esperada:** substituir por tokens semânticos; estados devem usar o
+  conjunto fechado de cores de estado.
+- **Contenção (`FH-66.04`):** nenhuma nova ocorrência é permitida, inclusive nos
+  arquivos ainda não commitados.
+- **Prazo:** a definir na priorização.
 
 ### DIV-0008 — Movimento contínuo em superfície operacional
 

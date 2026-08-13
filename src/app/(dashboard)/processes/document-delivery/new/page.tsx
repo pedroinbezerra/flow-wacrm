@@ -112,7 +112,7 @@ function WizardContent() {
       {/* Progress Bar */}
       <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
         <div
-          className="bg-primary h-full transition-all duration-300 ease-in-out"
+          className="bg-emerald-500 h-full transition-all duration-300 ease-in-out"
           style={{ width: `${(currentStep / 6) * 100}%` }}
         />
       </div>

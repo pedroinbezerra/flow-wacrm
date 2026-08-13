@@ -3,11 +3,11 @@
 | Campo | Valor |
 | --- | --- |
 | Livro | VII — Linguagem |
-| Versão | 1.0.0 |
+| Versão | 1.1.0 |
 | Estado | Estável |
 | Depende de | Capítulos 9, 11, 17, 40, 52 |
 | É pré-requisito de | Capítulos 58, 59, 60 |
-| Artigos | `FH-57.01` a `FH-57.10` |
+| Artigos | `FH-57.01` a `FH-57.13` |
 
 ---
 
@@ -53,6 +53,24 @@ regras deste capítulo (`FH-09.06`, `FH-53.08`).
 **`FH-57.10`** — Dentro do produto, o sistema **NUNCA** se personifica em primeira
 pessoa. Ele descreve fatos e ações, não a si mesmo (`FH-09.03`, `FH-09.07`).
 > **Verificação:** o texto personifica o sistema? → NÃO = cumpre | SIM = viola.
+
+**`FH-57.11`** — *(Característica não é mensagem)* Toda comunicação percorre a
+cadeia **capacidade → benefício → percepção → comunicação**. Nenhuma camada
+**PODE** repetir a linguagem da anterior. Texto derivado diretamente do nome da
+funcionalidade, da tecnologia ou do requisito que o originou é proibido.
+> **Verificação:** o texto expressa a consequência para o usuário, e não o nome do que foi construído? → SIM = cumpre | NÃO = viola.
+
+**`FH-57.12`** — As regras deste capítulo valem em **toda comunicação destinada ao
+usuário final**, dentro e fora do produto — interface, e-mail, notificação,
+onboarding, material de aquisição e página pública. Persuasão é permitida fora do
+produto (`FH-57.05`), mas **DEVE** partir da consequência, nunca do nome técnico.
+> **Verificação:** o texto fora do produto persuade pela consequência, e não pelo nome da implementação? → SIM = cumpre | NÃO = viola.
+
+**`FH-57.13`** — Antes de escrever, o **registro do conteúdo** é declarado: técnico,
+funcional, benefício, experiencial ou comercial. Em registro experiencial ou
+comercial, copiar a linguagem da especificação técnica é proibido — a abstração
+**DEVE** subir até a consequência humana.
+> **Verificação:** o registro foi declarado e a linguagem corresponde a ele? → SIM = cumpre | NÃO = viola.
 
 ---
 
@@ -272,3 +290,69 @@ produto fala menos e é levado mais a sério quando fala.
 | Textos de erro | Chave `errors` em `src/i18n/messages/pt-BR.json` |
 | Texto gerado por IA | `src/lib/ai-service/` |
 | Comunicações externas | Modelos de e-mail e notificação em `src/app/api/` |
+| Comunicação de aquisição | `src/app/page.tsx`, `src/components/home/`, chave `home` do dicionário |
+
+---
+
+## 14. Histórico de emendas
+
+### v1.1.0 — Característica não é mensagem
+
+Emenda **MENOR** (`FH-04.01`): três artigos novos, nenhuma revogação.
+
+**1. O que muda.** Passam a existir `FH-57.11` (cadeia de abstração obrigatória),
+`FH-57.12` (escopo estendido à comunicação de aquisição) e `FH-57.13` (declaração
+do registro do conteúdo antes de escrever). Em cadeia, `FH-59.11` no Capítulo 59.
+
+**2. Por que muda.** O capítulo governava apenas o interior do produto.
+`FH-57.05` proíbe linguagem publicitária "dentro do produto" — e, por leitura a
+contrario, deixava a comunicação de aquisição sem regra de derivação. Existiam
+artigos contra jargão (`FH-58.03`), contra nome de tecnologia como conceito
+(`FH-59.10`) e a favor da perspectiva do usuário (`FH-57.03`), mas nenhum proibia
+**derivar o texto do nome da funcionalidade**. A lacuna não era de princípio: era
+de alcance.
+
+**3. Evidência que motivou** (`FH-04.03`). Copy em produção na chave `home` de
+`src/i18n/messages/pt-BR.json`, quatro casos:
+
+| Texto atual | Registro real | Problema |
+| --- | --- | --- |
+| "Meta BYOK & BYOA" | técnico | Sigla não definida, em contexto comercial |
+| "Isolamento Multi-tenant & RLS — Arquitetura bancária com políticas de segurança ao nível de linha (RLS) no Supabase" | técnico | Nome de fornecedor e de mecanismo como argumento |
+| "Armazenamento & Retenção Zero" | técnico | Requisito de segurança convertido em slogan |
+| "Conformidade com LGPD & DPA" | jurídico | Requisito legal convertido em benefício |
+
+Nos quatro, o texto foi derivado do nome do que foi construído, não da
+consequência para quem usa.
+
+**A evidência não é exclusiva da aquisição.** A varredura do dicionário encontrou o
+mesmo padrão no **onboarding**, que é o registro mais experiencial do produto:
+"Vincule o número da sua empresa via Meta API"; "alta entregabilidade via WhatsApp
+API"; "Chave de API (BYOK)"; "parâmetros de inferência"; "métricas de tokens,
+latência, motivos de handoff". Este é o motivo pelo qual `FH-57.12` estende o
+alcance a **toda** comunicação ao usuário final, e não apenas à página pública: o
+desvio nasce da mesma causa — escrever a partir da especificação — e aparece em
+qualquer camada onde essa causa opere.
+
+**4. O que passa a ser proibido.** Derivar texto de usuário do nome da
+funcionalidade, da tecnologia, do fornecedor ou do requisito. Converter
+automaticamente requisito de segurança ou obrigação legal em argumento. Escrever
+texto experiencial ou comercial reaproveitando a linguagem da especificação.
+
+**5. O que deixa de ser proibido.** Nada. Nenhum artigo foi revogado nem
+restringido; `FH-57.05` permanece íntegro.
+
+**6. Impacto sobre o produto existente.** Duas dívidas, em camadas distintas
+(`FH-04.09` — o passado em desconformidade vira dívida, nunca é legitimado pela
+emenda):
+
+- **DIV-0014** — comunicação de aquisição: os quatro textos da tabela acima e o
+  bloco `home.capabilities`. Bloqueia a publicação da landing.
+- **DIV-0015** — interior do produto: sete linhas de `onboarding.steps.*` e
+  `onboarding.tour.*`. Não bloqueia entrega.
+
+Fora de escopo, e corretas: as chaves de configuração de credenciais
+(`settings.whatsappConfig.*`), onde o termo técnico **é** a informação.
+
+Contenção imediata (`FH-66.04`): nenhum texto novo de usuário pode citar
+tecnologia, fornecedor ou sigla de conformidade fora do registro técnico.

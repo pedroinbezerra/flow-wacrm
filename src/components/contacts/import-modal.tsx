@@ -603,19 +603,19 @@ export function ImportModal({
                   </div>
                 )}
                 {result.tagsAssigned > 0 && (
-                  <div className="flex items-center gap-1.5 text-sm text-primary">
+                  <div className="flex items-center gap-1.5 text-sm text-cyan-400">
                     <CheckCircle className="size-4 shrink-0" />
                     {t('contacts.importModal.tagsAssignedResult', { count: result.tagsAssigned })}
                   </div>
                 )}
                 {result.skipped > 0 && (
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1.5 text-sm text-amber-400">
                     <AlertTriangle className="size-4 shrink-0" />
                     {t('contacts.importModal.skippedResult', { count: result.skipped })}
                   </div>
                 )}
                 {result.failed > 0 && (
-                  <div className="flex items-center gap-1.5 text-sm text-destructive">
+                  <div className="flex items-center gap-1.5 text-sm text-red-400">
                     <XCircle className="size-4 shrink-0" />
                     {t('contacts.importModal.failedResult', { count: result.failed })}
                   </div>

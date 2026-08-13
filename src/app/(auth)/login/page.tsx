@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useTranslation } from "@/hooks/use-translation";
 import { Button } from "@/components/ui/button";
@@ -15,14 +15,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { UsersRound, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, UsersRound } from "lucide-react";
 import { FlowLogo } from "@/components/layout/flow-logo";
+import { HCaptchaWidget, HCaptchaWidgetRef, isCaptchaConfigured } from "@/components/auth/hcaptcha";
 
 // `useSearchParams` opts the component out of static prerendering
-// unless it sits under a Suspense boundary. We split the form into
-// a child component so the outer page can prerender the chrome
-// (background, card frame) while the form hydrates with the query
-// string on the client.
+// unless wrapped in Suspense.
 export default function LoginPage() {
   return (
     <Suspense fallback={null}>
@@ -33,29 +31,34 @@ export default function LoginPage() {
 
 function LoginPageInner() {
   const searchParams = useSearchParams();
-  const { t } = useTranslation();
-  // Forwarded from `/join/<token>` when the visitor already has an
-  // account. After a successful sign-in we send them to the join
-  // page to accept rather than to /dashboard.
   const inviteToken = searchParams.get("invite");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() => {
+    // Standard error parameter check
+    if (searchParams.get("error") === "invalid_session") {
+      return null;
+    }
+    return null;
+  });
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { t } = useTranslation();
   const supabase = createClient();
+  const captchaRef = useRef<HCaptchaWidgetRef>(null);
 
-  useEffect(() => {
-    const urlError = searchParams.get("error");
-    if (urlError === "link-expired" || urlError === "auth-callback-failed") {
-      setError(t("auth.resetPassword.invalidSessionDescription"));
-    }
-  }, [searchParams, t]);
+  const getLoginErrorMessage = (message?: string) => {
+    if (!message) return t("auth.login.error");
+    const lowerMessage = message.toLowerCase();
 
-  const getLoginErrorMessage = (message: string) => {
-    if (message.toLowerCase().includes("invalid login credentials")) {
+    if (
+      lowerMessage.includes("invalid login credentials") ||
+      lowerMessage.includes("invalid_credentials") ||
+      lowerMessage.includes("invalid credentials")
+    ) {
       return t("auth.login.invalidCredentials");
     }
 
@@ -65,15 +68,26 @@ function LoginPageInner() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (isCaptchaConfigured() && !captchaToken) {
+      setError(t("auth.signup.captchaRequired"));
+      return;
+    }
+
     setLoading(true);
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
+      options: {
+        ...(captchaToken ? { captchaToken } : {}),
+      },
     });
 
     if (error) {
       setError(getLoginErrorMessage(error.message));
+      captchaRef.current?.resetCaptcha();
+      setCaptchaToken(null);
       setLoading(false);
       return;
     }
@@ -122,7 +136,7 @@ function LoginPageInner() {
               <Input
                 id="email"
                 type="email"
-                placeholder={t("common.placeholders.emailExample")}
+                placeholder={t("auth.login.emailPlaceholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -137,7 +151,7 @@ function LoginPageInner() {
                 </Label>
                 <Link
                   href="/forgot-password"
-                  className="text-sm text-primary hover:text-primary/80"
+                  className="text-xs text-primary hover:text-primary/80 transition-colors"
                 >
                   {t("auth.login.forgotPassword")}
                 </Link>
@@ -168,10 +182,16 @@ function LoginPageInner() {
               </div>
             </div>
 
+            <HCaptchaWidget
+              ref={captchaRef}
+              onVerify={(token) => setCaptchaToken(token)}
+              onExpire={() => setCaptchaToken(null)}
+            />
+
             <Button
               type="submit"
               disabled={loading}
-              className="mt-2 h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              className="mt-2 h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 font-medium"
             >
               {loading ? t("auth.login.loading") : t("auth.login.submit")}
             </Button>

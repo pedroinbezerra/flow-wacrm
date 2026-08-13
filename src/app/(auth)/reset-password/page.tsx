@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/card";
 import { CheckCircle, AlertCircle, KeyRound, Eye, EyeOff } from "lucide-react";
 import { FlowLogo } from "@/components/layout/flow-logo";
+import { PasswordRequirements } from "@/components/auth/password-requirements";
+import { validatePassword, parseSupabasePasswordError } from "@/lib/auth/password-policy";
 
 export default function ResetPasswordPage() {
   return (
@@ -71,13 +73,9 @@ function ResetPasswordPageInner() {
     e.preventDefault();
     setError(null);
 
-    if (password.length < 6) {
-      setError(t("auth.resetPassword.passwordTooShort"));
-      return;
-    }
-
-    if (password.length > 72) {
-      setError(t("auth.resetPassword.passwordTooLong"));
+    const validation = validatePassword(password);
+    if (!validation.isValid) {
+      setError(validation.errors[0] || t("auth.resetPassword.passwordRequirementsNotMet"));
       return;
     }
 
@@ -105,7 +103,7 @@ function ResetPasswordPageInner() {
         }
 
         console.error("[reset-password] Erro na redefinição de senha:", error);
-        setError(error.message || t("auth.resetPassword.error"));
+        setError(parseSupabasePasswordError(error, t("auth.resetPassword.error")));
         setLoading(false);
         return;
       }
@@ -120,7 +118,7 @@ function ResetPasswordPageInner() {
         await supabase.auth.signOut();
         setSuccess(true);
       } else {
-        setError(t("auth.resetPassword.error"));
+        setError(parseSupabasePasswordError(err, t("auth.resetPassword.error")));
       }
     } finally {
       setLoading(false);
@@ -255,6 +253,7 @@ function ResetPasswordPageInner() {
                   )}
                 </button>
               </div>
+              <PasswordRequirements password={password} className="mt-1" />
             </div>
 
             <div className="flex flex-col gap-2">

@@ -276,7 +276,7 @@ function FieldRow({
         disabled={busy}
         onClick={() => onDelete(field)}
         title={t('contacts.customFields.deleteFieldTitle')}
-        className="shrink-0 text-muted-foreground hover:text-destructive"
+        className="shrink-0 text-muted-foreground hover:text-red-400"
       >
         {busy ? (
           <Loader2 className="size-4 animate-spin" />

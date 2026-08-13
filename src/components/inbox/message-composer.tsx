@@ -106,6 +106,7 @@ interface MessageComposerProps {
   onOpenTemplates: () => void;
   replyTo?: ReplyDraft | null;
   onClearReply?: () => void;
+  onActivityChange?: (activity: "typing" | "writing_note" | "viewing") => void;
 }
 
 function formatDuration(seconds: number): string {
@@ -127,6 +128,7 @@ export function MessageComposer({
   onOpenTemplates,
   replyTo,
   onClearReply,
+  onActivityChange,
 }: MessageComposerProps) {
   const { t } = useTranslation();
   // O rascunho é persistido por conversa (FH-10.01, FH-14.01, FH-14.03).
@@ -242,8 +244,27 @@ export function MessageComposer({
     el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
   }, []);
 
+  const activityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerActivity = useCallback(
+    (nextText: string) => {
+      if (!onActivityChange) return;
+      if (activityTimerRef.current) clearTimeout(activityTimerRef.current);
+
+      if (nextText.trim().length > 0) {
+        onActivityChange(mode === "note" ? "writing_note" : "typing");
+        activityTimerRef.current = setTimeout(() => {
+          onActivityChange("viewing");
+        }, 3000);
+      } else {
+        onActivityChange("viewing");
+      }
+    },
+    [mode, onActivityChange]
+  );
+
   const handleSendNote = useCallback(async () => {
-    if (!text.trim() || sessionExpired || sending) return;
+    if (!text.trim() || readOnly || sending) return;
     setSending(true);
     try {
       // Automatically resolve mentioned user IDs from @mentions in text
@@ -284,7 +305,6 @@ export function MessageComposer({
             new CustomEvent("flowhub:refresh_notes", { detail: { conversationId } })
           );
         }
-
       } else {
         toast.error(t("inbox.notes.createError"));
       }
@@ -293,15 +313,16 @@ export function MessageComposer({
     } finally {
       setSending(false);
     }
-  }, [text, sessionExpired, sending, conversationId, consumeText, t]);
+  }, [text, readOnly, sending, conversationId, consumeText, t]);
 
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
-    if (!trimmed || sending || sessionExpired) return;
+    if (!trimmed || sending) return;
 
     if (mode === "note") {
       await handleSendNote();
     } else {
+      if (sessionExpired || readOnly) return;
       setSending(true);
       try {
         onSend(trimmed, replyTo?.id);
@@ -318,6 +339,7 @@ export function MessageComposer({
     text,
     sending,
     sessionExpired,
+    readOnly,
     mode,
     handleSendNote,
     onSend,
@@ -341,6 +363,7 @@ export function MessageComposer({
       const val = e.target.value;
       updateText(val);
       adjustHeight();
+      triggerActivity(val);
 
       const lastAt = val.lastIndexOf("@");
       if (lastAt !== -1 && lastAt >= val.length - 30) {
@@ -354,7 +377,7 @@ export function MessageComposer({
         setMentionQuery(null);
       }
     },
-    [adjustHeight, updateText]
+    [adjustHeight, updateText, triggerActivity]
   );
 
 
@@ -727,11 +750,13 @@ export function MessageComposer({
             placeholder={
               readOnly
                 ? t("inbox.composer.readOnlyReply")
-                : sessionExpired
-                  ? t("inbox.composer.sessionExpiredPlaceholder")
-                  : t("inbox.composer.messagePlaceholder")
+                : mode === "note"
+                  ? t("inbox.notes.placeholder", {}, "Escreva uma nota interna... (@para mencionar)")
+                  : sessionExpired
+                    ? t("inbox.composer.sessionExpiredPlaceholder")
+                    : t("inbox.composer.messagePlaceholder")
             }
-            disabled={sessionExpired || readOnly}
+            disabled={readOnly || (mode === "message" && sessionExpired)}
             rows={1}
             // Textarea keeps its own inline title — the GatedButton
             // wrapping pattern doesn't apply to non-button inputs.
@@ -739,7 +764,7 @@ export function MessageComposer({
             title={readOnly ? t("inbox.composer.readOnlySend") : undefined}
             className={cn(
               "flex-1 resize-none rounded-xl border border-border bg-muted px-4 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none transition-colors focus:border-primary/50",
-              (sessionExpired || readOnly) && "cursor-not-allowed opacity-50"
+              (readOnly || (mode === "message" && sessionExpired)) && "cursor-not-allowed opacity-50"
             )}
           />
 
@@ -747,22 +772,13 @@ export function MessageComposer({
             size="sm"
             canAct={!readOnly}
             gateReason="send messages"
-            disabled={!text.trim() || sessionExpired || sending}
+            disabled={!text.trim() || sending || (mode === "message" && (sessionExpired || readOnly))}
             onClick={handleSend}
             className="h-9 w-9 shrink-0 bg-primary p-0 hover:bg-primary/90 disabled:opacity-40"
           >
             <Send className="h-4 w-4" />
           </GatedButton>
         </div>
-      )}
-
-      {/* Hint sits outside the flex row so its height doesn't push
-          `items-end` buttons below the textarea. Indented to line up
-          under the textarea left edge. */}
-      {!draft && !recording && (
-        <p className="mt-1 pl-22 text-[10px] text-muted-foreground">
-          {t("inbox.composer.quickReplyHint")}
-        </p>
       )}
     </div>
   );

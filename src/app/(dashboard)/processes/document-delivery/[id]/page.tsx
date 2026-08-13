@@ -113,7 +113,7 @@ export default function DocumentDeliveryProcessDetailPage() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold tracking-tight text-foreground">{process.name}</h1>
-              <Badge variant="outline" className={process.status === 'active' ? 'bg-primary-soft text-primary border-primary/30' : 'bg-muted text-muted-foreground'}>
+              <Badge variant="outline" className={process.status === 'active' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-muted text-muted-foreground'}>
                 {process.status === 'active' ? 'Ativo' : 'Pausado'}
               </Badge>
             </div>
@@ -133,7 +133,7 @@ export default function DocumentDeliveryProcessDetailPage() {
             size="sm"
             onClick={handleTriggerSync}
             disabled={isSyncing || process.status === 'paused'}
-            className="bg-primary hover:bg-primary-hover text-primary-foreground gap-2 font-semibold text-xs"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-semibold text-xs"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
             {isSyncing ? 'Sincronizando...' : 'Executar Sincronização'}
@@ -149,11 +149,11 @@ export default function DocumentDeliveryProcessDetailPage() {
         </Card>
         <Card className="p-4 border text-center">
           <span className="text-xs text-muted-foreground uppercase">Documentos Entregues</span>
-          <p className="text-xl font-bold text-primary mt-1">{process.success_count}</p>
+          <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{process.success_count}</p>
         </Card>
         <Card className="p-4 border text-center">
           <span className="text-xs text-muted-foreground uppercase">Pendências Geradas</span>
-          <p className="text-xl font-bold text-muted-foreground mt-1">{process.pendency_count}</p>
+          <p className="text-xl font-bold text-amber-600 dark:text-amber-400 mt-1">{process.pendency_count}</p>
         </Card>
         <Card className="p-4 border text-center">
           <span className="text-xs text-muted-foreground uppercase">Limite Mín. Confiança</span>
@@ -165,7 +165,7 @@ export default function DocumentDeliveryProcessDetailPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-primary" />
+            <ShieldCheck className="h-5 w-5 text-emerald-500" />
             Trilha de Auditoria & Histórico de Execução (FH-11.06 / FH-53.10)
           </h2>
           <Button variant="outline" size="sm" onClick={fetchDetailAndLogs} className="gap-1.5 text-xs">

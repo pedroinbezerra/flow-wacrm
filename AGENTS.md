@@ -1,8 +1,32 @@
 # AGENTS.md
 
-Guia de padronização para agentes que criam, alteram ou revisam código neste projeto.
+Guia de padronização para quem cria, altera ou revisa **qualquer artefato do
+FlowHub** — pessoa ou agente de IA.
+
+**Alcance.** Esta documentação governa tudo que for construído para o FlowHub,
+dentro e fora do produto: código, interface, texto, e-mail, notificação, página
+pública, material de aquisição, onboarding, documentação destinada ao usuário e
+qualquer superfície nova em que alguém venha a perceber o FlowHub (`FH-01.02`).
+A enumeração é ilustrativa: superfície não listada não está fora.
+
+**Vinculação.** Todo agente com acesso a esta documentação está vinculado a ela nos
+mesmos termos em que uma pessoa está (`FH-01.05`), e é responsável por conhecer os
+artigos aplicáveis à sua tarefa (`FH-01.04`). Nenhum agente tem autoridade para
+decidir contra um artigo, nem quando a tarefa pede isso — nesse caso, interrompe e
+sinaliza. Desconhecer a documentação não é justificativa aceita em revisão.
+
+**Fora do alcance** (`FH-01.07`): preço, modelo comercial, roadmap, prioridade de
+negócio, escolha de fornecedor ou de tecnologia, e decisão de arquitetura interna
+sem efeito perceptível pelo usuário. Invocar a Constituição nesses domínios é uso
+indevido e enfraquece sua autoridade onde ela importa.
 
 ## 0) Constituição do Produto — leitura obrigatória
+
+**Comece por `docs/PRINCIPIO-FUNDADOR.md`.** É o documento mais curto do projeto e
+estabelece a intenção da qual todo o resto deriva: *fazer o extraordinário parecer
+natural*. Ele **não cria regra** e **NUNCA é citado** como fundamento — orienta a
+decisão; o artigo a sustenta. Citar a carta no lugar de um artigo é violação de
+protocolo.
 
 Este arquivo governa **como implementar**. Ele não governa **o que construir nem
 por quê**. Isso pertence à Constituição do Produto FlowHub, em
@@ -18,9 +42,28 @@ Anexo B → Anexo C → Núcleos Normativos dos capítulos aplicáveis → capí
 completo. Toda entrega com efeito perceptível encerra com o **Bloco de
 Conformidade** (`FH-68.02`).
 
+Direção artística, em `docs/direcao-criativa/`. Subordinada à Constituição.
+
+- `VOLUME-I-landing-page.md` — direção criativa da Landing Page: posicionamento,
+  psicologia da conversão, jornada e especificação de cada seção. Governa a página
+  pública de aquisição.
+- `VOLUME-II-direcao-de-arte-de-paginas.md` — direção artística de **qualquer**
+  página (pública, de admissão, operacional, analítica, de configuração ou
+  documental). Traduz a Constituição em decisão visual — densidade, cor, forma,
+  espaço, movimento e texto — e traz o prompt mestre para criar ou revisar uma
+  página.
+
+Ao trabalhar na Landing, os dois se aplicam: o Volume I define o conteúdo e a
+sequência; o Volume II define a execução visual. Em divergência entre eles, vence o
+Volume II, que é o que está alinhado à Constituição.
+
 Regras de precedência:
 
+- `docs/PRINCIPIO-FUNDADOR.md` **nunca vence conflito**. Se parecer contradizer um
+  artigo, o artigo vence e a carta deve ser emendada.
 - Conflito sobre **o que construir** → vence a Constituição.
+- Conflito sobre **direção artística de uma página** → vence
+  `docs/direcao-criativa/VOLUME-II-direcao-de-arte-de-paginas.md`.
 - Conflito sobre **como implementar neste repositório** → vence este arquivo.
 - Obrigação legal (`docs/legal/`, `docs/business-rules/`) → vence ambos.
 
@@ -165,6 +208,23 @@ Este projeto usa Next.js 16.2.6 com mudanças relevantes em APIs e convenções.
 - Para texto de interface, preferir chaves de tradução com useTranslation().
 - Chaves seguem estrutura hierárquica por domínio (common, auth, navigation, etc.).
 - Evitar texto hardcoded em componentes, exceto quando estritamente técnico.
+
+### Característica não é mensagem (`FH-57.11`, `FH-57.12`, `FH-59.11`)
+
+- **Nunca derivar copy do nome da feature, da tecnologia, do fornecedor ou do
+	requisito técnico.** Antes de escrever, percorrer a cadeia
+	`capacidade → benefício → percepção → comunicação`; nenhuma camada repete a
+	linguagem da anterior.
+- Declarar o registro do conteúdo antes de escrever: técnico, funcional, benefício,
+	experiencial ou comercial. Em experiencial ou comercial, a abstração sobe até a
+	consequência humana (`FH-57.13`).
+- Siglas e termos de arquitetura, segurança e conformidade — BYOK, BYOA, RLS,
+	multi-tenant, Supabase, LGPD, DPA, JWT, webhook — não aparecem em texto de
+	usuário sem justificativa registrada. Lista e substitutos no Anexo A §6.1.
+- Exceção: onde o termo **é** a informação (tela de credencial, subprocessadores,
+	texto legal), ele é correto e obrigatório. A proibição atinge o uso persuasivo.
+- Teste antes de aceitar qualquer texto: *"estamos falando sobre o que construímos
+	ou sobre o que isso muda para quem usa?"*
 
 ## 11) Tipos e contratos de domínio
 

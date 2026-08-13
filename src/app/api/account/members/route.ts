@@ -24,6 +24,7 @@ interface ProfileRow {
   email: string | null;
   avatar_url: string | null;
   account_role: string;
+  sector?: string | null;
   created_at: string;
 }
 
@@ -35,7 +36,7 @@ export async function GET() {
     // the caller's, so this query is naturally account-scoped.
     const { data, error } = await ctx.supabase
       .from("profiles")
-      .select("user_id, full_name, email, avatar_url, account_role, created_at")
+      .select("user_id, full_name, email, avatar_url, account_role, sector, created_at")
       .eq("account_id", ctx.accountId)
       .order("created_at", { ascending: true });
 
@@ -61,6 +62,7 @@ export async function GET() {
           email: canSeeEmails ? row.email : null,
           avatar_url: row.avatar_url,
           role: row.account_role,
+          sector: row.sector ?? null,
           joined_at: row.created_at,
         },
       ];

@@ -409,7 +409,7 @@ function NodeCard({
       className={cn(
         "rounded-lg border bg-card transition-shadow duration-500",
         hasError
-          ? "border-destructive/40"
+          ? "border-red-500/40"
           : isEntry
             ? "border-primary/50"
             : "border-border",
@@ -447,7 +447,7 @@ function NodeCard({
           )}
         </div>
         {hasError && (
-          <CircleAlert className="h-3.5 w-3.5 shrink-0 text-destructive" />
+          <CircleAlert className="h-3.5 w-3.5 shrink-0 text-red-400" />
         )}
         {expanded ? (
           <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -482,7 +482,7 @@ function NodeCard({
             </Button>
           </div>
           {issues.length > 0 && (
-            <div className="mt-3 flex flex-col gap-1 rounded-md bg-destructive/10 p-2">
+            <div className="mt-3 flex flex-col gap-1 rounded-md bg-red-500/5 p-2">
               {issues.map((i, ix) => (
                 <IssueLine key={ix} issue={i} />
               ))}

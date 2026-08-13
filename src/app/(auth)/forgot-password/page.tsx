@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useTranslation } from "@/hooks/use-translation";
@@ -16,26 +16,39 @@ import {
 } from "@/components/ui/card";
 import { CheckCircle, ArrowLeft } from "lucide-react";
 import { FlowLogo } from "@/components/layout/flow-logo";
+import { HCaptchaWidget, HCaptchaWidgetRef, isCaptchaConfigured } from "@/components/auth/hcaptcha";
+import { parseSupabasePasswordError } from "@/lib/auth/password-policy";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const { t } = useTranslation();
   const supabase = createClient();
+  const captchaRef = useRef<HCaptchaWidgetRef>(null);
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (isCaptchaConfigured() && !captchaToken) {
+      setError(t("auth.signup.captchaRequired"));
+      return;
+    }
+
     setLoading(true);
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+      captchaToken: captchaToken || undefined,
     });
 
     if (error) {
-      setError(t("auth.forgotPassword.error"));
+      setError(parseSupabasePasswordError(error, t("auth.forgotPassword.error")));
+      captchaRef.current?.resetCaptcha();
+      setCaptchaToken(null);
       setLoading(false);
       return;
     }
@@ -110,6 +123,12 @@ export default function ForgotPasswordPage() {
               />
             </div>
 
+            <HCaptchaWidget
+              ref={captchaRef}
+              onVerify={(token) => setCaptchaToken(token)}
+              onExpire={() => setCaptchaToken(null)}
+            />
+
             <Button
               type="submit"
               disabled={loading}
@@ -131,3 +150,4 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
+

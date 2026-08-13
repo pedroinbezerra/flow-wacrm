@@ -199,7 +199,7 @@ export function AIConfigPanel() {
     <div className="space-y-6">
       <div id="tour-ai-settings-header">
         <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-          <Bot className="h-5 w-5 text-primary" />
+          <Bot className="h-5 w-5 text-violet-500" />
           Configuração de Inteligência Artificial
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
@@ -208,7 +208,7 @@ export function AIConfigPanel() {
       </div>
 
       {!canManageAI && (
-        <div className="p-4 rounded-xl bg-primary-soft border border-primary/30 text-primary space-y-2">
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 space-y-2">
           <div className="flex items-center gap-2 font-semibold text-xs">
             <Shield className="h-4 w-4" />
             <span>Acesso Restrito</span>
@@ -265,15 +265,15 @@ export function AIConfigPanel() {
 
             {/* Aviso de Provedor Customizado / Externo */}
             {isCustomProvider && (
-              <div className="p-3 rounded-xl bg-primary-soft border border-primary/30 text-primary space-y-2.5 text-xs">
-                <div className="flex items-start gap-2 font-semibold text-primary">
-                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 space-y-2.5 text-xs">
+                <div className="flex items-start gap-2 font-semibold text-amber-800 dark:text-amber-300">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
                   <span>Provedor de IA Externo / Customizado</span>
                 </div>
                 <p className="text-xs leading-relaxed text-muted-foreground">
                   Você está usando um provedor de IA diferente da OpenAI oficial. A Flow Hub não tem relação contratual nem visibilidade sobre esse fornecedor — a responsabilidade pela contratação, segurança e uso dos dados enviados a ele é sua.
                 </p>
-                <div className="flex items-center gap-2 pt-1 border-t border-primary/20">
+                <div className="flex items-center gap-2 pt-1 border-t border-amber-500/20">
                   <Checkbox
                     id="panel-confirm-custom-provider"
                     checked={customProviderConfirmed}
@@ -296,7 +296,7 @@ export function AIConfigPanel() {
                 Chave de API (BYOK - Bring Your Own Key)
               </Label>
               {hasKey && (
-                <Badge variant="outline" className="text-[10px] bg-primary-soft text-primary border-primary/30 gap-1">
+                <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-500 border-emerald-500/20 gap-1">
                   <CheckCircle2 className="h-3 w-3" /> Chave Configurada ({maskedKey})
                 </Badge>
               )}

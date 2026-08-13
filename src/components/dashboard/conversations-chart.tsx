@@ -88,8 +88,8 @@ export function ConversationsChart({ series, loading, range, onRangeChange }: Co
       </div>
 
       <footer className="flex items-center gap-4 border-t border-border px-5 py-3 text-xs text-muted-foreground">
-        <LegendDot color="var(--chart-2)" label={t('dashboard.incomingLabel')} />
-        <LegendDot color="var(--chart-1)" label={t('dashboard.outgoingLabel')} />
+        <LegendDot color="#3b82f6" label={t('dashboard.incomingLabel')} />
+        <LegendDot color="#7c3aed" label={t('dashboard.outgoingLabel')} />
       </footer>
     </section>
   )
@@ -108,7 +108,6 @@ function LineSvg({
   maxY: number
   ticks: number[]
 }) {
-  const { t } = useTranslation()
   // Hover state: both the snapped index AND the tooltip's pixel
   // offset inside the wrapper div. They're stored together so the
   // tooltip positions against the chart's actual rendered pixels,
@@ -241,20 +240,20 @@ function LineSvg({
           ) : null,
         )}
 
-        {/* Outgoing polyline */}
+        {/* Outgoing polyline (violet) */}
         <path
           d={outgoingPath}
           fill="none"
-          stroke="var(--chart-1)"
+          stroke="#7c3aed"
           strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        {/* Incoming polyline */}
+        {/* Incoming polyline (blue) */}
         <path
           d={incomingPath}
           fill="none"
-          stroke="var(--chart-2)"
+          stroke="#3b82f6"
           strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -271,8 +270,8 @@ function LineSvg({
               stroke="var(--muted-foreground)"
               strokeDasharray="3 3"
             />
-            <circle cx={hoverX} cy={yFor(data[hover.idx].incoming)} r={3.5} fill="var(--chart-2)" />
-            <circle cx={hoverX} cy={yFor(data[hover.idx].outgoing)} r={3.5} fill="var(--chart-1)" />
+            <circle cx={hoverX} cy={yFor(data[hover.idx].incoming)} r={3.5} fill="#3b82f6" />
+            <circle cx={hoverX} cy={yFor(data[hover.idx].outgoing)} r={3.5} fill="#7c3aed" />
           </g>
         )}
       </svg>
@@ -288,13 +287,13 @@ function LineSvg({
         >
           <div className="font-medium text-popover-foreground">{longDayLabel(hovered.day)}</div>
           <div className="mt-1 flex flex-col gap-0.5">
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "var(--chart-2)" }} />
-              {hovered.incoming} {t("dashboard.incomingLabel")}
+            <span className="flex items-center gap-1.5 text-blue-300">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-500" />
+              {hovered.incoming} incoming
             </span>
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "var(--chart-1)" }} />
-              {hovered.outgoing} {t("dashboard.outgoingLabel")}
+            <span className="flex items-center gap-1.5 text-primary">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+              {hovered.outgoing} outgoing
             </span>
           </div>
         </div>

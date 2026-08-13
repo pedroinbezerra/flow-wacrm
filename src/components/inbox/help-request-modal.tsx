@@ -56,7 +56,12 @@ export function HelpRequestModal({
           const res = await fetch("/api/account/members");
           if (res.ok) {
             const data = await res.json();
-            setMembers(data || []);
+            const list = Array.isArray(data?.members)
+              ? data.members
+              : Array.isArray(data)
+                ? data
+                : [];
+            setMembers(list);
           }
         } catch {
           // ignore
@@ -83,6 +88,14 @@ export function HelpRequestModal({
         toast.success(t("inbox.help.sent"));
         onOpenChange(false);
         setNote("");
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("flowhub:refresh_timeline", { detail: { conversationId } })
+          );
+          window.dispatchEvent(
+            new CustomEvent("flowhub:refresh_notes", { detail: { conversationId } })
+          );
+        }
         onHelpRequested?.();
       } else {
         toast.error(t("inbox.help.sendError"));
@@ -93,6 +106,8 @@ export function HelpRequestModal({
       setSubmitting(false);
     }
   };
+
+  const safeMembers = (Array.isArray(members) ? members : []).filter((m) => Boolean(m && m.user_id));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -136,7 +151,11 @@ export function HelpRequestModal({
               <Label className="text-xs font-medium">{t("inbox.help.sector")}</Label>
               <Select value={selectedSector} onValueChange={(val) => val && setSelectedSector(val)}>
                 <SelectTrigger className="text-xs">
-                  <SelectValue placeholder={t("inbox.help.sectorPlaceholder")} />
+                  <SelectValue placeholder={t("inbox.help.sectorPlaceholder")}>
+                    {SECTORS.find((sec) => sec.value === selectedSector)
+                      ? t(SECTORS.find((sec) => sec.value === selectedSector)!.labelKey)
+                      : selectedSector}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {SECTORS.map((sec) => (
@@ -152,12 +171,14 @@ export function HelpRequestModal({
               <Label className="text-xs font-medium">{t("inbox.help.teammate")}</Label>
               <Select value={selectedUserId} onValueChange={(val) => val && setSelectedUserId(val)}>
                 <SelectTrigger className="text-xs">
-                  <SelectValue placeholder={t("inbox.help.teammatePlaceholder")} />
+                  <SelectValue placeholder={t("inbox.help.teammatePlaceholder")}>
+                    {safeMembers.find((m) => m.user_id === selectedUserId)?.full_name || ""}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {members.map((m) => (
+                  {safeMembers.map((m) => (
                     <SelectItem key={m.user_id} value={m.user_id} className="text-xs">
-                      {m.full_name}
+                      {m.full_name || m.email || m.user_id}
                     </SelectItem>
                   ))}
                 </SelectContent>

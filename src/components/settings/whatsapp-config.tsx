@@ -699,12 +699,12 @@ export function WhatsAppConfig() {
                           {cfg.label || `WhatsApp (${cfg.phone_number_id})`}
                         </span>
                         {cfg.is_default && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary-soft text-primary border border-primary/30">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                             ⭐ Principal
                           </span>
                         )}
                         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                          cfg.status === 'connected' ? 'bg-primary-soft text-primary' : 'bg-destructive/10 text-destructive'
+                          cfg.status === 'connected' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-red-500/10 text-red-500'
                         }`}>
                           {cfg.status === 'connected' ? 'Conectado' : 'Desconectado'}
                         </span>
@@ -755,23 +755,22 @@ export function WhatsAppConfig() {
           </CardContent>
         </Card>
         {/* Corrupted-token reset banner */}
-        {/* Corrupted-token reset banner */}
         {showResetBanner && (
-          <Alert className="bg-primary-soft border-primary/30">
+          <Alert className="bg-amber-500/10 border-amber-500/30 dark:bg-amber-950/40 dark:border-amber-600/40">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="size-5 text-primary mt-0.5 shrink-0" />
+              <AlertTriangle className="size-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
               <div className="flex-1">
-                <AlertTitle className="text-primary mb-1 font-semibold">
+                <AlertTitle className="text-amber-900 dark:text-amber-200 mb-1 font-semibold">
                   {t('settings.whatsappConfig.tokenCorruptedTitle')}
                 </AlertTitle>
-                <AlertDescription className="text-muted-foreground text-sm">
+                <AlertDescription className="text-amber-800/90 dark:text-amber-100/80 text-sm">
                   {statusMessage}
                 </AlertDescription>
                 <Button
                   onClick={handleReset}
                   disabled={resetting}
                   size="sm"
-                  className="mt-3 bg-primary hover:bg-primary-hover text-primary-foreground"
+                  className="mt-3 bg-amber-600 hover:bg-amber-700 text-white"
                 >
                   {resetting ? (
                     <>
@@ -796,7 +795,7 @@ export function WhatsAppConfig() {
             {connectionStatus === 'connected' ? (
               <CheckCircle2 className="size-4 text-primary" />
             ) : (
-              <XCircle className="size-4 text-destructive" />
+              <XCircle className="size-4 text-red-500" />
             )}
             <AlertTitle className="text-foreground mb-0">
               {connectionStatus === 'connected'
@@ -811,23 +810,34 @@ export function WhatsAppConfig() {
           </AlertDescription>
         </Alert>
 
-        {/* Registration Status */}
+        {/* Registration Status — the "is it actually live?" check.
+            Credentials being valid is necessary but not sufficient;
+            without a successful /register call the number won't
+            receive inbound events. Surface this dimension separately
+            so users don't trust a misleading green banner. */}
         {config && (
           <Alert
             className={
               isRegistered
-                ? 'bg-primary-soft border-primary/30 text-primary'
-                : 'bg-primary-soft border-primary/30 text-primary'
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-950 dark:text-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800/60'
+                : 'bg-amber-500/10 border-amber-500/30 text-amber-950 dark:text-amber-200 dark:bg-amber-950/40 dark:border-amber-800/60'
             }
           >
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 {isRegistered ? (
-                  <CheckCircle2 className="size-4 text-primary shrink-0" />
+                  <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 ) : (
-                  <AlertTriangle className="size-4 text-primary shrink-0" />
+                  <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
                 )}
-                <AlertTitle className="mb-0 font-semibold text-primary">
+                <AlertTitle
+                  className={
+                    'mb-0 font-semibold ' +
+                    (isRegistered
+                      ? 'text-emerald-950 dark:text-emerald-200'
+                      : 'text-amber-950 dark:text-amber-200')
+                  }
+                >
                   {isRegistered
                     ? t('settings.whatsappConfig.registeredTitle')
                     : t('settings.whatsappConfig.notRegisteredTitle')}
@@ -838,7 +848,12 @@ export function WhatsAppConfig() {
                 size="sm"
                 onClick={handleVerifyRegistration}
                 disabled={verifyingRegistration}
-                className="h-7 text-xs font-medium border border-primary/30 bg-primary-soft text-primary hover:bg-primary-soft-2"
+                className={
+                  'h-7 text-xs font-medium border transition-colors ' +
+                  (isRegistered
+                    ? 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 text-emerald-950 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/80 dark:border-emerald-700/60 dark:text-emerald-200 dark:hover:text-emerald-100'
+                    : 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-950 dark:bg-amber-950/60 dark:hover:bg-amber-900/80 dark:border-amber-700/60 dark:text-amber-200 dark:hover:text-amber-100')
+                }
               >
                 {verifyingRegistration ? (
                   <Loader2 className="size-3.5 animate-spin" />
@@ -848,7 +863,14 @@ export function WhatsAppConfig() {
                 {t('settings.whatsappConfig.verifyWithMeta')}
               </Button>
             </div>
-            <AlertDescription className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            <AlertDescription
+              className={
+                'mt-2 text-xs leading-relaxed ' +
+                (isRegistered
+                  ? 'text-emerald-900/90 dark:text-emerald-300/90'
+                  : 'text-amber-900/90 dark:text-amber-300/90')
+              }
+            >
               {isRegistered ? (
                 <>
                   {t('settings.whatsappConfig.subscribedSince')}{' '}
@@ -860,7 +882,7 @@ export function WhatsAppConfig() {
               ) : lastRegistrationError ? (
                 <>
                   {t('settings.whatsappConfig.lastAttemptFailedWith')}{' '}
-                  <span className="text-destructive font-medium">
+                  <span className="text-red-600 dark:text-red-300 font-medium">
                     &quot;{lastRegistrationError}&quot;
                   </span>
                   . {t('settings.whatsappConfig.enterPinToRetry')}
@@ -873,10 +895,10 @@ export function WhatsAppConfig() {
             </AlertDescription>
 
             {registrationProbe && (
-              <div className="mt-3 rounded-lg border border-border bg-background/80 px-3.5 py-2.5 space-y-1.5 text-[11px]">
+              <div className="mt-3 rounded-lg border border-border bg-background/80 dark:bg-card/60 px-3.5 py-2.5 space-y-1.5 text-[11px]">
                 <p className="font-medium text-foreground">
                   {t('settings.whatsappConfig.diagnosticLastRun')}{' '}
-                  <span className={registrationProbe.live ? 'text-primary font-semibold' : 'text-muted-foreground font-semibold'}>
+                  <span className={registrationProbe.live ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-amber-600 dark:text-amber-400 font-semibold'}>
                     {registrationProbe.live ? t('settings.whatsappConfig.live') : t('settings.whatsappConfig.notLive')}
                   </span>
                 </p>
@@ -884,9 +906,9 @@ export function WhatsAppConfig() {
                   {Object.entries(registrationProbe.checks).map(([k, v]) => (
                     <li key={k} className="flex items-center gap-1.5">
                       {v === true ? (
-                        <CheckCircle2 className="size-3 text-primary shrink-0" />
+                        <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
                       ) : v === false ? (
-                        <XCircle className="size-3 text-destructive shrink-0" />
+                        <XCircle className="size-3 text-red-600 dark:text-red-400 shrink-0" />
                       ) : (
                         <span className="size-3 rounded-full border border-border shrink-0" />
                       )}
@@ -895,7 +917,7 @@ export function WhatsAppConfig() {
                   ))}
                 </ul>
                 {(registrationProbe.errors ?? []).length > 0 && (
-                  <ul className="pt-1 space-y-0.5 text-destructive">
+                  <ul className="pt-1 space-y-0.5 text-red-600 dark:text-red-300">
                     {registrationProbe.errors?.map((e, i) => (
                       <li key={i}>• {e}</li>
                     ))}
@@ -907,14 +929,14 @@ export function WhatsAppConfig() {
         )}
 
         {/* Mode 1: 1-Click Embedded Signup */}
-        <Card className="border-primary/30 bg-primary-soft">
+        <Card className="border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/20">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-foreground flex items-center gap-2">
-                <Sparkles className="size-5 text-primary" />
+                <Sparkles className="size-5 text-emerald-600 dark:text-emerald-400" />
                 {t('settings.whatsappConfig.quickConnectTitle')}
               </CardTitle>
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary-soft-2 text-primary border border-primary/30">
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
                 Recomendado
               </span>
             </div>
@@ -926,7 +948,7 @@ export function WhatsAppConfig() {
             <Button
               onClick={handleLaunchEmbeddedSignup}
               disabled={connectingEmbedded}
-              className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-primary-foreground font-medium gap-2 text-sm h-10 px-5 shadow-sm"
+              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-medium gap-2 text-sm h-10 px-5 shadow-sm"
             >
               {connectingEmbedded ? (
                 <>

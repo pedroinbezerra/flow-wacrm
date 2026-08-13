@@ -475,7 +475,7 @@ export function ContactDetailView({
                         <Ban className="size-2.5" /> Opt-Out LGPD
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-primary/30 text-primary bg-primary-soft gap-1">
+                      <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 gap-1">
                         <Shield className="size-2.5" /> LGPD Ativo
                       </Badge>
                     )}
@@ -538,7 +538,7 @@ export function ContactDetailView({
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-muted-foreground text-xs">
-                      {t('contacts.detail.phone')} <span className="text-destructive">*</span>
+                      {t('contacts.detail.phone')} <span className="text-red-400">*</span>
                     </Label>
                     <Input
                       value={editPhone}
@@ -671,7 +671,7 @@ export function ContactDetailView({
                           </p>
                           <button
                             onClick={() => deleteNote(note.id)}
-                            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all cursor-pointer shrink-0"
+                            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 transition-all cursor-pointer shrink-0"
                           >
                             <Trash2 className="size-3.5" />
                           </button>
@@ -784,7 +784,7 @@ export function ContactDetailView({
                               className={
                                 deal.status === 'won'
                                   ? 'text-primary'
-                                  : 'text-destructive'
+                                  : 'text-red-400'
                               }
                             >
                               {deal.status}
@@ -835,7 +835,7 @@ export function ContactDetailView({
 
                   <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
                     <div className="flex items-center gap-2">
-                      <Download className="size-4 text-primary" />
+                      <Download className="size-4 text-blue-500" />
                       <h4 className="text-sm font-medium text-foreground">Direito de Portabilidade (Art. 18, V)</h4>
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -857,8 +857,8 @@ export function ContactDetailView({
                     </Button>
                   </div>
 
-                  <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 space-y-2">
-                    <div className="flex items-center gap-2 text-destructive">
+                  <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3 space-y-2">
+                    <div className="flex items-center gap-2 text-red-500">
                       <UserX className="size-4" />
                       <h4 className="text-sm font-medium">Direito de Eliminação / Anonimização (Art. 18, VI)</h4>
                     </div>

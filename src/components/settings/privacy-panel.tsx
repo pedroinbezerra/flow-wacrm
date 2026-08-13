@@ -56,10 +56,10 @@ export function PrivacyPanel() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border/60">
           <div className="p-3 rounded-lg border border-border/60 bg-muted/20 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-medium text-foreground">
-              <Lock className="size-4 text-primary" />
+              <Lock className="size-4 text-emerald-500" />
               <span>Cookies Necessários</span>
             </div>
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-primary-soft text-primary">
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">
               Sempre Ativos
             </span>
           </div>
@@ -71,11 +71,11 @@ export function PrivacyPanel() {
             </div>
             {isLoaded ? (
               isAnalyticsAllowed ? (
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-primary-soft text-primary">
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">
                   Autorizado (GA4/Clarity)
                 </span>
               ) : (
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-destructive/15 text-destructive">
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500">
                   Bloqueado
                 </span>
               )
@@ -117,7 +117,7 @@ export function PrivacyPanel() {
             className="p-3.5 rounded-xl border border-border bg-card/60 hover:bg-muted/40 transition-colors flex items-center justify-between group"
           >
             <div className="flex items-center gap-2.5">
-              <Scale className="size-4 text-primary shrink-0" />
+              <Scale className="size-4 text-purple-500 shrink-0" />
               <div>
                 <span className="font-medium text-foreground block group-hover:underline">
                   Termos de Uso
@@ -134,7 +134,7 @@ export function PrivacyPanel() {
             className="p-3.5 rounded-xl border border-border bg-card/60 hover:bg-muted/40 transition-colors flex items-center justify-between group"
           >
             <div className="flex items-center gap-2.5">
-              <ShieldCheck className="size-4 text-primary shrink-0" />
+              <ShieldCheck className="size-4 text-emerald-500 shrink-0" />
               <div>
                 <span className="font-medium text-foreground block group-hover:underline">
                   Acordo DPA
@@ -151,7 +151,7 @@ export function PrivacyPanel() {
             className="p-3.5 rounded-xl border border-border bg-card/60 hover:bg-muted/40 transition-colors flex items-center justify-between group"
           >
             <div className="flex items-center gap-2.5">
-              <Shield className="size-4 text-primary shrink-0" />
+              <Shield className="size-4 text-blue-500 shrink-0" />
               <div>
                 <span className="font-medium text-foreground block group-hover:underline">
                   Segurança da Informação
@@ -168,7 +168,7 @@ export function PrivacyPanel() {
             className="p-3.5 rounded-xl border border-border bg-card/60 hover:bg-muted/40 transition-colors flex items-center justify-between group sm:col-span-2"
           >
             <div className="flex items-center gap-2.5">
-              <Server className="size-4 text-primary shrink-0" />
+              <Server className="size-4 text-amber-500 shrink-0" />
               <div>
                 <span className="font-medium text-foreground block group-hover:underline">
                   Lista de Subprocessadores de Dados
@@ -186,7 +186,7 @@ export function PrivacyPanel() {
       {/* Bloco 2: Seus Direitos LGPD (Autoatendimento) */}
       <div className="p-5 rounded-xl border border-border bg-card/40 space-y-4">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <UserCheck className="size-4 text-primary" />
+          <UserCheck className="size-4 text-emerald-500" />
           Canal de Direitos do Titular de Dados (Art. 18 LGPD)
         </h3>
 

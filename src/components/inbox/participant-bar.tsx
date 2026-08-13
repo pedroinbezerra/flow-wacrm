@@ -95,6 +95,11 @@ export function ParticipantBar({
       if (res.ok) {
         toast.success(t("inbox.collaboration.participantAdded"));
         fetchParticipants();
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("flowhub:refresh_timeline", { detail: { conversationId } })
+          );
+        }
         onRefreshParticipants?.();
       }
     } catch (err) {
@@ -114,6 +119,11 @@ export function ParticipantBar({
       if (res.ok) {
         toast.success(t("inbox.collaboration.participantRemoved"));
         fetchParticipants();
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("flowhub:refresh_timeline", { detail: { conversationId } })
+          );
+        }
         onRefreshParticipants?.();
       }
     } catch (err) {

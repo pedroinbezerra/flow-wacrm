@@ -14,6 +14,7 @@ Este documento registra as **decisões de arquitetura fundamentais** do FlowHub,
 | **ADR-004** | Utilização de `pg_trgm` + `unaccent()` em vez de FTS/Elasticsearch | Aceito | 2026-08-07 |
 | **ADR-005** | Consolidação de migrações históricas em um Schema Baseline Único | Aceito | 2026-08-07 |
 | **ADR-006** | Remoção de Foreign Keys declarativas para a tabela particionada `messages` | Aceito | 2026-08-07 |
+| **ADR-007** | Fortalecimento de Segurança de Senhas (Complexidade + HIBP) e Proteção hCaptcha | Aceito | 2026-08-11 |
 
 ---
 
@@ -147,10 +148,39 @@ Removemos a instrução de Foreign Key declarativa (`REFERENCES messages(id)`) d
   - Preserva a simplicidade do modelo de dados nas tabelas filhas sem colunas redundantes de data.
   - Elimina locks de verificação de integridade referencial cruzada durante inserções massivas de mensagens.
   - Permite a partição limpa de `messages` por RANGE(`created_at`).
+---
+
+## ADR-007: Fortalecimento de Segurança de Senhas (Complexidade + HIBP) e Proteção hCaptcha
+
+### Status
+**Aceito**
+
+### Contexto
+Para mitigar ataques de força bruta, credential stuffing e uso de senhas vazadas em vazamentos de dados públicos (data breaches), foi ativada no Supabase Auth a política rigorosa de complexidade de senhas (exigindo letras maiúsculas, minúsculas, dígitos e símbolos com no mínimo 8 caracteres), juntamente com o serviço Have I Been Pwned (HIBP) e a verificação hCaptcha.
+
+A aplicação frontend do FlowHub necessitava ser sincronizada para apresentar orientações visuais claras antes do envio, interpretar amigavelmente os erros retornados pelo Supabase e transmitir os tokens de captcha.
+
+### Decisão
+1. **Política de Senhas**:
+   - Padrão estabelecido: Mínimo 8 caracteres (máximo 72), contendo pelo menos 1 letra maiúscula, 1 minúscula, 1 dígito e 1 caractere especial/símbolo.
+   - Validação client-side unificada em `src/lib/auth/password-policy.ts`.
+   - Exibição de checklist interativo em tempo real (`PasswordRequirements`) nas telas de `/signup`, `/reset-password` e `/settings`.
+   - Parser de erros `parseSupabasePasswordError` para interceptar rejeições do Supabase Auth e HIBP, exibindo avisos claros sobre senhas expostas em data breaches.
+
+2. **Proteção hCaptcha**:
+   - Integração do pacote `@hcaptcha/react-hcaptcha` através do componente wrapper `HCaptchaWidget`.
+   - Configuração via variável de ambiente `NEXT_PUBLIC_HCAPTCHA_SITE_KEY`. Quando não presente (ex: dev local sem captcha), a validação visual e o token são ignorados de forma transparente.
+   - Envio de `captchaToken` nas chamadas de `signUp`, `signInWithPassword` e `resetPasswordForEmail`.
+
+### Consequências
+- **Positivas**:
+  - Proteção proativa contra senhas fracas e credenciais comprometidas em vazamentos globais.
+  - Mitigação de ataques automatizados de botnet e spam de cadastro/login via hCaptcha.
+  - Experiência do usuário aprimorada com feedback em tempo real sobre os critérios exigidos de senha.
 - **Negativas / Trade-offs**:
-  - A exclusão direta de um registro em `messages` não dispara `ON DELETE CASCADE` automático pelo banco de dados nas tabelas filhas.
-  - Exige rotinas de limpeza periódica de registros órfãos via `pg_cron` (`DELETE FROM message_reactions WHERE message_id NOT IN (...)`).
+  - Requer que o operador configure a chave `NEXT_PUBLIC_HCAPTCHA_SITE_KEY` no ambiente de produção e habilite a integração correspondente no painel do Supabase Auth.
 
 ---
 
 *Documento mantido sob governança da equipe de Arquitetura do FlowHub.*
+

@@ -68,7 +68,7 @@ function getStatusMeta(
   > = {
     active: {
       label: t("flows.statusActive"),
-      classes: "border-primary/40 bg-primary-soft text-primary",
+      classes: "border-emerald-600/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
       icon: PlayCircle,
     },
     completed: {
@@ -78,7 +78,7 @@ function getStatusMeta(
     },
     handed_off: {
       label: t("flows.statusHandedOff"),
-      classes: "border-primary/40 bg-primary-soft text-primary",
+      classes: "border-amber-600/40 bg-amber-500/10 text-amber-800 dark:text-amber-300",
       icon: UserPlus,
     },
     timed_out: {
@@ -93,7 +93,7 @@ function getStatusMeta(
     },
     failed: {
       label: t("flows.statusFailed"),
-      classes: "border-destructive/30 bg-destructive/10 text-destructive",
+      classes: "border-red-600/40 bg-red-500/10 text-red-700 dark:text-red-300",
       icon: CircleAlert,
     },
   };
@@ -301,15 +301,15 @@ function RunCard({
 }
 
 const EVENT_COLOR: Record<string, string> = {
-  started: "text-primary",
+  started: "text-emerald-300",
   node_entered: "text-muted-foreground",
-  message_sent: "text-primary",
+  message_sent: "text-sky-300",
   reply_received: "text-primary",
-  fallback_fired: "text-primary",
-  handoff: "text-primary",
+  fallback_fired: "text-amber-300",
+  handoff: "text-amber-300",
   timeout: "text-muted-foreground",
-  error: "text-destructive",
-  completed: "text-primary",
+  error: "text-red-300",
+  completed: "text-emerald-300",
 };
 
 function EventLine({ ev }: { ev: EventRow }) {

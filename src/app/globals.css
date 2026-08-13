@@ -231,6 +231,7 @@ html[data-theme="rose"] {
   }
   html {
     @apply font-sans;
+    scroll-behavior: smooth;
   }
 
   /* Force pointer (hand cursor) on buttons and interactive elements */

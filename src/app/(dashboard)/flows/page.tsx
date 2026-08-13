@@ -58,7 +58,7 @@ interface FlowRow {
 
 const STATUS_COLORS: Record<FlowRow["status"], string> = {
   draft: "border-border bg-muted text-muted-foreground",
-  active: "border-primary/40 bg-primary-soft text-primary",
+  active: "border-emerald-600/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
   archived: "border-border bg-muted/50 text-muted-foreground",
 };
 
@@ -423,7 +423,7 @@ function FlowCard({
           {flow.status === "active" && (
             <Badge
               variant="outline"
-              className="border-primary/40 bg-primary-soft text-primary text-[10px] gap-1"
+              className="border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300 text-[10px] gap-1"
               title="Este fluxo responde no WhatsApp antes do Atendimento por Inteligência Artificial."
             >
               <Zap className="h-3 w-3" />
@@ -462,7 +462,7 @@ function FlowCard({
             variant="ghost"
             size="sm"
             onClick={onToggleStatus}
-            className="text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="text-amber-600 dark:text-amber-400 hover:bg-amber-600 hover:text-white dark:hover:bg-amber-500 dark:hover:text-amber-950"
             title={t("flows.deactivate", {}, "Desativar")}
           >
             <PauseCircle className="h-3.5 w-3.5" />
@@ -473,7 +473,7 @@ function FlowCard({
             variant="ghost"
             size="sm"
             onClick={onToggleStatus}
-            className="text-primary hover:bg-primary-soft hover:text-primary"
+            className="text-emerald-700 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-500 dark:hover:text-white"
             title={t("flows.activate", {}, "Ativar")}
           >
             <PlayCircle className="h-3.5 w-3.5" />
