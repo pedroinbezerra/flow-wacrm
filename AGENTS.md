@@ -303,3 +303,4 @@ Este projeto prioriza:
 - Componentização de UI com tokens de tema consistentes.
 - TypeScript com contratos claros e documentação no código.
 - Evolução incremental orientada a domínio, sem reescrita ampla desnecessária.
+

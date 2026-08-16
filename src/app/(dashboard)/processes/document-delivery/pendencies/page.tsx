@@ -58,7 +58,7 @@ export default function DocumentDeliveryPendenciesPage() {
             Fila de Pendências para Revisão Manual
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Documentos cuja identificação ficou abaixo do limite de confiança retidos para sua total segurança (FH-07.03).
+            Documentos cuja identificação ficou abaixo do limite de confiança retidos para sua total segurança.
           </p>
         </div>
       </div>

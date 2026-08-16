@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { CustomField, Tag } from '@/types';
+import { Contact, CustomField, Tag } from '@/types';
 import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
 import { parseContactCsv, type ParsedContactRow } from '@/lib/contacts/parse-contact-csv';
@@ -15,6 +15,7 @@ import {
   ArrowRight,
   ArrowLeft,
   X,
+  Eye,
 } from 'lucide-react';
 
 type AudienceType = 'all' | 'tags' | 'custom_field' | 'csv';
@@ -91,7 +92,56 @@ export function Step2SelectAudience({
   const [loadingCount, setLoadingCount] = useState(false);
   const [csvFileName, setCsvFileName] = useState<string | null>(null);
   const [csvError, setCsvError] = useState<string | null>(null);
+  const [showSample, setShowSample] = useState(false);
+  const [sampleContacts, setSampleContacts] = useState<Contact[]>([]);
+  const [loadingSample, setLoadingSample] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchSampleContacts = useCallback(async () => {
+    setLoadingSample(true);
+    try {
+      const supabase = createClient();
+      let query = supabase.from('contacts').select('*').limit(5);
+
+      if (audience.type === 'tags' && audience.tagIds && audience.tagIds.length > 0) {
+        const { data: ctData } = await supabase
+          .from('contact_tags')
+          .select('contact_id')
+          .in('tag_id', audience.tagIds);
+        const ids = (ctData ?? []).map((r) => r.contact_id);
+        if (ids.length === 0) {
+          setSampleContacts([]);
+          return;
+        }
+        query = query.in('id', ids);
+      } else if (
+        audience.type === 'custom_field' &&
+        audience.customField?.fieldId &&
+        audience.customField.value
+      ) {
+        const { fieldId, operator, value } = audience.customField;
+        let q = supabase
+          .from('contact_custom_values')
+          .select('contact_id')
+          .eq('custom_field_id', fieldId);
+        if (operator === 'is') q = q.eq('value', value);
+        else if (operator === 'is_not') q = q.neq('value', value);
+        else q = q.ilike('value', `%${value}%`);
+        const { data: cvData } = await q;
+        const ids = (cvData ?? []).map((r) => r.contact_id);
+        if (ids.length === 0) {
+          setSampleContacts([]);
+          return;
+        }
+        query = query.in('id', ids);
+      }
+
+      const { data } = await query;
+      setSampleContacts(data ?? []);
+    } finally {
+      setLoadingSample(false);
+    }
+  }, [audience.type, audience.tagIds, audience.customField]);
 
   // Tags are used both by the primary "Filter by Tags" audience type
   // AND by the exclude-list below — so always load once on mount.
@@ -570,9 +620,29 @@ export function Step2SelectAudience({
         )}
       </div>
 
-      {/* Audience Summary */}
-      <div className="rounded-xl border border-border bg-card/50 p-4">
-        <p className="mb-2 text-sm font-medium text-foreground">{t('broadcasts.audienceSummary')}</p>
+      {/* Audience Summary & Live Sample Preview */}
+      <div className="rounded-xl border border-border bg-card/50 p-4 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-medium text-foreground">{t('broadcasts.audienceSummary')}</p>
+          {estimatedCount !== null && estimatedCount > 0 && audience.type !== 'csv' && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (!showSample && sampleContacts.length === 0) {
+                  void fetchSampleContacts();
+                }
+                setShowSample(!showSample);
+              }}
+              className="h-7 text-xs border-border text-muted-foreground hover:bg-muted"
+            >
+              <Eye className="mr-1.5 h-3.5 w-3.5 text-primary" />
+              {showSample ? t('broadcasts.hideSampleAudience') : t('broadcasts.viewSampleAudience')}
+            </Button>
+          )}
+        </div>
+
         {loadingCount ? (
           <div className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -581,7 +651,7 @@ export function Step2SelectAudience({
         ) : estimatedCount !== null ? (
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-primary" />
-            <span className="text-sm text-foreground">
+            <span className="text-sm font-semibold text-foreground">
               {estimatedCount.toLocaleString()}
             </span>
             <span className="text-xs text-muted-foreground">{t('broadcasts.estimatedRecipients')}</span>
@@ -590,6 +660,33 @@ export function Step2SelectAudience({
           <p className="text-xs text-muted-foreground">
             {t('broadcasts.selectAudienceToEstimate')}
           </p>
+        )}
+
+        {/* Live Sample Audience Drawer */}
+        {showSample && audience.type !== 'csv' && (
+          <div className="mt-3 rounded-lg border border-border bg-background p-3 space-y-2">
+            <p className="text-xs font-medium text-foreground">
+              {t('broadcasts.sampleAudienceTitle')}
+            </p>
+            {loadingSample ? (
+              <div className="flex h-16 items-center justify-center">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              </div>
+            ) : sampleContacts.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                {t('broadcasts.sampleAudienceEmpty')}
+              </p>
+            ) : (
+              <div className="divide-y divide-border/60">
+                {sampleContacts.map((contact) => (
+                  <div key={contact.id} className="flex items-center justify-between py-1.5 text-xs">
+                    <span className="font-medium text-foreground">{contact.name || t('contacts.unnamed')}</span>
+                    <span className="font-mono text-muted-foreground">{contact.phone}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -614,3 +711,4 @@ export function Step2SelectAudience({
     </div>
   );
 }
+

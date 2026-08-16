@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   fetchUserTickets,
@@ -29,8 +30,11 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+import { usePathname } from "next/navigation";
+
 export function SupportFloatingWidget() {
   const { user, account, profile, profileLoading } = useAuth();
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"chat" | "tickets">("chat");
 
@@ -122,6 +126,13 @@ export function SupportFloatingWidget() {
 
     return () => clearInterval(interval);
   }, [profileLoading, user?.id, refreshSupportData]);
+
+  // Escuta evento customizado para abrir o suporte de qualquer lugar do app (ex: menu sidebar/header)
+  useEffect(() => {
+    const handleOpenSupport = () => setIsOpen(true);
+    window.addEventListener("flowhub:open-support", handleOpenSupport);
+    return () => window.removeEventListener("flowhub:open-support", handleOpenSupport);
+  }, []);
 
   // Scroll para o fim do chat
   useEffect(() => {
@@ -223,8 +234,8 @@ export function SupportFloatingWidget() {
 
   return (
     <>
-      {/* Botão Flutuante (FAB) fixo no canto inferior direito */}
-      <div className="fixed bottom-6 right-6 z-50">
+      {/* Botão Flutuante (FAB) fixo no canto inferior direito - visível apenas em telas médias/grandes (desktop) */}
+      <div className="fixed bottom-6 right-6 z-50 hidden md:flex">
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
@@ -242,9 +253,9 @@ export function SupportFloatingWidget() {
         </button>
       </div>
 
-      {/* Panel / Drawer Flutuante de Suporte */}
+      {/* Panel / Drawer Flutuante de Suporte - Responsivo no mobile e desktop */}
       {isOpen && (
-        <div className="fixed bottom-22 right-6 z-50 flex h-[470px] max-h-[calc(100vh-6.5rem)] w-[380px] max-w-[calc(100vw-2rem)] flex-col rounded-3xl border border-border/80 bg-card text-card-foreground shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-22 z-50 flex h-[470px] max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-6.5rem)] w-auto sm:w-[380px] max-w-[calc(100vw-2rem)] flex-col rounded-3xl border border-border/80 bg-card text-card-foreground shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
           {/* Top Header */}
           <div className="flex items-center justify-between border-b border-border bg-gradient-to-r from-primary/10 via-background to-accent/10 p-4">
             <div className="flex items-center gap-3">
@@ -252,7 +263,7 @@ export function SupportFloatingWidget() {
                 <Sparkles className="size-5" />
               </div>
               <div>
-                <h2 className="text-sm font-bold text-foreground">Suporte Flow Systems</h2>
+                <h2 className="text-sm font-bold text-foreground">Fale com a equipe Flow</h2>
                 <p className="text-[11px] text-muted-foreground">Estamos online para ajudar você</p>
               </div>
             </div>
@@ -298,7 +309,7 @@ export function SupportFloatingWidget() {
               }`}
             >
               <Ticket className="size-3.5" />
-              Meus Tickets
+              Chamados
               {totalUnreadCount > 0 && (
                 <span className="rounded-full bg-rose-500 px-1.5 py-0.2 text-[10px] font-bold text-white">
                   {totalUnreadCount}
@@ -313,9 +324,9 @@ export function SupportFloatingWidget() {
               {/* ÁREA DE MENSAGENS */}
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3 text-xs text-foreground/90 space-y-1">
-                  <p className="font-semibold text-primary">Atendimento ao Vivo</p>
+                  <p className="font-semibold text-primary">Atendimento ao Cliente</p>
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    Converse diretamente com a equipe técnica da Flow Systems. Estamos ao seu dispor para dúvidas e suporte operacional!
+                    Converse diretamente com a equipe de suporte. Estamos à disposição para ajudar você!
                   </p>
                 </div>
 

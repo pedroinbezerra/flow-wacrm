@@ -77,31 +77,23 @@ export async function PATCH(
     if (k in body) update[k] = body[k]
   }
 
-  // If this PATCH leaves the automation active (either explicitly
-  // activating it OR editing an already-active one), validate the
-  // merged configuration first. Activation is the natural gate — drafts
-  // are still allowed to be incomplete.
-  const willBeActive =
-    typeof update.is_active === 'boolean' ? update.is_active : existing.is_active
-  if (willBeActive) {
-    const mergedTriggerType = (update.trigger_type ?? existing.trigger_type) as string
-    const mergedTriggerConfig = update.trigger_config ?? existing.trigger_config
-    const mergedSteps = Array.isArray(body.steps)
-      ? (body.steps as { step_type: string; step_config: Record<string, unknown> }[])
-      : await loadStepsTree(id)
-    const issues = [
-      ...validateTriggerForActivation(mergedTriggerType, mergedTriggerConfig),
-      ...validateStepsForActivation(mergedSteps),
-    ]
-    if (issues.length > 0) {
-      return NextResponse.json(
-        {
-          error: 'Cannot keep automation active with invalid configuration',
-          issues,
-        },
-        { status: 400 },
-      )
-    }
+  const mergedTriggerType = (update.trigger_type ?? existing.trigger_type) as string
+  const mergedTriggerConfig = update.trigger_config ?? existing.trigger_config
+  const mergedSteps = Array.isArray(body.steps)
+    ? (body.steps as { step_type: string; step_config: Record<string, unknown> }[])
+    : await loadStepsTree(id)
+  const issues = [
+    ...validateTriggerForActivation(mergedTriggerType, mergedTriggerConfig),
+    ...validateStepsForActivation(mergedSteps),
+  ]
+  if (issues.length > 0) {
+    return NextResponse.json(
+      {
+        error: 'Não é possível salvar a automação com configurações inválidas.',
+        issues,
+      },
+      { status: 400 },
+    )
   }
 
   if (Object.keys(update).length > 0) {

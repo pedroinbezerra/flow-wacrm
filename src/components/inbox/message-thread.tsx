@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/hooks/use-translation";
 import { usePresence } from "@/hooks/use-presence";
 import { PresenceDot } from "@/components/presence/presence-dot";
+import { ContactAvatar } from "@/components/ui/contact-avatar";
 import { presenceLabel } from "@/lib/presence";
 import { cn } from "@/lib/utils";
 import type {
@@ -435,8 +436,6 @@ export function MessageThread({
 
   // 24-hour session timer
   const sessionInfo = useMemo(() => {
-    if (!messages.length) return { expired: false, remaining: "" };
-
     // Find last customer message
     const lastCustomerMsg = [...messages]
       .reverse()
@@ -1389,26 +1388,35 @@ export function MessageThread({
                 <ArrowLeft className="h-4 w-4" />
               </button>
             )}
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary ring-1 ring-primary/20">
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-            <div className="min-w-0 flex items-center gap-2">
-              <h2 className="truncate text-xs font-semibold text-foreground">{displayName}</h2>
-              <span className="hidden sm:inline text-[11px] text-muted-foreground truncate">{contact.phone}</span>
-            </div>
+            <button
+              type="button"
+              onClick={onToggleContactPanel}
+              className="flex items-center gap-2 text-left hover:opacity-85 transition-opacity min-w-0"
+              title="Ver detalhes do perfil e notas"
+            >
+              <ContactAvatar
+                name={contact.name}
+                phone={contact.phone}
+                avatarUrl={contact.avatar_url}
+                size="sm"
+              />
+              <div className="min-w-0 flex items-center gap-2">
+                <h2 className="truncate text-xs font-semibold text-foreground">{displayName}</h2>
+                <span className="hidden sm:inline text-[11px] text-muted-foreground truncate">{contact.phone}</span>
+              </div>
+            </button>
 
             {/* Subtle Pills for Session & AI */}
             <div className="hidden md:flex items-center gap-1.5 ml-1">
-              <Badge
-                variant="outline"
-                className={cn(
-                  "gap-1 border-border/60 text-[10px] font-normal px-1.5 py-0 shrink-0",
-                  sessionInfo.expired ? "text-red-400 border-red-500/30 bg-red-500/10" : "text-muted-foreground"
-                )}
-              >
-                <Clock className="h-3 w-3" />
-                {sessionInfo.remaining}
-              </Badge>
+              {!sessionInfo.expired && sessionInfo.remaining && (
+                <Badge
+                  variant="outline"
+                  className="gap-1 border-border/60 text-[10px] font-normal px-1.5 py-0 shrink-0 text-muted-foreground"
+                >
+                  <Clock className="h-3 w-3" />
+                  {sessionInfo.remaining}
+                </Badge>
+              )}
 
               {conversation.ai_handler_status === "human" ? (
                 <Badge variant="outline" className="text-[10px] font-normal px-1.5 py-0 border-amber-500/30 text-amber-500 bg-amber-500/10 shrink-0">
@@ -1441,12 +1449,12 @@ export function MessageThread({
               {conversation.ai_handler_status === "human" ? (
                 <>
                   <Sparkles className="h-3.5 w-3.5 shrink-0" />
-                  <span className="whitespace-nowrap">{t("inbox.collaboration.returnToAi")}</span>
+                  <span className="hidden sm:inline whitespace-nowrap">{t("inbox.collaboration.returnToAi")}</span>
                 </>
               ) : (
                 <>
                   <UserCheck className="h-3.5 w-3.5 shrink-0" />
-                  <span className="whitespace-nowrap">{t("inbox.collaboration.takeOver")}</span>
+                  <span className="hidden sm:inline whitespace-nowrap">{t("inbox.collaboration.takeOver")}</span>
                 </>
               )}
             </Button>

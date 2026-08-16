@@ -117,6 +117,19 @@ html[data-mode="dark"] {
   --sidebar-accent: oklch(0.22 0.01 260);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.28 0.01 260);
+
+  /* Identidade (monograma de contato) — ver bloco IDENTIDADE abaixo.
+   * L e C constantes; só o matiz varia. */
+  --identity-1: oklch(0.82 0.105 25);
+  --identity-2: oklch(0.82 0.105 70);
+  --identity-3: oklch(0.82 0.105 145);
+  --identity-4: oklch(0.82 0.105 185);
+  --identity-5: oklch(0.82 0.105 230);
+  --identity-6: oklch(0.82 0.105 275);
+  --identity-7: oklch(0.82 0.105 310);
+  --identity-8: oklch(0.82 0.105 345);
+  --identity-surface: 16%;
+  --identity-edge: 24%;
 }
 
 html[data-mode="light"] {
@@ -148,6 +161,17 @@ html[data-mode="light"] {
   --sidebar-accent: oklch(0.96 0.004 260);
   --sidebar-accent-foreground: oklch(0.25 0.01 260);
   --sidebar-border: oklch(0.922 0.004 260);
+
+  --identity-1: oklch(0.5 0.135 25);
+  --identity-2: oklch(0.5 0.135 70);
+  --identity-3: oklch(0.5 0.135 145);
+  --identity-4: oklch(0.5 0.135 185);
+  --identity-5: oklch(0.5 0.135 230);
+  --identity-6: oklch(0.5 0.135 275);
+  --identity-7: oklch(0.5 0.135 310);
+  --identity-8: oklch(0.5 0.135 345);
+  --identity-surface: 11%;
+  --identity-edge: 20%;
 }
 
 /* ---- ACCENT: primary color ---- */
@@ -220,6 +244,90 @@ html[data-theme="rose"] {
   --sidebar-primary: oklch(0.645 0.22 16);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-ring: oklch(0.645 0.22 16);
+}
+
+/* ============================================================
+ * IDENTIDADE — o monograma de contato
+ *
+ * A marca de duas letras é a primeira camada da ordem canônica
+ * identidade → estado → conteúdo → ação (FH-24.01). Ela é usada
+ * em Caixa de Entrada, Quadros, Contatos e Funis, e precisa ser
+ * literalmente a mesma coisa nos quatro lugares.
+ *
+ * Cor. Oito matizes, e apenas o matiz varia: L e C são constantes
+ * em OKLCH, por modo. É isso que separa uma paleta composta de um
+ * arco-íris (§6.11) — com L igual, oito avatares numa lista têm
+ * exatamente o mesmo peso visual e a lista lê como uma coisa só.
+ * Os matizes são um eixo próprio, disjunto de modo e de acento
+ * (FH-29.03): trocar o acento não mexe na identidade de ninguém.
+ * Nenhuma cor literal chega ao componente (FH-29.01) — o TSX só
+ * escolhe um índice.
+ *
+ * Proporção. O corpo da letra é 38cqw: 38% do diâmetro do círculo,
+ * medido pelo próprio círculo via container query. Não existe par
+ * tamanho/corpo para manter sincronizado, e nenhum ajuste de
+ * tamanho na chamada — prop, classe utilitária ou o que for —
+ * consegue quebrar a razão. A borda é `inset ring` e não `border`
+ * de propósito: `border` encolheria a caixa de conteúdo e, com ela,
+ * a base do cqw.
+ *
+ * Diâmetro. A razão interna ser constante não basta: o círculo ainda
+ * precisa concordar com o que está ao lado dele. A regra é o bloco de
+ * texto que a marca rotula, não a tela:
+ *
+ *   1 linha  → `sm`      (24px)  linha de tabela, cartão, cabeçalho
+ *   2 linhas → `default` (32px)  linha de conversa, ficha compacta
+ *   entidade → `xl`/`2xl`        folha de contato, perfil
+ *   `xs` (20px) só dentro de pílula ou como dado secundário.
+ *
+ * Um `lg` numa linha de duas linhas de `text-xs` é o erro clássico:
+ * a razão interna está certa e mesmo assim a marca domina a linha.
+ * ============================================================ */
+
+@layer components {
+  .avatar-identity {
+    container-type: inline-size;
+    color: var(--identity, var(--primary));
+    background-color: color-mix(
+      in oklab,
+      var(--identity, var(--primary)) var(--identity-surface),
+      transparent
+    );
+    box-shadow: inset 0 0 0 1px
+      color-mix(in oklab, var(--identity, var(--primary)) var(--identity-edge), transparent);
+  }
+
+  .avatar-identity-1 { --identity: var(--identity-1); }
+  .avatar-identity-2 { --identity: var(--identity-2); }
+  .avatar-identity-3 { --identity: var(--identity-3); }
+  .avatar-identity-4 { --identity: var(--identity-4); }
+  .avatar-identity-5 { --identity: var(--identity-5); }
+  .avatar-identity-6 { --identity: var(--identity-6); }
+  .avatar-identity-7 { --identity: var(--identity-7); }
+  .avatar-identity-8 { --identity: var(--identity-8); }
+
+  .avatar-identity-label {
+    /* O corpo NÃO mora aqui. `AvatarFallback` traz `text-sm`, que é
+     * utility layer e ganha de components — o corpo tem de sair de uma
+     * utility (`text-[length:38cqw]`, no componente) para que o
+     * tailwind-merge remova o `text-sm` em vez de empilhar os dois. */
+    font-weight: 600;
+    line-height: 1;
+    /* O monograma é marca, não texto corrido: fixa o corte display
+     * da Inter em vez de deixar o opsz cair com o tamanho físico. */
+    font-variation-settings: "opsz" 32;
+    /* Iniciais vindas de telefone caem em dígitos; largura uniforme
+     * mantém todos esses avatares idênticos em largura (FH-30.07). */
+    font-variant-numeric: tabular-nums;
+  }
+
+  .avatar-identity-glyphs {
+    /* Duas maiúsculas precisam de ar entre si. A margem negativa
+     * cancela a folga que o tracking abre depois do último glifo —
+     * sem ela a dupla assenta meio passo à esquerda do centro. */
+    letter-spacing: 0.025em;
+    margin-inline-end: -0.025em;
+  }
 }
 
 @layer base {

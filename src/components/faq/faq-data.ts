@@ -21,438 +21,410 @@ export interface FaqCategory {
 export const FAQ_CATEGORIES: FaqCategory[] = [
   {
     id: "onboarding",
-    title: "Início Rápido",
-    description: "Primeiros passos para configurar sua empresa no Flow Hub",
+    title: "Início Rápido & Guia",
+    description: "Passos essenciais para colocar sua operação no WhatsApp em funcionamento",
     iconName: "Zap",
     items: [
       {
         id: "start-steps",
-        question: "Acabei de entrar no Flow Hub pela primeira vez. Por onde devo começar?",
-        answer: "Para colocar seu sistema para rodar rapidamente e atender seus clientes via WhatsApp oficial, recomendamos seguir estes 3 passos iniciais:",
+        question: "Acabei de acessar o sistema pela primeira vez. Por onde devo começar?",
+        answer: "Para estruturar seu atendimento oficial no WhatsApp de forma rápida e segura, siga este roteiro de 3 etapas:",
         steps: [
-          "Conecte seu WhatsApp Meta: Acesse Configurações > WhatsApp e insira o Token permanente, Phone Number ID e WABA ID.",
-          "Traga sua equipe: Vá em Configurações > Membros da equipe e convide os atendentes e administradores.",
-          "Adicione seus contatos: Acesse a tela de Contatos para importar sua base via CSV ou cadastrar manualmente."
+          "Conecte sua conta do WhatsApp Meta: Em Configurações > WhatsApp, insira suas credenciais ou utilize a verificação de 1 clique.",
+          "Organize sua equipe: Em Configurações > Membros da equipe, convide os atendentes e defina os papéis de acesso.",
+          "Importe seus contatos: Na tela de Contatos, faça o upload de sua base via planilha CSV ou cadastre clientes individualmente."
         ],
         routeLink: {
           label: "Ir para Configurações do WhatsApp",
           href: "/settings?tab=whatsapp"
         },
-        tags: ["início", "primeiros passos", "setup", "começar"]
+        tags: ["início", "primeiros passos", "setup", "começar", "configuração inicial"]
       },
       {
         id: "guided-tour",
-        question: "Como posso fazer o tour guiado pelo sistema a qualquer momento?",
-        answer: "O Tour Guiado é contextual e independente para cada funcionalidade do sistema. Para uma experiência mais assertiva e detalhada:",
+        question: "Como funciona o Tour Guiado contextual?",
+        answer: "O Tour Guiado é projetado para orientar você exatamente na tela onde estiver trabalhando. Em qualquer momento:",
         steps: [
-          "Navegue até a tela da funcionalidade que você deseja entender melhor (ex: Caixa de Entrada, Pipelines, Transmissões, etc.).",
-          "No cabeçalho superior direito, clique no botão de Tour Guiado (ícone de bússola/mapa).",
-          "O tour iniciado será específico sobre os recursos e elementos daquela tela em que você está navegando."
+          "Navegue até a funcionalidade desejada (ex: Caixa de Entrada, Pipelines, Transmissões ou Automações).",
+          "No canto superior direito da tela, clique no botão de Tour Guiado (ícone de bússola/mapa).",
+          "Um assistente visual conduzirá você pelos botões, relatórios e recursos específicos daquela página."
         ],
-        tags: ["tour", "ajuda", "tutorial", "passo a passo", "funcionalidade", "contextual"]
+        tags: ["tour", "ajuda", "tutorial", "passo a passo", "contextual", "orientação"]
       }
     ]
   },
   {
     id: "dashboard",
-    title: "Dashboard & Métricas",
-    description: "Acompanhe o ritmo de atendimento e negociações em tempo real",
+    title: "Dashboard Operacional",
+    description: "Visão em tempo real da Fila de Atenção, métricas de resposta e ritmo comercial",
     iconName: "LayoutDashboard",
     items: [
       {
         id: "dash-overview",
-        question: "O que é o Dashboard e o que representam as métricas no topo?",
-        answer: "O Dashboard é o painel de controle em tempo real do Flow Hub. Ele reúne dados chave do seu workspace sem precisar trocar de tela:",
+        question: "Como o Dashboard ajuda a priorizar o trabalho diário da equipe?",
+        answer: "O Dashboard reúne os indicadores operacionais mais críticos para que gestores e atendentes saibam exatamente onde agir primeiro:",
         steps: [
-          "Conversas Ativas: Quantidade de chats em andamento no momento.",
-          "Novos Contatos Hoje: Total de novos clientes adicionados na sua base hoje.",
-          "Valor de Deals Abertos: Soma financeira de todas as negociações ativas no seu Pipelines.",
-          "Mensagens Enviadas Hoje: Volume total de mensagens disparadas pela sua equipe no dia."
+          "Fila de Atenção: Alertas prioritários sobre conversas pendentes de resposta humana, oportunidades comerciais estagnadas e falhas pontuais de comunicação.",
+          "Ações Rápidas: Atalhos diretos para iniciar conversas, cadastrar oportunidades e criar envios.",
+          "Volume de Interações: Comparativo em gráfico do fluxo diário de mensagens enviadas e recebidas.",
+          "Tempo Médio de Resposta: Indicador do tempo de atendimento distribuído ao longo da semana para acompanhamento de SLA."
         ],
         routeLink: {
-          label: "Ver meu Dashboard",
+          label: "Ver Dashboard",
           href: "/dashboard"
         },
-        tags: ["dashboard", "métricas", "desempenho", "relatório"]
+        tags: ["dashboard", "fila de atenção", "métricas", "tempo de resposta", "sla", "indicadores"]
       },
       {
         id: "dash-filters",
-        question: "Como posso filtrar os gráficos do Dashboard por período?",
-        answer: "No gráfico principal de interações ao longo do tempo, utilize os seletores de 7 dias, 30 dias ou 90 dias localizados no topo do gráfico para ajustar o intervalo de análise.",
+        question: "Como ajustar o período de análise dos gráficos?",
+        answer: "Utilize os seletores de período (7 dias, 30 dias ou 90 dias) posicionados no cabeçalho do gráfico principal para alternar a visão temporal das métricas.",
         routeLink: {
           label: "Ir para o Dashboard",
           href: "/dashboard"
         },
-        tags: ["filtro", "período", "gráficos"]
+        tags: ["filtro", "período", "gráficos", "histórico"]
       }
     ]
   },
   {
     id: "inbox",
-    title: "Caixa de Entrada & Chat",
-    description: "Atendimento multiagente em tempo real via WhatsApp",
+    title: "Caixa de Entrada & Multiatendimento",
+    description: "Atendimento simultâneo no WhatsApp com histórico unificado e notas internas",
     iconName: "MessageSquare",
     items: [
       {
         id: "inbox-multiagent",
-        question: "Como funciona o atendimento multiagente na Caixa de Entrada?",
-        answer: "A Caixa de Entrada centraliza todas as conversas do seu WhatsApp oficial. Vários atendentes podem trabalhar simultaneamente na mesma conta, podendo assumir chats, atribuir conversas a outros membros e utilizar modelos de mensagens.",
+        question: "Como funciona o atendimento simultâneo por múltiplos operadores?",
+        answer: "Toda a equipe opera a partir de um número oficial único de WhatsApp. Os atendentes visualizam as conversas da fila, assumem chats, transferem atendimento e registram notas internas sem sobreposição de mensagens.",
         routeLink: {
           label: "Abrir Caixa de Entrada",
           href: "/inbox"
         },
-        tags: ["chat", "atendimento", "multiatendente", "whatsapp"]
+        tags: ["chat", "atendimento", "multiatendente", "whatsapp", "fila de trabalho"]
       },
       {
         id: "inbox-features",
-        question: "Como envio mídias, áudios e notas internas durante o atendimento?",
-        answer: "Na barra inferior do chat aberto, você encontrará opções para enviar anexos (imagens, documentos), gravar áudios em tempo real e alternar para a aba 'Nota Interna' — que permite registrar anotações privadas visíveis apenas para a sua equipe.",
+        question: "Como enviar arquivos, áudios e anotações privadas durante o atendimento?",
+        answer: "Na barra de composição do chat, você pode anexar documentos e imagens, gravar mensagens de áudio diretamente do navegador e alternar para o modo 'Nota Interna' — que salva anotações visíveis apenas para a sua equipe.",
         routeLink: {
           label: "Ir para a Caixa de Entrada",
           href: "/inbox"
         },
-        tags: ["áudio", "mídia", "notas internas", "anexos"]
+        tags: ["áudio", "mídia", "notas internas", "anexos", "documentos"]
       },
       {
-        id: "inbox-resolve",
-        question: "Como encerrar ou reabrir um atendimento?",
-        answer: "No painel lateral do chat aberto, clique no botão 'Concluir' para arquivar ou encerrar o atendimento. Caso o cliente volte a enviar mensagem, a conversa será automaticamente reaberta ou movida para a aba correspondente.",
+        id: "inbox-statuses-explained",
+        question: "O que representam os status Aberto, Pendente e Fechado?",
+        answer: "Os status organizam o ciclo de vida do atendimento e influenciam na contagem de SLA e métricas de desempenho:",
+        steps: [
+          "Aberto (open): Conversa ativa aguardando tratativa da equipe ou da inteligência artificial. Contabiliza no tempo de resposta da fila.",
+          "Pendente (pending): Atendimento pausado temporariamente enquanto a equipe aguarda retorno de cliente ou ação externa.",
+          "Fechado (closed): Atendimento concluído. Se o cliente enviar uma nova mensagem no WhatsApp, a conversa é reaberta automaticamente na fila ativa."
+        ],
+        routeLink: {
+          label: "Ver Caixa de Entrada",
+          href: "/inbox"
+        },
+        tags: ["status", "aberto", "pendente", "fechado", "sla", "ciclo de vida"]
+      }
+    ]
+  },
+  {
+    id: "crm_routing",
+    title: "Direcionamento CRM & Atribuição",
+    description: "Roteamento inteligente de conversas para o responsável pelo lead ou equipe certa",
+    iconName: "UserCheck",
+    items: [
+      {
+        id: "crm-routing-how",
+        question: "Como funciona o direcionamento automático para o responsável pelo cliente?",
+        answer: "Quando um cliente entra em contato pelo WhatsApp, o sistema identifica se ele já possui um responsável de conta (Owner) ou uma oportunidade ativa no funil comercial. O atendimento é automaticamente atribuído ao profissional correspondente na Caixa de Entrada.",
+        routeLink: {
+          label: "Ver Caixa de Entrada",
+          href: "/inbox"
+        },
+        tags: ["direcionamento", "atribuição", "carteira", "responsável", "crm", "roteamento"]
+      },
+      {
+        id: "crm-routing-manual",
+        question: "É possível reatribuir manualmente um atendimento na Caixa de Entrada?",
+        answer: "Sim. No cabeçalho da conversa na Caixa de Entrada, selecione a opção de responsável e escolha qualquer membro da equipe ou departamento para transferir o atendimento instantaneamente.",
         routeLink: {
           label: "Ir para a Caixa de Entrada",
           href: "/inbox"
         },
-        tags: ["concluir", "fechar", "reabrir", "status"]
+        tags: ["reatribuir", "transferir", "responsável", "membro"]
       }
     ]
   },
   {
     id: "boards",
-    title: "Boards (Kanban)",
-    description: "Organização visual de conversas por status e relacionamento",
+    title: "Boards & Gestão Visual",
+    description: "Organização estilo Kanban para acompanhar conversas e estágios de relacionamento",
     iconName: "LayoutGrid",
     items: [
       {
         id: "boards-difference",
-        question: "O que é a tela de Boards e qual a diferença para o Pipelines?",
-        answer: "O Boards organiza visualmente seus contatos ativos de acordo com o status de atendimento (ex: Prioridades, Parceiros, Conversas Diretas). O Pipelines, por outro lado, foca na gestão comercial de Oportunidades/Deals com valores financeiros.",
+        question: "Qual a diferença entre a visão de Boards e a tela de Pipelines?",
+        answer: "O Boards organiza os contatos e conversas por estágio de atendimento e relacionamento (ex: Prioridades, Em Atendimento, Retorno Agendado). O Pipelines é voltado para a gestão comercial de vendas, com valores financeiros e negociações (Deals).",
         routeLink: {
           label: "Visualizar Boards",
           href: "/boards"
         },
-        tags: ["boards", "kanban", "status", "organização"]
+        tags: ["boards", "kanban", "estágios", "organização visual"]
       },
       {
         id: "boards-move",
-        question: "Como mover um contato de coluna na tela de Boards?",
-        answer: "Basta clicar sobre o card do contato com o mouse (ou toque na tela), segurar e arrastá-lo para a coluna de status desejada.",
+        question: "Como movimentar cartões entre as colunas do Board?",
+        answer: "Basta clicar sobre o cartão do contato, arrastá-lo até a coluna desejada e soltar. O status do atendimento será atualizado imediatamente.",
         routeLink: {
           label: "Ir para Boards",
           href: "/boards"
         },
-        tags: ["arrastar", "drag and drop", "mover"]
+        tags: ["arrastar", "drag and drop", "mover", "colunas"]
       }
     ]
   },
   {
     id: "contacts",
-    title: "Contatos & CSV",
-    description: "Gestão da base de clientes, importação em massa e etiquetas",
+    title: "Contatos & Base de Clientes",
+    description: "Centralização da base de contatos, importação em massa e etiquetagem",
     iconName: "Users",
     items: [
       {
         id: "contacts-import",
-        question: "Como posso importar uma lista de contatos via CSV?",
-        answer: "Para importar sua base de clientes em segundos, siga o passo a passo:",
+        question: "Como importar uma lista de contatos via planilha CSV?",
+        answer: "Para cadastrar múltiplos contatos de forma automatizada:",
         steps: [
-          "Acesse a tela de Contatos no menu lateral.",
-          "Clique no botão 'Importar' no canto superior direito.",
-          "Faça o upload de um arquivo .CSV contendo obrigatoriamente colunas de Nome e Telefone (com DDD).",
-          "Mapeie os campos e confirme a importação."
+          "Acesse a tela de Contatos no menu principal.",
+          "Clique em 'Importar' no topo da página.",
+          "Faça o envio do arquivo CSV contendo ao menos o Nome e Telefone (com DDD).",
+          "Mapeie as colunas com os campos do sistema e confirme o carregamento."
         ],
         routeLink: {
           label: "Ir para Contatos",
           href: "/contacts"
         },
-        tags: ["importar", "csv", "contatos", "lista"]
+        tags: ["importar", "csv", "contatos", "lista", "base"]
       },
       {
         id: "custom-fields",
-        question: "O que são os Campos Personalizados e como criá-los?",
-        answer: "Campos Personalizados permitem armazenar dados específicos dos seus clientes (como CPF, CNPJ, CEP ou Origem do Lead). Você pode criá-los na tela de Contatos (clicando em 'Campos personalizados') ou em Configurações > Campos e Tags.",
+        question: "O que são Campos Personalizados e Tags?",
+        answer: "Campos Personalizados armazenam dados específicos do seu negócio (como CPF/CNPJ, Razão Social ou Segmento). As Tags ajudam a categorizar rapidamente os contatos para filtros e transmissões.",
         routeLink: {
           label: "Gerenciar Campos e Tags",
           href: "/settings?tab=fields"
         },
-        tags: ["campos", "personalizados", "atributos", "tags"]
+        tags: ["campos", "personalizados", "atributos", "tags", "etiquetas"]
       }
     ]
   },
   {
     id: "pipelines",
-    title: "Pipelines & Vendas",
-    description: "Gestão de funil de vendas, negociações e deals monetários",
+    title: "Pipelines & Oportunidades",
+    description: "Gestão do funil de vendas, negociações comerciais e acompanhamento de receita",
     iconName: "GitBranch",
     items: [
       {
         id: "pipelines-concept",
-        question: "O que são Pipelines e Deals no Flow Hub?",
-        answer: "Pipelines são quadros visuais do seu funil de vendas. Cada card representa um 'Deal' (negociação), com valor monetário associado, responsável e estágio no processo de vendas.",
+        question: "Como funcionam os Pipelines de Vendas?",
+        answer: "Os Pipelines representam as etapas do seu processo comercial. Cada oportunidade (Deal) exibe o valor monetário estimado, contato vinculado, responsável e previsão de fechamento.",
         routeLink: {
           label: "Abrir Pipelines",
           href: "/pipelines"
         },
-        tags: ["pipelines", "vendas", "deals", "funil"]
+        tags: ["pipelines", "vendas", "deals", "funil commercial", "oportunidades"]
       },
       {
         id: "pipelines-edit-stages",
-        question: "Como posso personalizar as etapas e cores do meu Pipeline?",
-        answer: "Na tela de Pipelines, clique no botão 'Operação' e selecione 'Gerenciar pipelines'. Lá você poderá criar novos estágios, reordenar etapas e atribuir cores personalizadas.",
+        question: "Como personalizar as etapas do funil de vendas?",
+        answer: "Na tela de Pipelines, acesse as opções de gerenciamento para criar novos estágios, reordenar etapas do processo e atribuir cores visuais de identificação.",
         routeLink: {
           label: "Ir para Pipelines",
           href: "/pipelines"
         },
-        tags: ["etapas", "estágios", "cores", "gerenciar"]
-      },
-      {
-        id: "pipelines-currency",
-        question: "Como alterar a moeda padrão das minhas negociações?",
-        answer: "Acesse Configurações > Deals e Moeda para definir a moeda utilizada no seu workspace (ex: BRL - R$, USD - $, EUR - €).",
-        routeLink: {
-          label: "Configurar Moeda",
-          href: "/settings?tab=currency"
-        },
-        tags: ["moeda", "moedas", "currency", "valores"]
+        tags: ["etapas", "estágios", "personalização", "gerenciar funil"]
       }
     ]
   },
   {
     id: "broadcasts",
-    title: "Transmissões em Massa",
-    description: "Disparos oficiais de mensagens com modelos homologados pela Meta",
+    title: "Transmissões em Massa & Aprovações",
+    description: "Envios oficiais agendados com suporte à aprovação prévia de administradores",
     iconName: "Radio",
     items: [
       {
         id: "broadcast-how",
-        question: "O que são Transmissões e como funcionam os disparos oficiais?",
-        answer: "Transmissões são envios de mensagens para múltiplos contatos ao mesmo tempo. No WhatsApp API Oficial da Meta, esses disparos utilizam modelos (HSM) pré-aprovados para garantir conformidade e entrega segura.",
+        question: "Como funcionam os disparos de mensagens em massa oficiais?",
+        answer: "As Transmissões utilizam modelos de mensagem (HSM) pré-aprovados pela Meta. É possível filtrar a lista de destinatários por tags ou atributos e agendar a entrega no melhor horário.",
         routeLink: {
-          label: "Criar Transmissão",
+          label: "Ver Transmissões",
           href: "/broadcasts"
         },
-        tags: ["disparos", "transmissões", "massa", "meta", "hsm"]
+        tags: ["disparos", "transmissões", "massa", "meta", "modelos", "hsm"]
       },
       {
-        id: "broadcast-schedule",
-        question: "Como criar e agendar um disparo de transmissão?",
-        answer: "Vá em Transmissões > Nova transmissão. Escolha o modelo aprovado, filtre os destinatários por tags ou campos, personalize as variáveis de texto e escolha disparar imediatamente ou agendar para uma data e hora futuras.",
+        id: "broadcast-approval",
+        question: "Como funciona o fluxo de aprovação prévia de envios?",
+        answer: "Para garantir total governança sobre comunicações em larga escala, o sistema permite exigir que transmissões criadas por atendentes passem por revisão e autorização expressa de um Administrador antes do disparo.",
         routeLink: {
-          label: "Ir para Transmissões",
+          label: "Gerenciar Transmissões",
           href: "/broadcasts"
         },
-        tags: ["agendar", "disparar", "filtro", "modelo"]
+        tags: ["aprovação", "governança", "revisão", "autorização", "segurança"]
+      }
+    ]
+  },
+  {
+    id: "document_delivery",
+    title: "Transmissões Documentais & Processos",
+    description: "Envio seguro de demonstrativos, relatórios e arquivos com código de validação",
+    iconName: "FileText",
+    items: [
+      {
+        id: "doc-delivery-concept",
+        question: "O que são Transmissões Documentais e qual a sua aplicação?",
+        answer: "A funcionalidade de Transmissões Documentais automatiza o envio individualizado de arquivos e demonstrativos importantes (como informes de rendimentos, faturas e relatórios). Cada envio gera um código único de rastreabilidade para auditoria de entrega.",
+        routeLink: {
+          label: "Acessar Transmissões Documentais",
+          href: "/processes/document-delivery"
+        },
+        tags: ["documentos", "demonstrativos", "relatórios", "envio seguro", "validação", "código único"]
+      },
+      {
+        id: "doc-delivery-tracking",
+        question: "Como acompanhar a confirmação e entrega de documentos?",
+        answer: "No painel de Transmissões Documentais, você acompanha em tempo real o status de cada envio (Enviado, Entregue, Lido), podendo reenviar ou baixar o comprovante de transmissão.",
+        routeLink: {
+          label: "Ver Processos Documentais",
+          href: "/processes/document-delivery"
+        },
+        tags: ["rastreabilidade", "entrega", "status", "confirmação", "auditoria"]
       }
     ]
   },
   {
     id: "automations",
-    title: "Automações & Gatilhos",
-    description: "Workflows automáticos para otimizar a rotina operacional",
+    title: "Automações & Regras",
+    description: "Workflows automáticos para direcionar conversas, aplicar tags e enviar avisos",
     iconName: "Zap",
     items: [
       {
         id: "automations-intro",
-        question: "O que são Automações no Flow Hub?",
-        answer: "Automações são regras que executam ações de forma automática quando determinados eventos ocorrem (ex: mensagem recebida fora do horário, novo contato adicionado ou tag aplicada).",
+        question: "Como funcionam as regras de automação?",
+        answer: "As Automações executam ações programadas de acordo com gatilhos definidos (ex: recebimento de mensagem fora do horário comercial, inclusão de novo contato ou alteração de etapa no funil).",
         routeLink: {
           label: "Ver Automações",
           href: "/automations"
         },
-        tags: ["automação", "triggers", "gatilhos", "regras"]
-      },
-      {
-        id: "automations-actions",
-        question: "Quais ações automáticas posso disparar?",
-        answer: "Você pode disparar respostas automáticas, atribuir a conversa a um atendente específico, adicionar ou remover tags de contatos e até enviar webhooks para sistemas externos.",
-        routeLink: {
-          label: "Ir para Automações",
-          href: "/automations"
-        },
-        tags: ["ações", "webhook", "atribuir", "tags"]
+        tags: ["automação", "gatilhos", "triggers", "regras", "respostas automáticas"]
       }
     ]
   },
   {
     id: "flows",
-    title: "Fluxos & Chatbot Visual",
-    description: "Construção de árvores de conversação e menus de atendimento",
+    title: "Chatbot Visual & Fluxos",
+    description: "Construtor de menus interativos, triagem de atendimento e pesquisas",
     iconName: "Workflow",
     items: [
       {
         id: "flows-builder",
-        question: "O que é o Flow Builder e para que ele serve?",
-        answer: "O Flow Builder é o construtor visual drag & drop do Flow Hub. Com ele você cria bots de atendimento com botões interativos, menus de opção, perguntas sequenciais e triagem automática antes de transferir para um humano.",
+        question: "Como funciona o construtor visual de chatbot (Flow Builder)?",
+        answer: "O Flow Builder permite desenhar árvores de atendimento intuitivas com botões interativos, perguntas sequenciais e coleta de dados do cliente antes da transferência para a equipe humana.",
         routeLink: {
           label: "Acessar Fluxos",
           href: "/flows"
         },
-        tags: ["flow builder", "bot", "chatbot", "árvore", "menu"]
+        tags: ["flow builder", "bot", "chatbot", "menu interativo", "triagem"]
       }
     ]
   },
   {
     id: "ai_assistant",
     title: "Atendimento IA & Copilot",
-    description: "Assistente de inteligência artificial treinado para sua empresa",
+    description: "Assistente virtual que sugere respostas e agiliza o suporte diário",
     iconName: "Sparkles",
     items: [
       {
         id: "ai-copilot",
-        question: "Como funciona o Atendimento de IA no Flow Hub?",
-        answer: "O assistente de IA pode responder dúvidas frequentes dos clientes automaticamente ou sugerir respostas rápidas para os atendentes na Caixa de Entrada, utilizando o contexto e diretrizes da sua empresa.",
+        question: "Como a Inteligência Artificial auxilia no atendimento?",
+        answer: "O assistente de IA lê as dúvidas recebidas e sugere rascunhos de resposta diretamente na Caixa de Entrada. O operador pode revisar, editar e aprovar o texto com um clique antes do envio.",
         routeLink: {
           label: "Configurar Atendimento IA",
           href: "/ai-assistant"
         },
-        tags: ["ia", "ai", "copilot", "inteligência artificial", "resposta automática"]
+        tags: ["ia", "copilot", "inteligência artificial", "sugestões de resposta", "produtividade"]
       }
     ]
   },
   {
     id: "whatsapp",
     title: "Conexão WhatsApp Meta",
-    description: "Integração oficial via WhatsApp Cloud API",
+    description: "Integração direta com a Cloud API oficial da Meta",
     iconName: "Shield",
     items: [
       {
         id: "wa-connect",
         question: "Como conectar o WhatsApp Business API oficial da Meta?",
-        answer: "Para integrar sua conta da Meta Cloud API com o Flow Hub, você pode utilizar a Auto-Detecção de 1 clique ou inserir as credenciais manualmente:",
-        steps: [
-          "Acesse Configurações > WhatsApp.",
-          "Insira o Token de Acesso Permanente da Meta ou conecte via Cadastro Incorporado (Embedded Signup).",
-          "O sistema detectará automaticamente a sua Conta do WhatsApp Business (WABA ID) e os Telefones associados.",
-          "Clique em 'Salvar alterações' para ativar a integração."
-        ],
+        answer: "Em Configurações > WhatsApp, você pode realizar a conexão rápida via Cadastro Incorporado (Embedded Signup) ou inserir seu Token de Acesso Permanente e IDs da conta da Meta.",
         routeLink: {
-          label: "Ir para Configurações de WhatsApp",
+          label: "Configurar WhatsApp",
           href: "/settings?tab=whatsapp"
         },
         tags: ["whatsapp", "meta", "cloud api", "token", "waba"]
       },
       {
-        id: "wa-system-user-token",
-        question: "Como gerar um Token de Acesso Permanente (System User Token) na Meta?",
-        answer: "Tokens temporários expiram em poucas horas. Para garantir que sua conexão permaneça 100% ativa sem nunca expirar, gere um Token de Usuário do Sistema:",
-        steps: [
-          "Acesse o Meta Business Manager (business.facebook.com/settings).",
-          "No menu lateral, vá em Usuários > Usuários do Sistema e clique em 'Adicionar'.",
-          "Crie o usuário com o papel de 'Administrador'.",
-          "Clique em 'Atribuir ativos', selecione seu Aplicativo e sua Conta do WhatsApp Business com controle total.",
-          "Clique em 'Gerar novo token', selecione o seu App e marque as permissões: whatsapp_business_messaging e whatsapp_business_management.",
-          "Copie o token gerado e cole nas Configurações de WhatsApp do Flow Hub."
-        ],
-        routeLink: {
-          label: "Configurar Token de WhatsApp",
-          href: "/settings?tab=whatsapp"
-        },
-        tags: ["token permanente", "system user", "usuário do sistema", "meta", "gerenciador de negócios"]
-      },
-      {
         id: "wa-24h-window",
-        question: "Como funciona a Janela de Atendimento de 24 horas do WhatsApp?",
-        answer: "Sempre que um cliente envia uma mensagem para a sua empresa, a Meta abre uma 'Janela de Atendimento de 24 horas':",
-        steps: [
-          "Dentro das 24h: Sua equipe pode responder livremente com qualquer texto, imagem, documento ou áudio diretamente pela Caixa de Entrada.",
-          "Na Caixa de Entrada do Flow Hub, um contador regressivo exibe exatamente quanto tempo falta para o fim da janela gratuita de 24h.",
-          "Após as 24h: Para iniciar uma nova conversa ou retomar o contato após o prazo, é necessário enviar uma Mensagem de Modelo (Template) aprovada pela Meta."
-        ],
+        question: "Como funciona a Janela de Atendimento de 24 horas?",
+        answer: "Quando o cliente envia uma mensagem, abre-se uma janela de 24h em que a equipe pode responder com qualquer conteúdo. Na Caixa de Entrada, um cronômetro regressivo exibe o tempo restante da janela.",
         routeLink: {
           label: "Ir para a Caixa de Entrada",
           href: "/inbox"
         },
-        tags: ["24 horas", "janela de atendimento", "sessão", "tarifas", "regras meta"]
-      },
-      {
-        id: "wa-quality-rating",
-        question: "O que significam os indicadores de Qualidade e Saúde da Linha (Quality Rating)?",
-        answer: "A Meta monitora continuamente o nível de satisfação dos usuários em relação aos seus envios de mensagens. Na tela de configurações, exibimos o status atual da sua linha:",
-        steps: [
-          "GREEN (Verde - Alta Qualidade): Sua linha está saudável e operando sem restrições.",
-          "YELLOW (Amarelo - Média Qualidade): Houve alguns bloqueios ou marcações de spam recentes pelos clientes. Recomenda-se reduzir envios promocionais não solicitados.",
-          "RED (Vermelho - Baixa Qualidade): Linha com alto índice de denúncias ou spam. Riscos de redução temporária do limite diário de mensagens."
-        ],
-        routeLink: {
-          label: "Ver Status da Minha Linha",
-          href: "/settings?tab=whatsapp"
-        },
-        tags: ["qualidade", "quality rating", "saúde", "status", "bloqueio", "spam"]
-      },
-      {
-        id: "wa-groups",
-        question: "Como funciona o atendimento de Grupos do WhatsApp no Flow Hub?",
-        answer: "O Flow Hub oferece suporte à API Oficial de Grupos da Meta para atendimento e suporte em pequenos grupos:",
-        steps: [
-          "Os grupos de atendimento podem ser criados ou conectados diretamente pelo sistema.",
-          "Conforme as diretrizes de privacidade da Meta, participantes entram no grupo através do link de convite oficial enviado pela empresa.",
-          "As mensagens trocadas no grupo chegam em tempo real na Caixa de Entrada e nos Boards do Flow Hub para atendimento multiagente."
-        ],
-        routeLink: {
-          label: "Ir para a Caixa de Entrada",
-          href: "/inbox"
-        },
-        tags: ["grupos", "groups", "atendimento em grupo", "suporte vip", "convite"]
+        tags: ["24 horas", "janela de atendimento", "sessão", "regras meta"]
       }
     ]
   },
   {
     id: "team",
     title: "Equipe & Permissões",
-    description: "Gestão de usuários, funções e controle de acesso",
+    description: "Controle de papéis, convites de membros e níveis de acesso",
     iconName: "UsersRound",
     items: [
       {
-        id: "team-invite",
-        question: "Como convidar novos membros para a equipe?",
-        answer: "Acesse Configurações > Membros da equipe e clique em 'Convidar membro'. Digite o e-mail do colaborador e defina a função dele no sistema.",
+        id: "team-roles",
+        question: "Quais os níveis de permissão disponíveis para os membros da equipe?",
+        answer: "O sistema disponibiliza 4 papéis com atribuições bem definidas:",
+        steps: [
+          "Proprietário (Owner): Gestão total do workspace, permissões administrativas e assinatura.",
+          "Administrador (Admin): Configuração de equipe, integrações, regras de automação e modelos.",
+          "Atendente (Agent): Operação da Caixa de Entrada, atendimento a clientes e gestão de contatos atribuídos.",
+          "Visualizador (Viewer): Acesso para leitura de estatísticas e acompanhamento de relatórios sem poder de edição."
+        ],
         routeLink: {
           label: "Gerenciar Equipe",
           href: "/settings?tab=members"
         },
-        tags: ["equipe", "convite", "membros", "usuários"]
-      },
-      {
-        id: "team-roles",
-        question: "Quais são os níveis de permissão (Roles) no Flow Hub?",
-        answer: "O sistema disponibiliza 4 papéis principais:",
-        steps: [
-          "Owner: Proprietário do workspace, com acesso irrestrito e controle financeiro.",
-          "Admin: Administrador total de configurações, membros, modelos e pipelines.",
-          "Agent: Atendente focado em responder clientes na Caixa de Entrada e gerenciar seus contatos.",
-          "Viewer: Usuário de visualização apenas (leitura de relatórios sem edição)."
-        ],
-        routeLink: {
-          label: "Ver Membros da Equipe",
-          href: "/settings?tab=members"
-        },
-        tags: ["permissões", "roles", "admin", "agent", "owner"]
+        tags: ["permissões", "roles", "admin", "agent", "owner", "acesso"]
       }
     ]
   },
   {
     id: "plans",
-    title: "Planos & Consumo",
-    description: "Limites de uso, faturamento e assinatura",
+    title: "Planos & Faturamento",
+    description: "Gestão de limites de uso, faturamento e assinatura do workspace",
     iconName: "CreditCard",
     items: [
       {
         id: "plans-usage",
-        question: "Como verificar meu consumo ou fazer upgrade de plano?",
-        answer: "Acesse a área de Configurações para conferir o uso atual do seu workspace (limite de contatos, mensagens e membros) e gerenciar os detalhes da sua assinatura.",
+        question: "Como acompanhar os limites de consumo da conta?",
+        answer: "Acesse as Configurações do sistema para verificar o número de contatos cadastrados, volume de mensagens enviadas no mês e total de atendentes ativos.",
         routeLink: {
           label: "Ver Configurações",
           href: "/settings"
         },
-        tags: ["plano", "faturamento", "consumo", "upgrade", "assinatura"]
+        tags: ["plano", "faturamento", "consumo", "assinatura", "limites"]
       }
     ]
   }

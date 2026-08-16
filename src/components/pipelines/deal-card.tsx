@@ -4,6 +4,7 @@ import type { Deal, PipelineStage } from "@/types";
 import { Calendar, Check, X } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useTranslation } from "@/hooks/use-translation";
+import { ContactAvatar } from "@/components/ui/contact-avatar";
 
 interface DealCardProps {
   deal: Deal;
@@ -30,6 +31,11 @@ export function DealCard({ deal, stage, onEdit, isOverlay }: DealCardProps) {
   const { t } = useTranslation();
   const contactLabel = deal.contact?.name || deal.contact?.phone || t("pipelines.noContact");
   const assigneeLabel = deal.assignee?.full_name || null;
+
+  const isOverdue =
+    deal.expected_close_date &&
+    deal.status === "open" &&
+    new Date(deal.expected_close_date).getTime() < new Date().setHours(0, 0, 0, 0);
 
   return (
     <button
@@ -74,9 +80,12 @@ export function DealCard({ deal, stage, onEdit, isOverlay }: DealCardProps) {
 
       {/* Contact row */}
       <div className="mt-2 flex items-center gap-2">
-        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-foreground">
-          {initials(deal.contact?.name, deal.contact?.phone)}
-        </span>
+        <ContactAvatar
+          name={deal.contact?.name}
+          phone={deal.contact?.phone}
+          avatarUrl={deal.contact?.avatar_url}
+          size="xs"
+        />
         <span className="truncate text-xs text-muted-foreground">{contactLabel}</span>
       </div>
 
@@ -85,7 +94,14 @@ export function DealCard({ deal, stage, onEdit, isOverlay }: DealCardProps) {
           {formatCurrency(deal.value, deal.currency)}
         </span>
         {deal.expected_close_date && (
-          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+          <span
+            className={`flex items-center gap-1 text-[11px] font-medium ${
+              isOverdue
+                ? "text-amber-500 dark:text-amber-400"
+                : "text-muted-foreground"
+            }`}
+            title={isOverdue ? t("pipelines.overdue") : undefined}
+          >
             <Calendar className="h-3 w-3" />
             {formatDate(deal.expected_close_date)}
           </span>
@@ -94,12 +110,10 @@ export function DealCard({ deal, stage, onEdit, isOverlay }: DealCardProps) {
 
       {assigneeLabel && (
         <div className="mt-2 flex items-center justify-end">
-          <span
-            title={assigneeLabel}
-            className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary"
-          >
-            {initials(assigneeLabel)}
-          </span>
+          <ContactAvatar
+            name={assigneeLabel}
+            size="xs"
+          />
         </div>
       )}
     </button>

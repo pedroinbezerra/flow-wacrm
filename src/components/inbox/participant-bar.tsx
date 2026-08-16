@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ContactAvatar } from "@/components/ui/contact-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
@@ -199,10 +199,11 @@ export function ParticipantBar({
                 key={p.id || p.user_id}
                 className="flex items-center gap-1 bg-background border border-border px-2 py-0.5 rounded-full text-[11px] shadow-2xs"
               >
-                <Avatar className="h-4 w-4">
-                  <AvatarImage src={prof?.avatar_url} />
-                  <AvatarFallback className="text-[9px]">{name.charAt(0)}</AvatarFallback>
-                </Avatar>
+                <ContactAvatar
+                  name={name}
+                  avatarUrl={prof?.avatar_url}
+                  size="xs"
+                />
                 <span className="font-medium text-foreground truncate max-w-[100px]">{name}</span>
 
                 {isOwner && (

@@ -4,13 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/hooks/use-translation";
-import { HelpCircle, LogOut, Menu, Settings as SettingsIcon, User, Cookie, Sparkles } from "lucide-react";
+import { HelpCircle, LogOut, Menu, Settings as SettingsIcon, User, Cookie, Sparkles, Headphones } from "lucide-react";
 import { CookiePreferencesTrigger } from "@/components/cookies/cookie-preferences-trigger";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
+import { ContactAvatar } from "@/components/ui/contact-avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -95,17 +91,11 @@ export function Header({ onOpenSidebar }: HeaderProps) {
           className="flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-muted/70 focus:bg-muted/70 focus:outline-none data-popup-open:bg-muted/70 sm:gap-3 sm:pl-1 sm:pr-3"
           aria-label={t("navigation.account")}
         >
-          <Avatar className="size-8">
-            {profile?.avatar_url ? (
-              <AvatarImage
-                src={profile.avatar_url}
-                alt={profile.full_name ?? "Avatar"}
-              />
-            ) : null}
-            <AvatarFallback className="bg-primary/10 text-sm font-medium text-primary">
-              {initial}
-            </AvatarFallback>
-          </Avatar>
+          <ContactAvatar
+            name={profile?.full_name}
+            avatarUrl={profile?.avatar_url}
+            size="default"
+          />
           <span className="hidden text-sm font-medium text-foreground sm:inline">
             {profile?.full_name ?? "User"}
           </span>
@@ -167,6 +157,15 @@ export function Header({ onOpenSidebar }: HeaderProps) {
           >
             <HelpCircle className="size-4" />
             {t("navigation.faq")}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent("flowhub:open-support"));
+            }}
+            className="text-popover-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer"
+          >
+            <Headphones className="size-4" />
+            {t("navigation.liveSupport")}
           </DropdownMenuItem>
           <DropdownMenuItem
             render={

@@ -12,11 +12,10 @@ import {
   Info,
 } from "lucide-react";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatCurrency } from "@/lib/currency";
@@ -94,46 +93,44 @@ export function PipelineAnalytics({ stages, deals }: PipelineAnalyticsProps) {
   }, [deals, sortedStages]);
 
   return (
-    <TooltipProvider>
-      <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-card/60 p-4 sm:grid-cols-3 xl:grid-cols-6">
-        <Metric
-          icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
-          label={t("pipelines.metricTotalDeals")}
-          value={String(stats.totalCount)}
-          tooltip={t("pipelines.metricTotalDealsHint")}
-        />
-        <Metric
-          icon={<DollarSign className="h-4 w-4 text-primary" />}
-          label={t("pipelines.metricPipelineValue")}
-          value={formatCurrency(stats.totalValue, defaultCurrency)}
-          tooltip={t("pipelines.metricPipelineValueHint")}
-        />
-        <Metric
-          icon={<Target className="h-4 w-4 text-blue-400" />}
-          label={t("pipelines.metricAvgDealSize")}
-          value={formatCurrency(stats.avgValue, defaultCurrency)}
-          tooltip={t("pipelines.metricAvgDealSizeHint")}
-        />
-        <Metric
-          icon={<TrendingUp className="h-4 w-4 text-purple-400" />}
-          label={t("pipelines.metricWeightedValue")}
-          value={formatCurrency(stats.weightedValue, defaultCurrency)}
-          tooltip={t("pipelines.metricWeightedValueHint")}
-        />
-        <Metric
-          icon={<Trophy className="h-4 w-4 text-primary" />}
-          label={t("pipelines.metricWonThisMonth")}
-          value={String(stats.wonThisMonth)}
-          tooltip={t("pipelines.metricWonThisMonthHint")}
-        />
-        <Metric
-          icon={<XCircle className="h-4 w-4 text-red-400" />}
-          label={t("pipelines.metricLostThisMonth")}
-          value={String(stats.lostThisMonth)}
-          tooltip={t("pipelines.metricLostThisMonthHint")}
-        />
-      </div>
-    </TooltipProvider>
+    <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-card/60 p-4 sm:grid-cols-3 xl:grid-cols-6">
+      <Metric
+        icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
+        label={t("pipelines.metricTotalDeals")}
+        value={String(stats.totalCount)}
+        tooltip={t("pipelines.metricTotalDealsHint")}
+      />
+      <Metric
+        icon={<DollarSign className="h-4 w-4 text-primary" />}
+        label={t("pipelines.metricPipelineValue")}
+        value={formatCurrency(stats.totalValue, defaultCurrency)}
+        tooltip={t("pipelines.metricPipelineValueHint")}
+      />
+      <Metric
+        icon={<Target className="h-4 w-4 text-blue-400" />}
+        label={t("pipelines.metricAvgDealSize")}
+        value={formatCurrency(stats.avgValue, defaultCurrency)}
+        tooltip={t("pipelines.metricAvgDealSizeHint")}
+      />
+      <Metric
+        icon={<TrendingUp className="h-4 w-4 text-purple-400" />}
+        label={t("pipelines.metricWeightedValue")}
+        value={formatCurrency(stats.weightedValue, defaultCurrency)}
+        tooltip={t("pipelines.metricWeightedValueHint")}
+      />
+      <Metric
+        icon={<Trophy className="h-4 w-4 text-primary" />}
+        label={t("pipelines.metricWonThisMonth")}
+        value={String(stats.wonThisMonth)}
+        tooltip={t("pipelines.metricWonThisMonthHint")}
+      />
+      <Metric
+        icon={<XCircle className="h-4 w-4 text-red-400" />}
+        label={t("pipelines.metricLostThisMonth")}
+        value={String(stats.lostThisMonth)}
+        tooltip={t("pipelines.metricLostThisMonthHint")}
+      />
+    </div>
   );
 }
 
@@ -152,23 +149,18 @@ function Metric({
     <div className="rounded-lg bg-muted/50 p-3">
       <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
         {icon}
-        <span>{label}</span>
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <button
-                type="button"
-                aria-label={`Como ${label} é calculado`}
-                className="ml-auto text-muted-foreground hover:text-foreground focus:outline-none"
-              />
-            }
+        <span className="truncate">{label}</span>
+        <Popover>
+          <PopoverTrigger
+            aria-label={`Como ${label} é calculado`}
+            className="ml-auto p-0.5 text-muted-foreground hover:text-foreground focus:outline-none touch-manipulation"
           >
-            <Info className="h-3 w-3" />
-          </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-xs text-left">
+            <Info className="h-3.5 w-3.5" />
+          </PopoverTrigger>
+          <PopoverContent side="top" className="max-w-xs text-xs p-3 text-popover-foreground">
             {tooltip}
-          </TooltipContent>
-        </Tooltip>
+          </PopoverContent>
+        </Popover>
       </div>
       <p className="mt-1 text-base font-semibold text-foreground">{value}</p>
     </div>

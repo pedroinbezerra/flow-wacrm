@@ -29,13 +29,15 @@ export async function POST(request: Request) {
   }
 
   const accountId = profile.account_id
+  const startTime = Date.now()
 
   try {
     const body = await request.json()
-    const { messageText, history = [] } = body
+    const messageText = body.messageText || body.message || body.text || ''
+    const history = body.history || []
 
-    if (!messageText || typeof messageText !== 'string') {
-      return NextResponse.json({ error: 'Mensagem inválida.' }, { status: 400 })
+    if (!messageText || typeof messageText !== 'string' || !messageText.trim()) {
+      return NextResponse.json({ error: 'Mensagem inválida ou vazia.' }, { status: 400 })
     }
 
     // 1. Fetch AI Config
@@ -91,7 +93,7 @@ export async function POST(request: Request) {
     const llmMessages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
       ...formattedHistory,
-      { role: 'user', content: messageText },
+      { role: 'user', content: messageText.trim() },
     ]
 
     // 4. Execute Completion
@@ -104,6 +106,8 @@ export async function POST(request: Request) {
       maxTokens: Number(config.max_tokens ?? 500),
     })
 
+    const latencyMs = Date.now() - startTime
+
     // 5. Parse Output
     const parsed = parseAIResponse(completionRes.content)
 
@@ -112,11 +116,65 @@ export async function POST(request: Request) {
       .map((id) => mediaItems.find((m) => m.id === id))
       .filter((m): m is AIMediaItem => Boolean(m))
 
+    const promptTokens = completionRes.usage?.prompt_tokens || Math.floor(systemPrompt.length / 4)
+    const completionTokens = completionRes.usage?.completion_tokens || Math.floor(parsed.cleanText.length / 4)
+    const tokensUsed = completionRes.usage?.total_tokens || (promptTokens + completionTokens)
+    const maxTokensConfigured = Number(config.max_tokens ?? 500)
+    const sourcesUsed = knowledgeItems.length > 0
+      ? knowledgeItems.map((k) => k.title)
+      : ['Instruções & Personalidade do Assistente']
+
+    // 6. Record persistent simulation log with config snapshot
+    const configSnapshot = {
+      company_name: config.company_name || config.assistant_name || 'Atendente IA',
+      business_segment: config.business_segment || config.business_niche || null,
+      communication_style: config.communication_style || config.tone_of_voice || 'Profissional',
+      service_goal: config.service_goal || null,
+      service_rules: config.service_rules || null,
+      limitations: config.limitations || null,
+      handoff_instructions: config.handoff_instructions || null,
+      openai_model: config.openai_model || 'gpt-4o-mini',
+      temperature: Number(config.temperature ?? 0.3),
+      max_tokens: Number(config.max_tokens ?? 500),
+      knowledge_items_count: knowledgeItems.length,
+      media_items_count: mediaItems.length,
+    }
+
+    try {
+      await supabase.from('ai_simulation_logs').insert({
+        account_id: accountId,
+        user_id: user.id,
+        inbound_message_text: messageText.trim(),
+        outbound_text: parsed.cleanText,
+        model_used: config.openai_model || 'gpt-4o-mini',
+        temperature: Number(config.temperature ?? 0.3),
+        max_tokens: Number(config.max_tokens ?? 500),
+        prompt_tokens: promptTokens,
+        completion_tokens: completionTokens,
+        total_tokens: tokensUsed,
+        latency_ms: latencyMs,
+        config_snapshot: configSnapshot,
+        knowledge_sources: sourcesUsed,
+        attached_media: attachedMedia,
+        handoff_requested: parsed.handoffRequested,
+        handoff_reason: parsed.handoffReason,
+      })
+    } catch (logErr) {
+      console.error('[ai_simulation_logs] Erro ao gravar log de simulação:', logErr)
+    }
+
     return NextResponse.json({
+      reply: parsed.cleanText,
       text: parsed.cleanText,
       handoffRequested: parsed.handoffRequested,
+      handoffTriggered: parsed.handoffRequested,
       handoffReason: parsed.handoffReason,
       attachedMedia,
+      sourcesUsed,
+      tokensUsed,
+      promptTokens,
+      completionTokens,
+      maxTokensConfigured,
     })
   } catch (err) {
     return NextResponse.json(

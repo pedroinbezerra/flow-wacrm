@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/hooks/use-translation";
 import { useTotalUnread } from "@/hooks/use-total-unread";
 import { FlowLogo } from "@/components/layout/flow-logo";
+import { ContactAvatar } from "@/components/ui/contact-avatar";
 import {
   CreditCard,
   Crown,
@@ -283,6 +284,24 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
               );
             })}
 
+            <li>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose?.();
+                  window.dispatchEvent(new CustomEvent("flowhub:open-support"));
+                }}
+                title={isCollapsed ? t("navigation.liveSupport") : undefined}
+                className={cn(
+                  "relative flex w-full items-center gap-3 rounded-lg text-sm font-medium transition-all duration-150 text-muted-foreground hover:bg-muted hover:text-foreground",
+                  isCollapsed ? "justify-center p-2.5" : "px-3 py-2",
+                )}
+              >
+                <Headphones className="h-4 w-4 shrink-0" />
+                {!isCollapsed && <span className="truncate">{t("navigation.liveSupport")}</span>}
+              </button>
+            </li>
+
             {isSuperAdmin && (
               <>
                 <li>
@@ -417,19 +436,11 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                 isCollapsed ? "justify-center py-2 px-1" : "px-3 py-2"
               )}
             >
-              <Avatar className="size-8 shrink-0">
-                {profile?.avatar_url ? (
-                  <AvatarImage
-                    src={profile.avatar_url}
-                    alt={profile.full_name ?? "Avatar"}
-                  />
-                ) : null}
-                <AvatarFallback className="bg-primary/10 text-sm font-medium text-primary">
-                  {profile?.full_name?.charAt(0)?.toUpperCase() ??
-                    profile?.email?.charAt(0)?.toUpperCase() ??
-                    "U"}
-                </AvatarFallback>
-              </Avatar>
+              <ContactAvatar
+                name={profile?.full_name || profile?.email}
+                avatarUrl={profile?.avatar_url}
+                size="default"
+              />
               {!isCollapsed && (
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-foreground">
@@ -471,6 +482,16 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
               >
                 <Settings className="size-4" />
                 {t("navigation.settings")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  onClose?.();
+                  window.dispatchEvent(new CustomEvent("flowhub:open-support"));
+                }}
+                className="text-popover-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer"
+              >
+                <Headphones className="size-4" />
+                {t("navigation.liveSupport")}
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-border" />
               <DropdownMenuItem

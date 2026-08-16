@@ -17,6 +17,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
 import { useCan } from "@/hooks/use-can";
 import { useTranslation } from "@/hooks/use-translation";
+import { ContactAvatar } from "@/components/ui/contact-avatar";
 import { normalizeConversationPreview } from "@/lib/conversation-preview";
 import { useRealtime } from "@/hooks/use-realtime";
 import { listConversationBoards, listConversationBoardGroups, listConversationBoardItems } from "@/lib/conversation-boards/queries";
@@ -37,8 +38,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +57,7 @@ import {
   FolderKanban,
   GripVertical,
   MoreHorizontal,
+  Pencil,
   Pin,
   Plus,
   RefreshCw,
@@ -63,17 +66,14 @@ import {
   UsersRound,
   MessageSquare,
   ShieldCheck,
+  Search,
+  ChevronDown,
+  SlidersHorizontal,
+  X,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MessageThread } from "@/components/inbox/message-thread";
-
-const SYSTEM_LANE_DESCRIPTION_KEYS: Record<string, string> = {
-  partners: "boards.lanesDescriptions.partners",
-  franchisees: "boards.lanesDescriptions.franchisees",
-  jobs: "boards.lanesDescriptions.jobs",
-  direct: "boards.lanesDescriptions.direct",
-  other: "boards.lanesDescriptions.other",
-};
 
 const PRIORITY_COLUMN_ID = "priority";
 const NO_GROUP_VALUE = "__no_group__";
@@ -86,6 +86,8 @@ const DEFAULT_LANE_COLORS = [
   "#ec4899",
   "#f97316",
 ];
+
+type FilterMode = "all" | "unread" | "mentioned" | "awaiting" | "priority";
 
 type EditableBoardLane = {
   id?: string;
@@ -144,6 +146,26 @@ function previewForItem(item: ConversationBoardItem): string {
   );
 }
 
+function formatBoardTime(iso?: string | null): string {
+  if (!iso) return "";
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const diffSec = Math.max(0, Math.floor((Date.now() - then) / 1000));
+  if (diffSec < 60) return "agora";
+  const mins = Math.floor(diffSec / 60);
+  if (mins < 60) return `há ${mins} min`;
+  const hours = Math.floor(diffSec / 3600);
+  if (hours === 1) return "há 1 hora";
+  if (hours < 24) return `há ${hours} horas`;
+  const days = Math.floor(diffSec / 86400);
+  if (days === 1) return "há 1 dia";
+  if (days < 30) return `há ${days} dias`;
+  const months = Math.floor(days / 30);
+  if (months === 1) return "há 1 mês";
+  if (months < 12) return `há ${months} meses`;
+  return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+}
+
 export function BoardWorkspace() {
   const supabase = useMemo(() => createClient(), []);
   const { t } = useTranslation();
@@ -157,8 +179,20 @@ export function BoardWorkspace() {
   const [loadingBoards, setLoadingBoards] = useState(true);
   const [loadingItems, setLoadingItems] = useState(true);
 
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterMode, setFilterMode] = useState<FilterMode>("all");
+
   const [createBoardOpen, setCreateBoardOpen] = useState(false);
+  const [editBoardOpen, setEditBoardOpen] = useState(false);
+  const [editBoardName, setEditBoardName] = useState("");
+  const [editBoardDescription, setEditBoardDescription] = useState("");
+  const [editBoardGroupId, setEditBoardGroupId] = useState<string>("");
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [manageGroupsOpen, setManageGroupsOpen] = useState(false);
+  const [editableGroups, setEditableGroups] = useState<
+    { id: string; name: string; description: string }[]
+  >([]);
   const [manageLanesOpen, setManageLanesOpen] = useState(false);
   const [boardName, setBoardName] = useState("");
   const [boardDescription, setBoardDescription] = useState("");
@@ -217,6 +251,30 @@ export function BoardWorkspace() {
     if (!boardGroupId) return t("boards.noGroup", {}, "Sem grupo");
     return groups.find((group) => group.id === boardGroupId)?.name ?? boardGroupId;
   }, [boardGroupId, groups, t]);
+  const editSelectedGroupName = useMemo(() => {
+    if (!editBoardGroupId) return t("boards.noGroup", {}, "Sem grupo");
+    return groups.find((group) => group.id === editBoardGroupId)?.name ?? editBoardGroupId;
+  }, [editBoardGroupId, groups, t]);
+
+  const groupedBoardsList = useMemo(() => {
+    const ungrouped: ConversationBoard[] = [];
+    const byGroup = new Map<string, { groupName: string; boards: ConversationBoard[] }>();
+
+    for (const board of boards) {
+      if (board.group?.name) {
+        const groupId = board.group.id;
+        if (!byGroup.has(groupId)) {
+          byGroup.set(groupId, { groupName: board.group.name, boards: [] });
+        }
+        byGroup.get(groupId)!.boards.push(board);
+      } else {
+        ungrouped.push(board);
+      }
+    }
+
+    return { ungrouped, groupsList: Array.from(byGroup.values()) };
+  }, [boards]);
+
   const loadBoardsErrorText = t("boards.errors.loadBoards", {}, "Falha ao carregar boards");
   const loadItemsErrorText = t("boards.errors.loadItems", {}, "Falha ao carregar conversas do board");
   const saveLanesErrorText = t("boards.errors.saveLanes", {}, "Falha ao salvar raias");
@@ -264,9 +322,6 @@ export function BoardWorkspace() {
   );
 
   useEffect(() => {
-    // Initial load is a one-shot sync with the backend state, not
-    // derived render state. The board page intentionally mirrors the
-    // pattern already used by pipelines/contacts.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void refreshBoards();
   }, [refreshBoards]);
@@ -356,23 +411,60 @@ export function BoardWorkspace() {
     },
   });
 
+  // Filtered items based on searchQuery & filterMode
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const name = (item.conversation?.contact?.name || "").toLowerCase();
+        const phone = (item.conversation?.contact?.phone || "").toLowerCase();
+        const msg = (item.conversation?.last_message_text || "").toLowerCase();
+        if (!name.includes(q) && !phone.includes(q) && !msg.includes(q)) {
+          return false;
+        }
+      }
+
+      if (filterMode === "unread") {
+        if ((item.conversation?.unread_count ?? 0) <= 0) return false;
+      } else if (filterMode === "mentioned") {
+        if (!item.mention_active) return false;
+      } else if (filterMode === "awaiting") {
+        if (!item.awaiting_return) return false;
+      } else if (filterMode === "priority") {
+        if (item.priority_rank <= 0 && !item.mention_active && !item.awaiting_return) return false;
+      }
+      return true;
+    });
+  }, [items, filterMode, searchQuery]);
+
+  // Dynamic counts for quick filter pills
+  const statsCounts = useMemo(() => {
+    const total = items.length;
+    const unread = items.filter((i) => (i.conversation?.unread_count ?? 0) > 0).length;
+    const mentioned = items.filter((i) => i.mention_active).length;
+    const awaiting = items.filter((i) => i.awaiting_return).length;
+    const priority = items.filter((i) => isPriorityItem(i)).length;
+    return { total, unread, mentioned, awaiting, priority };
+  }, [items]);
+
   const groupedItems = useMemo(() => {
     const byLane = new Map<string, ConversationBoardItem[]>();
     for (const lane of boardLanes) {
       byLane.set(lane.id, []);
     }
 
-    for (const item of items) {
+    for (const item of filteredItems) {
       const bucket = byLane.get(item.lane_id);
       if (bucket) bucket.push(item);
     }
 
     for (const bucket of byLane.values()) bucket.sort(compareBoardItems);
 
-    const priorityItems = items.filter(isPriorityItem).sort(compareBoardItems);
+    const priorityItems = filteredItems.filter(isPriorityItem).sort(compareBoardItems);
 
     return { byLane, priorityItems };
-  }, [boardLanes, items]);
+  }, [boardLanes, filteredItems]);
+
   const activeDragItem = useMemo(
     () => (activeDragItemId ? items.find((item) => item.id === activeDragItemId) ?? null : null),
     [activeDragItemId, items],
@@ -474,6 +566,7 @@ export function BoardWorkspace() {
     },
     [boardLanes, items, t, updateItem],
   );
+
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveDragItemId(String(event.active.id));
   }, []);
@@ -481,6 +574,48 @@ export function BoardWorkspace() {
   const handleDragCancel = useCallback(() => {
     setActiveDragItemId(null);
   }, []);
+
+  const openEditBoardModal = useCallback(() => {
+    if (!selectedBoard) return;
+    setEditBoardName(selectedBoard.name);
+    setEditBoardDescription(selectedBoard.description || "");
+    setEditBoardGroupId(selectedBoard.group_id || "");
+    setEditBoardOpen(true);
+  }, [selectedBoard]);
+
+  const handleSaveBoardEdits = useCallback(async () => {
+    if (!selectedBoardId) return;
+    const name = editBoardName.trim();
+    if (!name) {
+      toast.error("Nome do board não pode ficar vazio");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/conversation-boards/${selectedBoardId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          description: editBoardDescription.trim() || null,
+          groupId: editBoardGroupId || null,
+        }),
+      });
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(payload?.error || "Failed to update board");
+      }
+      toast.success("Board atualizado com sucesso!");
+      setEditBoardOpen(false);
+      await refreshBoards();
+    } catch (error) {
+      console.error("[boards] update board failed:", error);
+      toast.error("Falha ao atualizar board");
+    } finally {
+      setSaving(false);
+    }
+  }, [editBoardDescription, editBoardGroupId, editBoardName, refreshBoards, selectedBoardId]);
 
   const handleCreateBoard = useCallback(async () => {
     const name = boardName.trim();
@@ -515,6 +650,76 @@ export function BoardWorkspace() {
       setSaving(false);
     }
   }, [boardDescription, boardGroupId, boardName, boards.length, refreshBoards, t]);
+
+  const openManageGroupsModal = useCallback(() => {
+    setEditableGroups(
+      groups.map((g) => ({
+        id: g.id,
+        name: g.name,
+        description: g.description || "",
+      })),
+    );
+    setManageGroupsOpen(true);
+  }, [groups]);
+
+  const handleUpdateGroup = useCallback(
+    async (groupId: string, name: string, description: string) => {
+      if (!name.trim()) {
+        toast.error("Nome do grupo não pode ficar vazio");
+        return;
+      }
+      setSaving(true);
+      try {
+        const res = await fetch(`/api/conversation-board-groups/${groupId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name.trim(),
+            description: description.trim() || null,
+          }),
+        });
+        if (!res.ok) {
+          const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(payload?.error || "Failed to update group");
+        }
+        toast.success("Grupo atualizado com sucesso!");
+        await refreshBoards();
+      } catch (error) {
+        console.error("[boards] update group failed:", error);
+        toast.error("Falha ao atualizar grupo");
+      } finally {
+        setSaving(false);
+      }
+    },
+    [refreshBoards],
+  );
+
+  const handleDeleteGroup = useCallback(
+    async (groupId: string) => {
+      if (!confirm("Tem certeza que deseja excluir este grupo? Os boards deste grupo não serão excluídos, apenas ficarão sem grupo.")) {
+        return;
+      }
+      setSaving(true);
+      try {
+        const res = await fetch(`/api/conversation-board-groups/${groupId}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) {
+          const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(payload?.error || "Failed to delete group");
+        }
+        toast.success("Grupo excluído com sucesso!");
+        setEditableGroups((prev) => prev.filter((g) => g.id !== groupId));
+        await refreshBoards();
+      } catch (error) {
+        console.error("[boards] delete group failed:", error);
+        toast.error("Falha ao excluir grupo");
+      } finally {
+        setSaving(false);
+      }
+    },
+    [refreshBoards],
+  );
 
   const handleCreateGroup = useCallback(async () => {
     const name = groupName.trim();
@@ -769,7 +974,7 @@ export function BoardWorkspace() {
       const assignedIds = (boardMembersJson.members ?? []).map((m: { user_id: string }) => m.user_id);
       setSelectedUserIds(assignedIds);
     } catch (err) {
-      console.error("Failed to load board members:", err);
+      console.error("[boards] failed to load members:", err);
     } finally {
       setLoadingMembers(false);
     }
@@ -788,6 +993,7 @@ export function BoardWorkspace() {
       toast.success("Permissões do board salvas com sucesso!");
       setManageMembersOpen(false);
     } catch (err) {
+      console.error("[boards] failed to save board members:", err);
       toast.error("Falha ao salvar permissões do board");
     } finally {
       setSaving(false);
@@ -795,108 +1001,312 @@ export function BoardWorkspace() {
   }, [selectedBoardId, selectedUserIds]);
 
   return (
-    <div className="space-y-4">
-      <div id="tour-boards-header" className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+    <div className="space-y-3 sm:space-y-4">
+      {/* Top Header & Operational Actions */}
+      <div id="tour-boards-header" className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <FolderKanban className="h-5 w-5 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground">{t("boards.title", {}, "Boards")}</h1>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <FolderKanban className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">{t("boards.title", {}, "Boards")}</h1>
+                <Badge variant="outline" className="text-[11px] font-normal border-primary/20 text-primary bg-primary/5">
+                  <Sparkles className="mr-1 h-3 w-3" />
+                  {t("boards.badge", {}, "Kanban Vivo")}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground line-clamp-1 sm:line-clamp-none">
+                {t(
+                  "boards.description",
+                  {},
+                  "Organize conversas em boards com grupos opcionais, prioridades e aguardando retorno.",
+                )}
+              </p>
+            </div>
           </div>
-          <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-            {t(
-              "boards.description",
-              {},
-              "Organize conversas em boards com grupos opcionais, prioridades e aguardando retorno.",
-            )}
-          </p>
         </div>
 
-        <div id="tour-boards-actions" className="flex flex-wrap gap-2">
+        {/* Desktop Top Actions Bar */}
+        <div id="tour-boards-actions" className="hidden sm:flex sm:items-center sm:gap-2 shrink-0">
           {canCreate && (
             <>
-              <Button variant="outline" onClick={() => setCreateGroupOpen(true)}>
-                <UsersRound className="mr-2 h-4 w-4" />
+              <Button variant="outline" size="sm" onClick={() => setCreateGroupOpen(true)} className="h-8 text-xs shrink-0">
+                <UsersRound className="mr-1.5 h-3.5 w-3.5" />
                 {t("boards.newGroup", {}, "Novo grupo")}
               </Button>
-              <Button onClick={() => setCreateBoardOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
+              {selectedBoardId && (
+                <Button variant="outline" size="sm" onClick={openLaneManager} className="h-8 text-xs shrink-0">
+                  <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
+                  {t("boards.manageLanes", {}, "Gerenciar raias")}
+                </Button>
+              )}
+              <Button size="sm" onClick={() => setCreateBoardOpen(true)} className="h-8 text-xs font-medium shrink-0">
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
                 {t("boards.newBoard", {}, "Novo board")}
               </Button>
               {selectedBoardId && (
-                <>
-                  <Button variant="outline" onClick={openMemberManager}>
-                    <ShieldCheck className="mr-2 h-4 w-4" />
-                    Permissões
-                  </Button>
-                  <Button variant="outline" onClick={openLaneManager}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    {t("boards.manageLanes", {}, "Gerenciar raias")}
-                  </Button>
-                </>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button variant="outline" size="sm" className="h-8 text-xs shrink-0 gap-1 text-muted-foreground hover:text-foreground">
+                        <Settings className="h-3.5 w-3.5" />
+                        <span>Configurações</span>
+                        <ChevronDown className="h-3 w-3 opacity-60" />
+                      </Button>
+                    }
+                  />
+                  <DropdownMenuContent align="end" className="text-xs w-48">
+                    <DropdownMenuItem onClick={openEditBoardModal}>
+                      <Pencil className="mr-2 h-3.5 w-3.5" />
+                      Editar board
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={openMemberManager}>
+                      <ShieldCheck className="mr-2 h-3.5 w-3.5" />
+                      Permissões
+                    </DropdownMenuItem>
+                    {groups.length > 0 && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={openManageGroupsModal}>
+                          <UsersRound className="mr-2 h-3.5 w-3.5" />
+                          Gerenciar grupos
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
             </>
           )}
-          <Button variant="ghost" onClick={() => refreshBoards()}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            {t("boards.refresh", {}, "Atualizar")}
-          </Button>
+        </div>
+
+        {/* Mobile Compact Actions Bar (Primary CTA + 3-Dot Overflow Menu) */}
+        <div className="flex items-center gap-2 sm:hidden">
+          {canCreate && (
+            <Button size="sm" onClick={() => setCreateBoardOpen(true)} className="h-8 text-xs font-medium flex-1">
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              {t("boards.newBoard", {}, "Novo board")}
+            </Button>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted shrink-0"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="text-xs w-48">
+              {canCreate && (
+                <>
+                  <DropdownMenuItem onClick={() => setCreateGroupOpen(true)}>
+                    <UsersRound className="mr-2 h-3.5 w-3.5" />
+                    {t("boards.newGroup", {}, "Novo grupo")}
+                  </DropdownMenuItem>
+                  {groups.length > 0 && (
+                    <DropdownMenuItem onClick={openManageGroupsModal}>
+                      <Settings className="mr-2 h-3.5 w-3.5" />
+                      Gerenciar grupos
+                    </DropdownMenuItem>
+                  )}
+                  {selectedBoardId && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={openEditBoardModal}>
+                        <Pencil className="mr-2 h-3.5 w-3.5" />
+                        Editar board
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={openMemberManager}>
+                        <ShieldCheck className="mr-2 h-3.5 w-3.5" />
+                        Permissões
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={openLaneManager}>
+                        <Settings className="mr-2 h-3.5 w-3.5" />
+                        {t("boards.manageLanes", {}, "Gerenciar raias")}
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <DropdownMenuItem onClick={() => refreshBoards()}>
+                <RefreshCw className="mr-2 h-3.5 w-3.5" />
+                {t("boards.refresh", {}, "Atualizar")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      <div id="tour-boards-selector" className="rounded-xl border border-border bg-card p-3">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0 flex-1">
-            <Label className="text-xs text-muted-foreground">
-              {t("boards.currentBoard", {}, "Board atual")}
-            </Label>
-            <div className="mt-1 flex items-center gap-2">
+      {/* Control & Command Bar: Board Selector + Quick Filters + Live Search */}
+      <div id="tour-boards-selector" className="rounded-xl border border-border bg-card p-2.5 sm:p-3 shadow-xs space-y-2.5 sm:space-y-3">
+        <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+          {/* Board & Group Selector */}
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-full sm:w-[260px]">
               <Select value={selectedBoardId} onValueChange={(value) => setSelectedBoardId(value ?? "")}>
-                <SelectTrigger className="w-full lg:w-[320px]">
+                <SelectTrigger className="h-9 w-full font-medium text-xs">
                   <SelectValue placeholder={t("boards.selectBoard", {}, "Selecione um board")}>
                     {selectedBoardName}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {boards.map((board) => (
-                    <SelectItem key={board.id} value={board.id}>
-                      {board.name}
-                    </SelectItem>
+                  {groupedBoardsList.groupsList.map((g) => (
+                    <SelectGroup key={g.groupName}>
+                      <SelectLabel className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground/80 px-2 py-1 bg-muted/30">
+                        {g.groupName}
+                      </SelectLabel>
+                      {g.boards.map((board) => (
+                        <SelectItem key={board.id} value={board.id} className="text-xs pl-4">
+                          {board.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   ))}
+
+                  {groupedBoardsList.ungrouped.length > 0 && (
+                    <SelectGroup>
+                      {groupedBoardsList.groupsList.length > 0 && (
+                        <SelectLabel className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground/80 px-2 py-1 bg-muted/30">
+                          Outros Boards
+                        </SelectLabel>
+                      )}
+                      {groupedBoardsList.ungrouped.map((board) => (
+                        <SelectItem key={board.id} value={board.id} className="text-xs">
+                          {board.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  )}
                 </SelectContent>
               </Select>
-              {selectedBoard?.group && (
-                <Badge variant="outline" className="hidden sm:inline-flex">
-                  {selectedBoard.group.name}
-                </Badge>
-              )}
             </div>
+            {selectedBoard?.group && (
+              <Badge variant="secondary" className="text-xs font-normal shrink-0">
+                {selectedBoard.group.name}
+              </Badge>
+            )}
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>{boards.length}</span>
-            <span>
-              {boards.length === 1
-                ? t("boards.boardCount", {}, "quadro")
-                : t("boards.boardsCount", {}, "quadros")}
-            </span>
-            <span>•</span>
-            <span>{groups.length}</span>
-            <span>
-              {groups.length === 1
-                ? t("boards.groupCount", {}, "grupo")
-                : t("boards.groupsCount", {}, "grupos")}
-            </span>
+          {/* Search Box & Data Refresh Utility */}
+          <div className="flex items-center gap-1.5 w-full lg:w-auto">
+            <div className="relative flex-1 sm:w-[320px] lg:w-[360px]">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder={t("boards.searchPlaceholder", {}, "Buscar por nome, telefone ou mensagem...")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9 pl-8 pr-7 text-xs"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => refreshBoards()}
+              disabled={loadingBoards || loadingItems}
+              title={t("boards.refresh", {}, "Atualizar")}
+              className="h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground border-border bg-card shadow-2xs"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5", (loadingBoards || loadingItems) && "animate-spin")} />
+            </Button>
           </div>
         </div>
+
+        {/* Quick Filter Pills Bar - Smooth Horizontal Touch Scroll on Mobile */}
+        {selectedBoardId && (
+          <div className="flex items-center gap-1.5 border-t border-border/50 pt-2 text-xs overflow-x-auto pb-0.5 whitespace-nowrap">
+            <span className="text-[11px] font-medium text-muted-foreground mr-1 shrink-0">Filtros:</span>
+            <Button
+              variant={filterMode === "all" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setFilterMode("all")}
+              className="h-7 text-xs px-2.5 rounded-lg font-medium shrink-0"
+            >
+              Todas ({statsCounts.total})
+            </Button>
+            <Button
+              variant={filterMode === "unread" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setFilterMode("unread")}
+              className={cn(
+                "h-7 text-xs px-2.5 rounded-lg shrink-0",
+                filterMode === "unread" && "bg-primary/10 text-primary hover:bg-primary/20",
+              )}
+            >
+              Não Lidas
+              {statsCounts.unread > 0 && (
+                <Badge variant="default" className="ml-1.5 h-4 px-1 text-[10px]">
+                  {statsCounts.unread}
+                </Badge>
+              )}
+            </Button>
+            <Button
+              variant={filterMode === "priority" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setFilterMode("priority")}
+              className={cn(
+                "h-7 text-xs px-2.5 rounded-lg shrink-0",
+                filterMode === "priority" && "bg-red-500/10 text-red-400 hover:bg-red-500/20",
+              )}
+            >
+              <Pin className="mr-1 h-3 w-3" />
+              Prioridades ({statsCounts.priority})
+            </Button>
+            <Button
+              variant={filterMode === "awaiting" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setFilterMode("awaiting")}
+              className={cn(
+                "h-7 text-xs px-2.5 rounded-lg shrink-0",
+                filterMode === "awaiting" && "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20",
+              )}
+            >
+              <Clock3 className="mr-1 h-3 w-3" />
+              Aguardando Retorno ({statsCounts.awaiting})
+            </Button>
+            <Button
+              variant={filterMode === "mentioned" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setFilterMode("mentioned")}
+              className={cn(
+                "h-7 text-xs px-2.5 rounded-lg shrink-0",
+                filterMode === "mentioned" && "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20",
+              )}
+            >
+              <AtSign className="mr-1 h-3 w-3" />
+              Menções ({statsCounts.mentioned})
+            </Button>
+
+            {filterMode !== "all" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setFilterMode("all")}
+                className="h-7 text-[11px] px-2 text-muted-foreground hover:text-foreground shrink-0"
+              >
+                Limpar filtros
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {!selectedBoardId ? (
-        <div className="rounded-xl border border-dashed border-border bg-card/60 p-8 text-center">
-          <MessageSquare className="mx-auto h-10 w-10 text-muted-foreground" />
-          <h2 className="mt-3 text-lg font-semibold">
+        <div className="rounded-xl border border-dashed border-border bg-card/60 p-8 sm:p-12 text-center">
+          <MessageSquare className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/60" />
+          <h2 className="mt-4 text-base font-semibold text-foreground">
             {t("boards.emptyTitle", {}, "Crie seu primeiro board")}
           </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-1 max-w-md mx-auto text-xs text-muted-foreground">
             {t(
               "boards.emptyDescription",
               {},
@@ -904,16 +1314,14 @@ export function BoardWorkspace() {
             )}
           </p>
           {canCreate && (
-            <Button className="mt-4" onClick={() => setCreateBoardOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
+            <Button className="mt-4 h-9 text-xs" onClick={() => setCreateBoardOpen(true)}>
+              <Plus className="mr-1.5 h-4 w-4" />
               {t("boards.newBoard", {}, "Novo board")}
             </Button>
           )}
         </div>
       ) : loadingItems || loadingBoards ? (
-        <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-          {t("common.loading", {}, "Carregando...")}
-        </div>
+        <BoardSkeleton />
       ) : (
         <DndContext
           sensors={sensors}
@@ -922,7 +1330,7 @@ export function BoardWorkspace() {
           onDragCancel={handleDragCancel}
           onDragEnd={handleDragEnd}
         >
-          <div id="tour-boards-lanes" className="flex gap-3 overflow-x-auto pb-3">
+          <div id="tour-boards-lanes" className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory">
             <PriorityColumn
               items={groupedItems.priorityItems}
               onOpenInbox={handleOpenInbox}
@@ -949,11 +1357,6 @@ export function BoardWorkspace() {
               <BoardLaneColumn
                 key={lane.id}
                 lane={lane}
-                description={
-                  SYSTEM_LANE_DESCRIPTION_KEYS[lane.lane_key]
-                    ? t(SYSTEM_LANE_DESCRIPTION_KEYS[lane.lane_key]!)
-                    : t("boards.customLaneDescription", {}, "Raia personalizada do board.")
-                }
                 items={groupedItems.byLane.get(lane.id) ?? []}
                 onOpenInbox={handleOpenInbox}
                 onMoveToBoard={handleOpenMoveToBoard}
@@ -978,7 +1381,7 @@ export function BoardWorkspace() {
           </div>
           <DragOverlay zIndex={1000}>
             {activeDragItem ? (
-              <div className="opacity-95">
+              <div className="rotate-1 scale-[1.02] shadow-2xl transition-transform duration-100">
                 <BoardCard
                   item={activeDragItem}
                   onOpenInbox={handleOpenInbox}
@@ -995,6 +1398,141 @@ export function BoardWorkspace() {
           </DragOverlay>
         </DndContext>
       )}
+
+      {/* Modals */}
+      <Dialog open={manageGroupsOpen} onOpenChange={setManageGroupsOpen}>
+        <DialogContent className="w-[94vw] max-w-lg rounded-xl p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle>Gerenciar grupos de boards</DialogTitle>
+            <DialogDescription>
+              Edite o nome, a descrição ou exclua grupos de boards da sua conta.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+            {editableGroups.length === 0 ? (
+              <p className="py-4 text-center text-xs text-muted-foreground">Nenhum grupo cadastrado.</p>
+            ) : (
+              editableGroups.map((group, index) => (
+                <div key={group.id} className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={group.name}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditableGroups((prev) =>
+                          prev.map((g, i) => (i === index ? { ...g, name: val } : g)),
+                        );
+                      }}
+                      placeholder="Nome do grupo"
+                      className="h-8 text-xs font-semibold"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={saving}
+                      onClick={() => void handleUpdateGroup(group.id, group.name, group.description)}
+                      className="h-8 text-xs shrink-0"
+                    >
+                      Salvar
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon-xs"
+                      variant="ghost"
+                      disabled={saving}
+                      onClick={() => void handleDeleteGroup(group.id)}
+                      className="h-8 w-8 text-red-400 hover:text-red-500 hover:bg-red-500/10 shrink-0"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <Input
+                    value={group.description}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditableGroups((prev) =>
+                        prev.map((g, i) => (i === index ? { ...g, description: val } : g)),
+                      );
+                    }}
+                    placeholder="Descrição opcional do grupo"
+                    className="h-7 text-xs text-muted-foreground"
+                  />
+                </div>
+              ))
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManageGroupsOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editBoardOpen} onOpenChange={setEditBoardOpen}>
+        <DialogContent className="w-[94vw] max-w-lg rounded-xl p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle>Editar board</DialogTitle>
+            <DialogDescription>
+              Altere o nome, descrição ou vincule/desvincule este board a um grupo.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="edit-board-name">Nome do board</Label>
+              <Input
+                id="edit-board-name"
+                value={editBoardName}
+                onChange={(e) => setEditBoardName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-board-description">Descrição</Label>
+              <Textarea
+                id="edit-board-description"
+                value={editBoardDescription}
+                onChange={(e) => setEditBoardDescription(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-board-group">Grupo de Boards</Label>
+              <Select
+                value={editBoardGroupId || NO_GROUP_VALUE}
+                onValueChange={(value) =>
+                  setEditBoardGroupId(value === NO_GROUP_VALUE ? "" : (value ?? ""))
+                }
+              >
+                <SelectTrigger className="w-full" id="edit-board-group">
+                  <SelectValue placeholder={t("boards.noGroup", {}, "Sem grupo")}>
+                    {editSelectedGroupName}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_GROUP_VALUE}>{t("boards.noGroup", {}, "Sem grupo")}</SelectItem>
+                  {groups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditBoardOpen(false)}>
+              {t("common.cancel", {}, "Cancelar")}
+            </Button>
+            <Button onClick={() => void handleSaveBoardEdits()} disabled={saving}>
+              {saving ? t("common.saving", {}, "Salvando...") : t("common.save", {}, "Salvar alterações")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={conversationModalOpen}
@@ -1041,7 +1579,7 @@ export function BoardWorkspace() {
           if (!open) setMoveTargetItem(null);
         }}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="w-[94vw] max-w-lg rounded-xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>{t("boards.moveToBoardTitle", {}, "Mover para board")}</DialogTitle>
             <DialogDescription>
@@ -1109,7 +1647,7 @@ export function BoardWorkspace() {
       </Dialog>
 
       <Dialog open={createBoardOpen} onOpenChange={setCreateBoardOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="w-[94vw] max-w-lg rounded-xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>{t("boards.createBoardTitle", {}, "Criar board")}</DialogTitle>
             <DialogDescription>
@@ -1173,7 +1711,7 @@ export function BoardWorkspace() {
       </Dialog>
 
       <Dialog open={createGroupOpen} onOpenChange={setCreateGroupOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="w-[94vw] max-w-lg rounded-xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>{t("boards.createGroupTitle", {}, "Criar grupo")}</DialogTitle>
             <DialogDescription>
@@ -1214,7 +1752,7 @@ export function BoardWorkspace() {
       </Dialog>
 
       <Dialog open={manageLanesOpen} onOpenChange={setManageLanesOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="w-[94vw] max-w-lg rounded-xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>{t("boards.manageLanesTitle", {}, "Gerenciar raias")}</DialogTitle>
             <DialogDescription>
@@ -1239,7 +1777,7 @@ export function BoardWorkspace() {
                       ),
                     )
                   }
-                  className="h-8"
+                  className="h-8 text-xs"
                 />
                 <Input
                   type="color"
@@ -1307,8 +1845,8 @@ export function BoardWorkspace() {
           </div>
 
           <div>
-            <Button type="button" variant="outline" onClick={addEditableLane}>
-              <Plus className="mr-2 h-4 w-4" />
+            <Button type="button" variant="outline" size="sm" onClick={addEditableLane} className="h-8 text-xs">
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
               {t("boards.addLane", {}, "Adicionar raia")}
             </Button>
           </div>
@@ -1325,10 +1863,10 @@ export function BoardWorkspace() {
       </Dialog>
 
       <Dialog open={manageMembersOpen} onOpenChange={setManageMembersOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[94vw] max-w-md rounded-xl p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Permissões de Acesso ao Board</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-sm font-semibold">Permissões de Acesso ao Board</DialogTitle>
+            <DialogDescription className="text-xs">
               Selecione quais usuários têm permissão para visualizar este Board. Se nenhum for selecionado, todos os membros da conta têm acesso por padrão.
             </DialogDescription>
           </DialogHeader>
@@ -1363,8 +1901,8 @@ export function BoardWorkspace() {
                           className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
                         />
                         <div>
-                          <div className="text-sm font-medium text-foreground">{member.full_name || member.email}</div>
-                          {member.email && <div className="text-xs text-muted-foreground">{member.email}</div>}
+                          <div className="text-xs font-medium text-foreground">{member.full_name || member.email}</div>
+                          {member.email && <div className="text-[11px] text-muted-foreground">{member.email}</div>}
                         </div>
                       </div>
                       <Badge variant="outline" className="capitalize text-[10px]">
@@ -1391,6 +1929,42 @@ export function BoardWorkspace() {
   );
 }
 
+function BoardSkeleton() {
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-4">
+      {[1, 2, 3, 4].map((col) => (
+        <div
+          key={col}
+          className="flex w-[86vw] min-w-75 max-w-90 shrink-0 flex-col rounded-xl border border-border bg-card/60 p-3 lg:w-90"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded-full bg-muted animate-pulse" />
+              <div className="h-4 w-28 rounded bg-muted animate-pulse" />
+            </div>
+            <div className="h-5 w-6 rounded-full bg-muted animate-pulse" />
+          </div>
+          <div className="mt-4 space-y-3">
+            {[1, 2, 3].map((card) => (
+              <div
+                key={card}
+                className="h-28 rounded-xl border border-border/60 bg-background/50 p-3 space-y-2 animate-pulse"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-full bg-muted" />
+                  <div className="h-4 w-32 rounded bg-muted" />
+                </div>
+                <div className="h-3 w-full rounded bg-muted/70" />
+                <div className="h-3 w-3/4 rounded bg-muted/50" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PriorityColumn({
   items,
   onOpenInbox,
@@ -1412,15 +1986,11 @@ function PriorityColumn({
   return (
     <BoardColumnShell
       ref={setNodeRef}
-      className={cn("bg-card/70", isOver && "ring-2 ring-primary ring-offset-2")}
+      accentColor="#ef4444"
+      className={cn("bg-card/70", isOver && "ring-2 ring-primary ring-offset-2 ring-offset-background bg-primary/5")}
       title={t("boards.priorityTitle", {}, "Prioridades")}
-      description={t(
-        "boards.priorityDescription",
-        {},
-        "Itens aparecem aqui sem sair da coluna original.",
-      )}
       count={items.length}
-      icon={<Pin className="h-4 w-4 text-amber-400" />}
+      icon={<Pin className="h-4 w-4 text-red-500 fill-current" />}
     >
       {items.map((item) => (
         <BoardCard
@@ -1436,7 +2006,7 @@ function PriorityColumn({
         />
       ))}
       {items.length === 0 && (
-        <EmptyDropState text={t("boards.priorityEmpty", {}, "Arraste uma conversa para destacar")} />
+        <EmptyDropState text={t("boards.priorityEmpty", {}, "Arraste uma conversa aqui para priorizá-la")} />
       )}
     </BoardColumnShell>
   );
@@ -1444,7 +2014,6 @@ function PriorityColumn({
 
 function BoardLaneColumn({
   lane,
-  description,
   items,
   onOpenInbox,
   onMoveToBoard,
@@ -1453,7 +2022,6 @@ function BoardLaneColumn({
   onTogglePriority,
 }: {
   lane: ConversationBoardLaneConfig;
-  description: string;
   items: ConversationBoardItem[];
   onOpenInbox: (conversationId: string) => void;
   onMoveToBoard: (item: ConversationBoardItem) => void;
@@ -1467,9 +2035,9 @@ function BoardLaneColumn({
   return (
     <BoardColumnShell
       ref={setNodeRef}
-      className={cn("bg-card", isOver && "ring-2 ring-primary ring-offset-2")}
+      accentColor={lane.color}
+      className={cn("bg-card", isOver && "ring-2 ring-primary ring-offset-2 ring-offset-background bg-primary/5")}
       title={lane.name}
-      description={description}
       count={items.length}
       icon={<div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: lane.color }} />}
     >
@@ -1485,7 +2053,7 @@ function BoardLaneColumn({
         />
       ))}
       {items.length === 0 && (
-        <EmptyDropState text={t("boards.laneEmpty", {}, "Solte uma conversa aqui")} />
+        <EmptyDropState text={t("boards.laneEmpty", {}, "Nenhuma conversa nesta raia")} />
       )}
     </BoardColumnShell>
   );
@@ -1495,37 +2063,52 @@ const BoardColumnShell = forwardRef<
   HTMLDivElement,
   {
     className?: string;
+    accentColor?: string;
     title: string;
-    description: string;
+    description?: string;
     count: number;
     icon: ReactNode;
     children: ReactNode;
   }
 >(function BoardColumnShell(
-  { className, title, description, count, icon, children },
+  { className, accentColor, title, description, count, icon, children },
   ref,
 ) {
   return (
     <div
       ref={ref}
       className={cn(
-        "flex w-[86vw] min-w-75 max-w-90 shrink-0 flex-col rounded-xl border border-border p-3 lg:w-90",
+        "relative flex w-[86vw] min-w-75 max-w-90 shrink-0 flex-col rounded-xl border border-border p-3 transition-colors lg:w-90 overflow-hidden snap-center",
         className,
       )}
     >
-      <div className="flex items-start justify-between gap-2">
+      {/* Top Accent Line */}
+      {accentColor && (
+        <div
+          className="absolute top-0 left-0 right-0 h-1"
+          style={{ backgroundColor: accentColor }}
+        />
+      )}
+
+      {/* Header Container - Fixed z-index and spacing */}
+      <div className="flex items-center justify-between gap-2 pt-1 pb-1 shrink-0">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             {icon}
             <h2 className="truncate text-sm font-semibold text-foreground">{title}</h2>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+          {description && (
+            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{description}</p>
+          )}
         </div>
-        <Badge variant="outline">{count}</Badge>
+        <Badge variant="secondary" className="h-5 px-1.5 text-[11px] font-semibold shrink-0">
+          {count}
+        </Badge>
       </div>
 
-      <ScrollArea className="mt-3 h-[calc(100vh-280px)] min-h-90 pr-2">
-        <div className="space-y-2 pb-2">{children}</div>
+      {/* Scroll Area - Responsive height so cards scroll cleanly on mobile */}
+      <ScrollArea className="mt-2 h-[calc(100vh-320px)] sm:h-[calc(100vh-280px)] min-h-75 pr-1.5">
+        <div className="space-y-2.5 pb-2 pt-1.5 px-0.5">{children}</div>
       </ScrollArea>
     </div>
   );
@@ -1533,7 +2116,7 @@ const BoardColumnShell = forwardRef<
 
 function EmptyDropState({ text }: { text: string }) {
   return (
-    <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+    <div className="rounded-lg border border-dashed border-border/70 p-5 text-center text-xs text-muted-foreground/70 bg-muted/20">
       {text}
     </div>
   );
@@ -1563,9 +2146,6 @@ function BoardCard({
   dragIdPrefix?: string;
 }) {
   const { t } = useTranslation();
-  // Prefixo diferencia o nó draggable na coluna de prioridades do
-  // nó na raia original, evitando que @dnd-kit aplique transform/
-  // isDragging no card espelhado quando o original é arrastado.
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `${dragIdPrefix}${item.id}`,
     disabled: !draggable,
@@ -1576,6 +2156,11 @@ function BoardCard({
     : undefined;
 
   const unread = item.conversation?.unread_count ?? 0;
+  const contact = item.conversation?.contact;
+  const displayName = displayNameForItem(item);
+  const initial = displayName.charAt(0).toUpperCase();
+  const avatarUrl = contact?.avatar_url;
+  const timeText = formatBoardTime(item.conversation?.last_message_at);
 
   return (
     <div
@@ -1590,92 +2175,111 @@ function BoardCard({
         onOpenInbox(item.conversation_id);
       }}
       className={cn(
-        "relative cursor-pointer rounded-xl border border-border bg-background p-3 shadow-sm transition hover:border-primary/40 hover:bg-muted/30",
-        isDragging && "opacity-50",
-        isOverlay && "z-1001",
+        "group relative cursor-pointer rounded-xl border border-border bg-card p-3 shadow-xs transition-all duration-150 ease-in-out hover:z-10 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+        isDragging && "opacity-40 border-dashed border-primary",
+        isOverlay && "z-1001 shadow-2xl border-primary/50 bg-card/95 backdrop-blur-xs",
       )}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="truncate text-sm font-medium text-foreground">
-            {displayNameForItem(item)}
-          </div>
-          <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <Clock3 className="h-3 w-3" />
-            <span>
-              {item.conversation?.last_message_at
-                ? new Date(item.conversation.last_message_at).toLocaleString()
-                : t("boards.noMessagesYet", {}, "Nenhuma mensagem ainda")}
+      {/* Header Row: Locked to h-7 (28px) */}
+      <div className="flex items-center justify-between gap-2">
+        {/* Left Side: Avatar + Contact Name */}
+        <div className="flex h-7 items-center gap-2 min-w-0 flex-1">
+          <ContactAvatar
+            name={displayName}
+            avatarUrl={avatarUrl}
+            size="sm"
+          />
+
+          <span className="truncate text-xs font-semibold leading-none text-foreground group-hover:text-primary transition-colors">
+            {displayName}
+          </span>
+        </div>
+
+        {/* Right Side: Clock Icon + Timestamp (Flushed to far right edge) */}
+        {timeText && (
+          <div className="flex h-7 items-center gap-1 shrink-0 ml-auto">
+            <Clock3 className="h-3.5 w-3.5 text-muted-foreground/70 shrink-0" />
+            <span className="text-[11px] leading-none text-muted-foreground/80 font-normal whitespace-nowrap">
+              {timeText}
             </span>
           </div>
-        </div>
-        {canOperate ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleAwaiting(item);
-                }}
+        )}
+
+        {/* Floating 3-Dot Action Menu (Fades in over top-right corner on hover without displacing timestamp when unhovered) */}
+        {canOperate && interactive ? (
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="flex h-6 w-6 items-center justify-center rounded-md border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none shadow-xs"
+                onClick={(e) => e.stopPropagation()}
               >
-                {item.awaiting_return
-                  ? t("boards.clearAwaitingReturn", {}, "Remover aguardando retorno")
-                  : t("boards.markAwaitingReturn", {}, "Aguardando retorno")}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onTogglePriority(item);
-                }}
-              >
-                {item.priority_rank > 0
-                  ? t("boards.clearPriority", {}, "Remover prioridade")
-                  : t("boards.promotePriority", {}, "Adicionar à prioridade")}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMoveToBoard(item);
-                }}
-              >
-                {t("boards.moveToBoard", {}, "Mover para board")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="text-xs">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleAwaiting(item);
+                  }}
+                >
+                  {item.awaiting_return
+                    ? t("boards.clearAwaitingReturn", {}, "Remover aguardando retorno")
+                    : t("boards.markAwaitingReturn", {}, "Aguardando retorno")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTogglePriority(item);
+                  }}
+                >
+                  {item.priority_rank > 0
+                    ? t("boards.clearPriority", {}, "Remover prioridade")
+                    : t("boards.promotePriority", {}, "Adicionar à prioridade")}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMoveToBoard(item);
+                  }}
+                >
+                  {t("boards.moveToBoard", {}, "Mover para board")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         ) : null}
       </div>
 
-      <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+      <p className="mt-2 line-clamp-2 text-xs text-muted-foreground/80 leading-snug">
         {previewForItem(item)}
       </p>
 
-      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+      {/* Badges */}
+      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
         {item.mention_active && (
-          <Badge variant="default">
-            <AtSign className="mr-1 h-3 w-3" />
+          <Badge variant="default" className="h-4 px-1.5 text-[10px] bg-emerald-500 hover:bg-emerald-600">
+            <AtSign className="mr-0.5 h-2.5 w-2.5" />
             {t("boards.mentioned", {}, "Menção")}
           </Badge>
         )}
         {item.awaiting_return && (
-          <Badge variant="outline" className="border-amber-500/40 text-amber-500">
-            <Clock3 className="mr-1 h-3 w-3" />
-            {t("boards.awaitingReturn", {}, "Aguardando retorno")}
+          <Badge variant="outline" className="h-4 px-1.5 text-[10px] border-amber-500/40 text-amber-500 bg-amber-500/10">
+            <Clock3 className="mr-0.5 h-2.5 w-2.5" />
+            {t("boards.awaitingReturn", {}, "Aguardando")}
           </Badge>
         )}
         {item.priority_rank > 0 && (
-          <Badge variant="outline" className="border-red-500/40 text-red-400">
-            <Pin className="mr-1 h-3 w-3 fill-current" />
+          <Badge variant="outline" className="h-4 px-1.5 text-[10px] border-red-500/40 text-red-400 bg-red-500/10">
+            <Pin className="mr-0.5 h-2.5 w-2.5 fill-current" />
             {t("boards.priority", {}, "Prioridade")}
           </Badge>
         )}
-        {unread > 0 && <Badge>{unread}</Badge>}
+        {unread > 0 && (
+          <Badge variant="default" className="h-4 px-1.5 text-[10px] font-bold">
+            {unread} não lida{unread > 1 ? "s" : ""}
+          </Badge>
+        )}
       </div>
     </div>
   );

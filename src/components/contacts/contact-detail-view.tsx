@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatCurrency } from '@/lib/currency';
 import { sanitizeCpfCnpj, formatCpfCnpj } from '@/lib/validation/fiscal';
 import { toast } from 'sonner';
-import type { Contact, Tag, ContactTag, ContactNote, CustomField, ContactCustomValue, Deal } from '@/types';
+import type { Contact, Tag, ContactNote, CustomField, Deal } from '@/types';
 import {
   Sheet,
   SheetContent,
@@ -20,9 +21,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { ContactAvatar } from '@/components/ui/contact-avatar';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Phone,
   Mail,
@@ -33,13 +33,13 @@ import {
   Plus,
   Trash2,
   Save,
-  X,
   DollarSign,
   Shield,
   Download,
   UserX,
   AlertCircle,
   Ban,
+  MessageSquare,
 } from 'lucide-react';
 
 interface ContactDetailViewProps {
@@ -56,6 +56,7 @@ export function ContactDetailView({
   onUpdated,
 }: ContactDetailViewProps) {
   const supabase = createClient();
+  const router = useRouter();
   const { accountId, defaultCurrency } = useAuth();
   const { t } = useTranslation();
 
@@ -251,6 +252,7 @@ export function ContactDetailView({
     setLoadingDeals(false);
   }, [contactId, supabase]);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open && contactId) {
       fetchContact();
@@ -260,6 +262,7 @@ export function ContactDetailView({
       fetchDeals();
     }
   }, [open, contactId, fetchContact, fetchTags, fetchNotes, fetchCustomFields, fetchDeals]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   async function copyPhone() {
     if (!contact) return;
@@ -403,16 +406,6 @@ export function ContactDetailView({
     setSavingCustom(false);
   }
 
-  function getInitials(name?: string | null) {
-    if (!name) return '?';
-    return name
-      .split(' ')
-      .map((w) => w[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  }
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
@@ -427,60 +420,76 @@ export function ContactDetailView({
           <div className="flex flex-col h-full">
             {/* Header */}
             <SheetHeader className="p-4 border-b border-border/50">
-              <div className="flex items-center gap-3">
-                <Avatar className="size-12 bg-muted border border-border">
-                  <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                    {getInitials(contact.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <SheetTitle className="text-popover-foreground truncate">
-                    {contact.name || t('contacts.detail.unknown')}
-                  </SheetTitle>
-                  <SheetDescription className="text-muted-foreground text-xs mt-0.5">
-                    {t('contacts.detail.title')}
-                  </SheetDescription>
-                  <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                    <button
-                      onClick={copyPhone}
-                      className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer"
-                    >
-                      <Phone className="size-3" />
-                      {contact.phone}
-                      {copiedPhone ? (
-                        <Check className="size-3 text-primary" />
-                      ) : (
-                        <Copy className="size-3" />
-                      )}
-                    </button>
-                    {contact.email && (
-                      <span className="flex items-center gap-1">
-                        <Mail className="size-3" />
-                        {contact.email}
-                      </span>
-                    )}
-                    {contact.cpf_cnpj && (
-                      <span className="font-mono text-xs text-foreground bg-muted px-1.5 py-0.5 rounded">
-                        CPF/CNPJ: {formatCpfCnpj(contact.cpf_cnpj)}
-                      </span>
-                    )}
-                    {contact.company && (
-                      <span className="flex items-center gap-1">
-                        <Building2 className="size-3" />
-                        {contact.company}
-                      </span>
-                    )}
-                    {contact.opt_out ? (
-                      <Badge variant="destructive" className="text-[10px] py-0 px-1.5 gap-1">
-                        <Ban className="size-2.5" /> Opt-Out LGPD
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 gap-1">
-                        <Shield className="size-2.5" /> LGPD Ativo
-                      </Badge>
-                    )}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <ContactAvatar
+                    name={contact.name}
+                    phone={contact.phone}
+                    avatarUrl={contact.avatar_url}
+                    size="xl"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <SheetTitle className="text-popover-foreground truncate">
+                      {contact.name || t('contacts.detail.unknown')}
+                    </SheetTitle>
+                    <SheetDescription className="text-muted-foreground text-xs mt-0.5">
+                      {t('contacts.detail.title')}
+                    </SheetDescription>
                   </div>
                 </div>
+
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    onOpenChange(false);
+                    router.push(`/inbox?contactId=${contact.id}`);
+                  }}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0"
+                >
+                  <MessageSquare className="size-3.5" />
+                  <span className="hidden sm:inline">Caixa de Entrada</span>
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-muted-foreground pt-1 border-t border-border/30">
+                <button
+                  onClick={copyPhone}
+                  className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer"
+                >
+                  <Phone className="size-3" />
+                  {contact.phone}
+                  {copiedPhone ? (
+                    <Check className="size-3 text-primary" />
+                  ) : (
+                    <Copy className="size-3" />
+                  )}
+                </button>
+                {contact.email && (
+                  <span className="flex items-center gap-1">
+                    <Mail className="size-3" />
+                    {contact.email}
+                  </span>
+                )}
+                {contact.cpf_cnpj && (
+                  <span className="font-mono text-xs text-foreground bg-muted px-1.5 py-0.5 rounded">
+                    CPF/CNPJ: {formatCpfCnpj(contact.cpf_cnpj)}
+                  </span>
+                )}
+                {contact.company && (
+                  <span className="flex items-center gap-1">
+                    <Building2 className="size-3" />
+                    {contact.company}
+                  </span>
+                )}
+                {contact.opt_out ? (
+                  <Badge variant="destructive" className="text-[10px] py-0 px-1.5 gap-1">
+                    <Ban className="size-2.5" /> Opt-Out LGPD
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 gap-1">
+                    <Shield className="size-2.5" /> LGPD Ativo
+                  </Badge>
+                )}
               </div>
             </SheetHeader>
 

@@ -391,7 +391,7 @@ export function AIConfigPanel() {
               {/* Tokens Máximos */}
               <div className="space-y-1.5">
                 <div className="flex items-center gap-1.5">
-                  <Label className="text-xs font-semibold">Tokens Máximos ({maxTokens})</Label>
+                  <Label className="text-xs font-semibold">Limite de Tokens da Resposta ({maxTokens})</Label>
 
                   <Popover>
                     <PopoverTrigger className="text-muted-foreground hover:text-primary transition-colors p-0.5 rounded">
@@ -400,11 +400,11 @@ export function AIConfigPanel() {
                     <PopoverContent side="top" align="start" className="w-80 p-3 space-y-2 text-xs">
                       <PopoverHeader>
                         <PopoverTitle className="text-xs font-bold flex items-center gap-1.5 text-primary">
-                          <Cpu className="h-3.5 w-3.5" /> O que são Tokens Máximos?
+                          <Cpu className="h-3.5 w-3.5" /> O que é o Limite de Tokens da Resposta?
                         </PopoverTitle>
                       </PopoverHeader>
                       <PopoverDescription className="text-xs leading-relaxed text-muted-foreground">
-                        Limita o <strong>comprimento máximo da resposta</strong> gerada pela IA em cada mensagem enviada (1 token ≈ 4 caracteres ou 0.75 palavra):
+                        Limita exclusivamente a <strong>extensão da resposta gerada pela IA</strong> em cada mensagem enviada (1 token ≈ 4 caracteres). Não limita os tokens de entrada (Prompt/Base de Conhecimento).
                       </PopoverDescription>
                       <div className="space-y-1.5 text-[11px]">
                         <div className="p-2 rounded bg-muted/60">

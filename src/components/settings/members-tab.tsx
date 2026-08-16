@@ -23,6 +23,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import {
   AlertTriangle,
   Loader2,
@@ -33,11 +34,9 @@ import {
   UsersRound,
 } from 'lucide-react';
 
+import { ContactAvatar } from '@/components/ui/contact-avatar';
 import {
-  Avatar,
   AvatarBadge,
-  AvatarFallback,
-  AvatarImage,
 } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useTranslation } from '@/hooks/use-translation';
@@ -397,28 +396,21 @@ export function MembersTab() {
                     <Tooltip>
                       <TooltipTrigger
                         render={
-                          <Avatar className="size-9 shrink-0">
-                            {member.avatar_url ? (
-                              <AvatarImage
-                                src={member.avatar_url}
-                                alt={member.full_name || t('settings.members.member')}
-                              />
-                            ) : null}
-                            <AvatarFallback className="bg-primary/10 text-sm font-medium text-primary">
-                              {(member.full_name || member.email || 'U')
-                                .charAt(0)
-                                .toUpperCase()}
-                            </AvatarFallback>
-                            {/* role+label so screen readers announce
-                                presence — the hover tooltip alone isn't
-                                reachable by keyboard/AT on a non-focusable
-                                avatar. */}
-                            <AvatarBadge
+                          <div className="relative shrink-0">
+                            <ContactAvatar
+                              name={member.full_name || member.email}
+                              avatarUrl={member.avatar_url}
+                              size="lg"
+                            />
+                            <span
                               role="img"
                               aria-label={presenceText}
-                              className={PRESENCE_DOT_CLASS[presence]}
+                              className={cn(
+                                'absolute right-0 bottom-0 z-10 inline-flex size-2.5 rounded-full ring-2 ring-background',
+                                PRESENCE_DOT_CLASS[presence]
+                              )}
                             />
-                          </Avatar>
+                          </div>
                         }
                       />
                       <TooltipContent>{presenceText}</TooltipContent>

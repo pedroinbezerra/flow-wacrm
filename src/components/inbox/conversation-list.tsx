@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ContactAvatar } from "@/components/ui/contact-avatar";
 
 interface ConversationListProps {
   activeConversationId: string | null;
@@ -329,7 +330,6 @@ function ConversationItem({
   const { t } = useTranslation();
   const contact = conversation.contact;
   const displayName = contact?.name || contact?.phone || t("inbox.unknown");
-  const initials = displayName.charAt(0).toUpperCase();
 
   const handleClick = useCallback(() => {
     onSelect(conversation);
@@ -351,22 +351,17 @@ function ConversationItem({
           : "hover:bg-muted/40 text-muted-foreground hover:text-foreground"
       )}
     >
-      {/* Avatar with Ring */}
+      {/* Avatar with Status Badge */}
       <div className="relative shrink-0">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/80 text-xs font-bold text-foreground ring-1 ring-border/60">
-          {contact?.avatar_url ? (
-            <img
-              src={contact.avatar_url}
-              alt={displayName}
-              className="h-10 w-10 rounded-full object-cover"
-            />
-          ) : (
-            initials
-          )}
-        </div>
+        <ContactAvatar
+          name={contact?.name}
+          phone={contact?.phone}
+          avatarUrl={contact?.avatar_url}
+          size="default"
+        />
         <span
           className={cn(
-            "absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-background",
+            "absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full ring-2 ring-background",
             STATUS_COLORS[conversation.status]
           )}
           title={conversation.status}

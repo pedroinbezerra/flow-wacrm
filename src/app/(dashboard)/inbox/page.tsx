@@ -14,6 +14,8 @@ import { WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+
 // Remembers the agent's show/hide choice for the desktop contact panel
 // across reloads and sessions (device-scoped, like the theme prefs).
 const CONTACT_PANEL_STORAGE_KEY = "flowhub:inbox:contact-panel-open";
@@ -23,11 +25,14 @@ export default function InboxPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   /**
-   * `?c=<id>` deep-link support. Used when landing here from the
-   * dashboard's recent-conversations list so the right thread opens
-   * automatically instead of showing the empty center panel.
+   * `?c=<id>` or `?conversationId=<id>` deep-link support.
    */
-  const deepLinkConvId = searchParams.get("c");
+  const deepLinkConvId = searchParams.get("c") || searchParams.get("conversationId");
+
+  /**
+   * `?contactId=<id>` or `?contact_id=<id>` deep-link support from Contacts page.
+   */
+  const deepLinkContactId = searchParams.get("contactId") || searchParams.get("contact_id");
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] =
@@ -55,6 +60,8 @@ export default function InboxPage() {
    * below reconciles to the stored value right after mount instead.
    */
   const [contactPanelOpen, setContactPanelOpen] = useState(true);
+  const [mobileContactSheetOpen, setMobileContactSheetOpen] = useState(false);
+
   useEffect(() => {
     try {
       const stored = localStorage.getItem(CONTACT_PANEL_STORAGE_KEY);
@@ -74,6 +81,7 @@ export default function InboxPage() {
       }
       return next;
     });
+    setMobileContactSheetOpen((prev) => !prev);
   }, []);
 
   const [listPanelOpen, setListPanelOpen] = useState(true);
@@ -100,6 +108,7 @@ export default function InboxPage() {
   // back to the deep-linked conversation if they've already clicked
   // elsewhere.
   const autoSelectedForDeepLinkRef = useRef<string | null>(null);
+  const autoSelectedForContactIdRef = useRef<string | null>(null);
 
   // Tracks conversations whose hydrate fetch is currently in flight. The
   // conv-INSERT and the first-message-INSERT events both call into
@@ -410,39 +419,185 @@ export default function InboxPage() {
     setResyncToken((n) => n + 1);
   }, []);
 
+  /**
+   * Resolves or creates a conversation for a target `contactId`.
+   * Used when navigating from Contacts ("Conversar no Inbox").
+   */
+  const resolveContactConversation = useCallback(
+    async (targetContactId: string) => {
+      if (autoSelectedForContactIdRef.current === targetContactId) return;
+      autoSelectedForContactIdRef.current = targetContactId;
+
+      try {
+        const supabase = createClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const user = session?.user;
+        if (!user) return;
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("account_id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        const accountId = profile?.account_id as string | undefined;
+        if (!accountId) return;
+
+        // 1. Look for existing conversation in DB for this account & contact
+        const { data: existingConv } = await supabase
+          .from("conversations")
+          .select("*, contact:contacts(*)")
+          .eq("account_id", accountId)
+          .eq("contact_id", targetContactId)
+          .order("updated_at", { ascending: false })
+          .maybeSingle();
+
+        if (existingConv) {
+          const conv = existingConv as Conversation;
+          // Switch to human mode when agent initiates conversation from contacts
+          if (conv.ai_handler_status === "ai") {
+            conv.ai_handler_status = "human";
+            await supabase
+              .from("conversations")
+              .update({ ai_handler_status: "human" })
+              .eq("id", conv.id);
+          }
+          setConversations((prev) => {
+            const exists = prev.some((c) => c.id === conv.id);
+            if (exists) {
+              return prev.map((c) => (c.id === conv.id ? { ...c, ai_handler_status: "human" } : c));
+            }
+            return [conv, ...prev];
+          });
+          autoSelectedForDeepLinkRef.current = conv.id;
+          setActiveConversation(conv);
+          setActiveContact(conv.contact ?? null);
+          setMessages([]);
+          router.replace(`/inbox?c=${conv.id}`, { scroll: false });
+          return;
+        }
+
+        // 2. Fetch contact to verify it exists
+        const { data: contactData } = await supabase
+          .from("contacts")
+          .select("*")
+          .eq("id", targetContactId)
+          .maybeSingle();
+
+        if (!contactData) {
+          toast.error(t("contacts.notFound") || "Contato não encontrado");
+          return;
+        }
+
+        // 3. Create new conversation row with AI disabled (human agent mode)
+        const { data: newConvData, error: createError } = await supabase
+          .from("conversations")
+          .insert({
+            account_id: accountId,
+            user_id: user.id,
+            contact_id: targetContactId,
+            status: "open",
+            unread_count: 0,
+            ai_handler_status: "human",
+          })
+          .select("*, contact:contacts(*)")
+          .maybeSingle();
+
+        let targetConv: Conversation | null = newConvData as Conversation | null;
+
+        if (createError || !targetConv) {
+          // If unique constraint or race condition, query existing row again
+          const { data: retryConv } = await supabase
+            .from("conversations")
+            .select("*, contact:contacts(*)")
+            .eq("account_id", accountId)
+            .eq("contact_id", targetContactId)
+            .maybeSingle();
+
+          if (retryConv) {
+            targetConv = retryConv as Conversation;
+          } else {
+            console.error("Failed to create conversation:", createError);
+            toast.error("Não foi possível iniciar a conversa");
+            return;
+          }
+        }
+
+        if (targetConv) {
+          const finalConv: Conversation = {
+            ...targetConv,
+            contact: targetConv.contact || (contactData as Contact),
+          };
+
+          setConversations((prev) => {
+            if (prev.some((c) => c.id === finalConv.id)) return prev;
+            return [finalConv, ...prev];
+          });
+          autoSelectedForDeepLinkRef.current = finalConv.id;
+          setActiveConversation(finalConv);
+          setActiveContact(finalConv.contact ?? null);
+          setMessages([]);
+          router.replace(`/inbox?c=${finalConv.id}`, { scroll: false });
+        }
+      } catch (err) {
+        console.error("Error resolving contact conversation:", err);
+      }
+    },
+    [router, t]
+  );
+
+  useEffect(() => {
+    if (deepLinkContactId && autoSelectedForContactIdRef.current !== deepLinkContactId) {
+      resolveContactConversation(deepLinkContactId);
+    }
+  }, [deepLinkContactId, resolveContactConversation]);
+
   const handleConversationsLoaded = useCallback(
     (loaded: Conversation[]) => {
       setConversations(loaded);
-      // Resolve a pending deep-link here rather than in an effect — this
-      // is an event handler, so the setState calls below are allowed by
-      // react-hooks/set-state-in-effect. Runs once per ?c=<id> URL value
-      // via the ref, so realtime refreshes of the list can't snap the
-      // user back to the deep-linked thread after they've navigated.
+
+      // 1. Resolve deep-link by contactId if present
+      if (
+        deepLinkContactId &&
+        autoSelectedForContactIdRef.current !== deepLinkContactId &&
+        loaded.length > 0
+      ) {
+        const matchByContact = loaded.find((c) => c.contact_id === deepLinkContactId);
+        if (matchByContact) {
+          autoSelectedForContactIdRef.current = deepLinkContactId;
+          autoSelectedForDeepLinkRef.current = matchByContact.id;
+          if (activeConversation?.id !== matchByContact.id) {
+            setActiveConversation(matchByContact);
+            setActiveContact(matchByContact.contact ?? null);
+            setMessages([]);
+            if (matchByContact.unread_count > 0) {
+              setConversations((prev) =>
+                prev.map((c) =>
+                  c.id === matchByContact.id ? { ...c, unread_count: 0 } : c,
+                ),
+              );
+            }
+            router.replace(`/inbox?c=${matchByContact.id}`, { scroll: false });
+          }
+          return;
+        }
+      }
+
+      // 2. Resolve deep-link by conversation id (c or conversationId)
       if (
         deepLinkConvId &&
         autoSelectedForDeepLinkRef.current !== deepLinkConvId &&
         loaded.length > 0
       ) {
         autoSelectedForDeepLinkRef.current = deepLinkConvId;
-        // If the deep-linked conversation is already the active one
-        // (e.g. because the user clicked it in the list and we
-        // router.replace()'d the URL, which made the ConversationList
-        // refetch and land us back here), do NOT re-apply it. Doing so
-        // would setMessages([]) on a thread whose messages have
-        // already been loaded by MessageThread — and because
-        // conversationId didn't change, MessageThread wouldn't
-        // refetch. The thread would read "No messages yet" until a
-        // full page reload rehydrated state from scratch.
         if (activeConversation?.id === deepLinkConvId) return;
         const match = loaded.find((c) => c.id === deepLinkConvId);
         if (match) {
           setActiveConversation(match);
           setActiveContact(match.contact ?? null);
           setMessages([]);
-          // Mirror the optimistic unread reset that handleSelectConversation
-          // does — the user just deep-linked into this conv, treat that the
-          // same as a click. Leaves activeConversation.unread_count alone so
-          // the MessageThread reset effect still fires the server UPDATE.
           if (match.unread_count > 0) {
             setConversations((prev) =>
               prev.map((c) =>
@@ -453,7 +608,7 @@ export default function InboxPage() {
         }
       }
     },
-    [deepLinkConvId, activeConversation?.id]
+    [deepLinkConvId, deepLinkContactId, activeConversation?.id, router]
   );
 
   const handleSelectConversation = useCallback(
@@ -594,8 +749,9 @@ export default function InboxPage() {
         <div
           id="tour-inbox-list"
           className={cn(
-            "h-full shrink-0 border-r border-border bg-card transition-all duration-300 ease-in-out overflow-hidden hidden lg:block",
-            listPanelOpen ? "w-80 opacity-100" : "w-0 opacity-0 border-r-0 pointer-events-none"
+            "h-full shrink-0 border-r border-border bg-card transition-all duration-300 ease-in-out overflow-hidden w-full lg:w-80",
+            hasActiveConv ? "hidden lg:block" : "block",
+            listPanelOpen ? "lg:w-80 lg:opacity-100" : "lg:w-0 lg:opacity-0 lg:border-r-0 lg:pointer-events-none"
           )}
         >
           <ConversationList
@@ -643,6 +799,13 @@ export default function InboxPage() {
           <ContactSidebar contact={activeContact} conversationId={activeConversation?.id} />
         </div>
       </div>
+
+      {/* Mobile Contact Sidebar Drawer */}
+      <Sheet open={mobileContactSheetOpen} onOpenChange={setMobileContactSheetOpen}>
+        <SheetContent side="right" className="p-0 w-full sm:max-w-md bg-card border-l border-border">
+          <ContactSidebar contact={activeContact} conversationId={activeConversation?.id} />
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

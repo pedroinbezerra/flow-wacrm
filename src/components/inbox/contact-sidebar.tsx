@@ -5,7 +5,12 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
+import { ContactAvatar } from "@/components/ui/contact-avatar";
 import type { Contact, Deal, ContactNote, Tag } from "@/types";
+import Link from "next/link";
+import { toast } from "sonner";
+import { DirectDealModal } from "@/components/inbox/direct-deal-modal";
+import { formatCurrency } from "@/lib/currency";
 import {
   Phone,
   Mail,
@@ -20,6 +25,9 @@ import {
   Eye,
   Info,
   Calendar,
+  Pencil,
+  Trash2,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +38,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
+import { EmojiPickerPopover } from "@/components/ui/emoji-picker-popover";
 
 interface ContactSidebarProps {
   contact: Contact | null;
@@ -47,6 +56,33 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [newNote, setNewNote] = useState("");
   const [addingNote, setAddingNote] = useState(false);
+  const [directDealModalOpen, setDirectDealModalOpen] = useState(false);
+
+  const handleUnlinkDeal = async (dealId: string) => {
+    if (!accountId) return;
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("deals")
+        .update({ contact_id: null })
+        .eq("id", dealId)
+        .eq("account_id", accountId);
+
+      if (error) throw error;
+
+      toast.success(t("inbox.deals.messages.unlinkedSuccess"));
+      fetchContactData();
+      if (conversationId && typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("flowhub:refresh_timeline", {
+            detail: { conversationId },
+          })
+        );
+      }
+    } catch {
+      toast.error(t("inbox.deals.messages.unlinkError"));
+    }
+  };
 
 
   const fetchTimeline = useCallback(async () => {
@@ -69,8 +105,9 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
     fetchTimeline();
 
     const supabase = createClient();
+    const channelName = `timeline:conversation:${conversationId}:${Math.random().toString(36).slice(2, 7)}`;
     const channel = supabase
-      .channel(`timeline:conversation:${conversationId}`)
+      .channel(channelName)
       .on(
         "postgres_changes",
         {
@@ -104,6 +141,7 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
 
 
   const [fullTimelineOpen, setFullTimelineOpen] = useState(false);
+  const [fullNotesOpen, setFullNotesOpen] = useState(false);
 
   const fetchContactData = useCallback(async () => {
     if (!contact) return;
@@ -145,19 +183,26 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
     if (dealsRes.data) setDeals(dealsRes.data);
 
     // Unify contact_notes and internal_notes into a single sorted feed
-    const contactNotesList = (notesRes.data || []).map((n: any) => ({
-      id: n.id,
-      note_text: n.note_text,
-      created_at: n.created_at,
-      source: "contact" as const,
-    }));
+    const contactNotesList = (notesRes.data || [])
+      .map((n: any) => ({
+        id: n.id,
+        note_text: (n.note_text || n.content || "").trim(),
+        created_at: n.created_at,
+        updated_at: n.updated_at,
+        source: "contact" as const,
+      }))
+      .filter((n: any) => n.note_text.length > 0);
 
-    const internalNotesList = (internalNotesRes?.data || []).map((n: any) => ({
-      id: n.id,
-      note_text: n.note_text,
-      created_at: n.created_at,
-      source: "internal" as const,
-    }));
+    const internalNotesList = (internalNotesRes?.data || [])
+      .filter((n: any) => !n.deleted_at)
+      .map((n: any) => ({
+        id: n.id,
+        note_text: (n.content || n.note_text || "").trim(),
+        created_at: n.created_at,
+        updated_at: n.updated_at,
+        source: "internal" as const,
+      }))
+      .filter((n: any) => n.note_text.length > 0);
 
     const combinedNotes = [...contactNotesList, ...internalNotesList].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -225,6 +270,78 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
     setAddingNote(false);
   }, [contact, newNote, accountId, conversationId]);
 
+  const handleEditNote = useCallback(
+    async (noteId: string, source: "internal" | "contact", newText: string) => {
+      if (source === "internal" && conversationId) {
+        try {
+          const res = await fetch(`/api/conversations/${conversationId}/notes/${noteId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: newText }),
+          });
+          if (res.ok) {
+            setNotes((prev) =>
+              prev.map((n) =>
+                n.id === noteId ? { ...n, note_text: newText, updated_at: new Date().toISOString() } : n
+              )
+            );
+            window.dispatchEvent(
+              new CustomEvent("flowhub:refresh_notes", { detail: { conversationId } })
+            );
+          }
+        } catch {}
+      } else {
+        const supabase = createClient();
+        const { error } = await supabase
+          .from("contact_notes")
+          .update({ note_text: newText })
+          .eq("id", noteId);
+        if (!error) {
+          setNotes((prev) =>
+            prev.map((n) =>
+              n.id === noteId ? { ...n, note_text: newText, updated_at: new Date().toISOString() } : n
+            )
+          );
+          window.dispatchEvent(
+            new CustomEvent("flowhub:refresh_notes", { detail: { conversationId } })
+          );
+        }
+      }
+    },
+    [conversationId]
+  );
+
+  const handleDeleteNote = useCallback(
+    async (noteId: string, source: "internal" | "contact") => {
+      if (source === "internal" && conversationId) {
+        try {
+          const res = await fetch(`/api/conversations/${conversationId}/notes/${noteId}`, {
+            method: "DELETE",
+          });
+          if (res.ok) {
+            setNotes((prev) => prev.filter((n) => n.id !== noteId));
+            window.dispatchEvent(
+              new CustomEvent("flowhub:refresh_notes", { detail: { conversationId } })
+            );
+          }
+        } catch {}
+      } else {
+        const supabase = createClient();
+        const { error } = await supabase
+          .from("contact_notes")
+          .delete()
+          .eq("id", noteId);
+        if (!error) {
+          setNotes((prev) => prev.filter((n) => n.id !== noteId));
+          window.dispatchEvent(
+            new CustomEvent("flowhub:refresh_notes", { detail: { conversationId } })
+          );
+        }
+      }
+    },
+    [conversationId]
+  );
+
   if (!contact) {
     return (
       <div className="flex h-full w-70 items-center justify-center border-l border-border bg-card">
@@ -251,6 +368,20 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 scrollbar-thin space-y-4">
+        {/* Contact Avatar Header Card */}
+        <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/20">
+          <ContactAvatar
+            name={contact.name}
+            phone={contact.phone}
+            avatarUrl={contact.avatar_url}
+            size="default"
+          />
+          <div className="min-w-0 flex-1">
+            <h4 className="font-semibold text-xs text-foreground truncate">{displayName}</h4>
+            <p className="text-[11px] text-muted-foreground font-mono truncate">{contact.phone}</p>
+          </div>
+        </div>
+
         {/* Quick Actions (Copy Phone / Email) */}
         {(contact.phone || contact.email) && (
           <div className="flex items-center gap-2 rounded-md bg-muted/30 p-2 text-xs">
@@ -302,30 +433,63 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
 
           {/* Active Deals */}
           <div>
-            <div className="flex items-center gap-2 px-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              <DollarSign className="h-3 w-3" />
-              {t("inbox.sidebar.activeDeals")}
+            <div className="flex items-center justify-between px-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <DollarSign className="h-3.5 w-3.5 text-primary" />
+                <span>{t("inbox.sidebar.activeDeals")}</span>
+              </div>
+              {deals.length > 0 && (
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  {deals.length} {deals.length === 1 ? "negócio" : "negócios"}
+                </span>
+              )}
             </div>
+
             <div className="mt-2 space-y-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full h-8 justify-center gap-1.5 border-dashed border-border/80 bg-muted/20 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 hover:border-primary/50 transition-all rounded-lg"
+                onClick={() => setDirectDealModalOpen(true)}
+              >
+                <Plus className="h-3.5 w-3.5 text-primary" />
+                <span>{t("inbox.sidebar.directToDeal")}</span>
+              </Button>
+
               {deals.length === 0 ? (
-                <p className="px-1 text-xs text-muted-foreground">{t("inbox.sidebar.noDeals")}</p>
+                <p className="px-1 text-xs text-muted-foreground italic">Nenhum negócio ativo ainda</p>
               ) : (
                 deals.map((deal) => (
                   <div
                     key={deal.id}
-                    className="rounded-lg bg-muted px-3 py-2"
+                    className="group relative rounded-lg bg-muted/60 border border-border/40 p-2.5 text-xs space-y-1.5 hover:border-primary/40 transition-colors"
                   >
-                    <p className="text-sm font-medium text-foreground">
-                      {deal.title}
-                    </p>
-                    <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>
-                        {deal.currency ?? "$"}
-                        {deal.value.toLocaleString()}
+                    <div className="flex items-center justify-between gap-2">
+                      <Link
+                        href={`/pipelines?dealId=${deal.id}`}
+                        className="font-semibold text-foreground hover:text-primary transition-colors truncate text-xs"
+                      >
+                        {deal.title}
+                      </Link>
+                      <div className="flex items-center gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          onClick={() => handleUnlinkDeal(deal.id)}
+                          className="p-0.5 rounded text-muted-foreground hover:text-destructive hover:bg-muted"
+                          title={t("inbox.sidebar.unlinkDeal")}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] pt-0.5">
+                      <span className="font-bold text-primary font-mono">
+                        {formatCurrency(deal.value, deal.currency)}
                       </span>
                       {deal.stage && (
                         <span
-                          className="rounded-full px-1.5 py-0.5 text-[10px]"
+                          className="rounded-full px-2 py-0.5 text-[10px] font-medium"
                           style={{
                             backgroundColor: `${deal.stage.color}20`,
                             color: deal.stage.color,
@@ -344,47 +508,112 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
           {/* Divider */}
           <div className="my-4 border-t border-border" />
 
-          {/* Notes */}
+          {/* Notes (Compact Top 3) */}
           <div>
-            <div className="flex items-center gap-2 px-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              <StickyNote className="h-3 w-3" />
-              {t("inbox.sidebar.notes")}
+            <div className="flex items-center justify-between px-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <StickyNote className="h-3.5 w-3.5 text-amber-500" />
+                <span>{t("inbox.sidebar.notes")}</span>
+              </div>
+              {notes.length > 0 && (
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  {notes.length} {notes.length === 1 ? "nota" : "notas"}
+                </span>
+              )}
             </div>
-            <div className="mt-2">
+            <div className="mt-2 space-y-2">
               <div className="flex gap-2">
                 <textarea
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
                   placeholder={t("common.placeholders.addNote")}
                   rows={2}
-                  className="flex-1 resize-none rounded-lg border border-border bg-muted px-3 py-2 text-xs text-foreground placeholder-muted-foreground outline-none focus:border-primary/50"
+                  className="flex-1 resize-none rounded-lg border border-border bg-muted px-3 py-2 text-xs text-foreground placeholder-muted-foreground outline-none focus:border-amber-500/50"
                 />
                 <Button
                   size="sm"
-                  className="h-auto bg-primary px-2 hover:bg-primary/90"
+                  className="h-auto bg-amber-500 text-amber-950 hover:bg-amber-400 font-medium px-2.5"
                   onClick={handleAddNote}
                   disabled={!newNote.trim() || addingNote}
                 >
-                  <Plus className="h-3 w-3" />
+                  <Plus className="h-3.5 w-3.5" />
                 </Button>
               </div>
 
               <div className="mt-2 space-y-2">
-                {notes.map((note) => (
-                  <div
-                    key={note.id}
-                    className="rounded-lg bg-muted px-3 py-2"
+                {notes.length === 0 ? (
+                  <p className="px-1 text-xs text-muted-foreground italic">Nenhuma nota registrada ainda</p>
+                ) : (
+                  notes.slice(0, 3).map((note) => (
+                    <NoteItemCard
+                      key={note.id}
+                      note={note}
+                      onEdit={handleEditNote}
+                      onDelete={handleDeleteNote}
+                    />
+                  ))
+                )}
+
+                {notes.length > 3 && (
+                  <button
+                    type="button"
+                    onClick={() => setFullNotesOpen(true)}
+                    className="w-full mt-2 py-2 px-3 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15 rounded-lg border border-amber-500/20 transition-colors flex items-center justify-center gap-1.5"
                   >
-                    <p className="whitespace-pre-wrap text-xs text-muted-foreground">
-                      {note.note_text}
-                    </p>
-                    <p className="mt-1 text-[10px] text-muted-foreground">
-                      {format(new Date(note.created_at), "MMM d, yyyy HH:mm")}
-                    </p>
-                  </div>
-                ))}
+                    <StickyNote className="h-3.5 w-3.5" />
+                    <span>Ver todas as notas ({notes.length})</span>
+                  </button>
+                )}
               </div>
             </div>
+          </div>
+
+      {/* Full Notes Modal */}
+      <Dialog open={fullNotesOpen} onOpenChange={setFullNotesOpen}>
+        <DialogContent className="sm:max-w-xl bg-card border-border max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <StickyNote className="h-5 w-5 text-amber-500" />
+              Notas Unificadas do Atendimento e do Cliente
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Histórico completo de anotações internas da conversa e do perfil do contato.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="pt-2">
+            <div className="flex gap-2">
+              <textarea
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+                placeholder="Escreva uma nova nota..."
+                rows={2}
+                className="flex-1 resize-none rounded-lg border border-border bg-muted px-3 py-2 text-xs text-foreground placeholder-muted-foreground outline-none focus:border-amber-500/50"
+              />
+              <Button
+                size="sm"
+                className="h-auto bg-amber-500 text-amber-950 hover:bg-amber-400 font-medium px-3"
+                onClick={handleAddNote}
+                disabled={!newNote.trim() || addingNote}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Adicionar
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 my-2 scrollbar-thin">
+            {notes.map((note) => (
+              <NoteItemCard
+                key={note.id}
+                note={note}
+                onEdit={handleEditNote}
+                onDelete={handleDeleteNote}
+              />
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
           {/* Divider */}
 
@@ -448,7 +677,6 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
             </div>
           </div>
         </div>
-      </div>
 
       {/* Full Timeline Modal */}
       <Dialog open={fullTimelineOpen} onOpenChange={setFullTimelineOpen}>
@@ -565,6 +793,17 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Direct Contact to Deal Modal */}
+      {contact && (
+        <DirectDealModal
+          open={directDealModalOpen}
+          onOpenChange={setDirectDealModalOpen}
+          contact={contact}
+          conversationId={conversationId}
+          onDealAssociated={fetchContactData}
+        />
+      )}
     </div>
   );
 }
@@ -641,6 +880,190 @@ function formatTimelineNaturalAction(evt: any): { actionText: string; naturalSen
       };
     }
   }
+}
+
+function NoteItemCard({
+  note,
+  onEdit,
+  onDelete,
+}: {
+  note: any;
+  onEdit: (noteId: string, source: "internal" | "contact", newText: string) => Promise<void>;
+  onDelete: (noteId: string, source: "internal" | "contact") => Promise<void>;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(note.note_text);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [reactions, setReactions] = useState<string[]>([]);
+
+  const handleSave = async () => {
+    if (!editText.trim() || editText === note.note_text) {
+      setIsEditing(false);
+      return;
+    }
+    setIsSaving(true);
+    await onEdit(note.id, note.source, editText.trim());
+    setIsSaving(false);
+    setIsEditing(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    await onDelete(note.id, note.source);
+    setIsDeleting(false);
+    setShowConfirmDelete(false);
+  };
+
+  const isEdited = Boolean(
+    note.updated_at &&
+    new Date(note.updated_at).getTime() - new Date(note.created_at).getTime() > 2000
+  );
+
+  const toggleReaction = (emoji: string) => {
+    setReactions((prev) =>
+      prev.includes(emoji) ? prev.filter((e) => e !== emoji) : [...prev, emoji]
+    );
+  };
+
+  return (
+    <div className="group relative rounded-lg bg-muted/60 border border-border/40 p-2.5 text-xs space-y-1.5 hover:border-amber-500/40 transition-colors">
+      <div className="flex items-center justify-between text-[10px] text-muted-foreground gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="font-semibold text-amber-600 dark:text-amber-400 shrink-0">
+            {note.source === "internal" ? "Nota da Conversa" : "Nota do Cliente"}
+          </span>
+          {isEdited && (
+            <span className="text-[9px] text-muted-foreground/80 italic shrink-0">
+              (editada)
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+          {!isEditing && (
+            <div className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditText(note.note_text);
+                  setIsEditing(true);
+                }}
+                className="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+                title="Editar nota"
+              >
+                <Pencil className="h-3 w-3" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowConfirmDelete(true)}
+                className="p-0.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                title="Excluir nota"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+          <span className="font-mono text-right shrink-0">
+            {format(new Date(note.created_at), "dd/MM HH:mm")}
+          </span>
+        </div>
+      </div>
+
+      {isEditing ? (
+        <div className="space-y-2 pt-1">
+          <textarea
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            rows={2}
+            className="w-full resize-none rounded border border-amber-500/40 bg-muted px-2.5 py-1.5 text-xs text-foreground outline-none focus:border-amber-500"
+          />
+          <div className="flex items-center justify-end gap-1.5">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => setIsEditing(false)}
+              disabled={isSaving}
+              className="h-6 px-2 text-[11px]"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSave}
+              disabled={isSaving || !editText.trim()}
+              className="h-6 px-2 text-[11px] bg-amber-500 text-amber-950 hover:bg-amber-400 font-medium"
+            >
+              Salvar
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <p className="whitespace-pre-wrap text-xs text-foreground/90 leading-relaxed">
+            {note.note_text}
+          </p>
+
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center gap-1 flex-wrap">
+              {reactions.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => toggleReaction(emoji)}
+                  className="text-[11px] px-2 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-300 font-semibold transition-colors flex items-center gap-1"
+                >
+                  <span>{emoji}</span>
+                </button>
+              ))}
+
+              <EmojiPickerPopover
+                onSelectEmoji={toggleReaction}
+                triggerClassName="h-6 w-6 text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 rounded-md transition-colors"
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={showConfirmDelete} onOpenChange={setShowConfirmDelete}>
+        <DialogContent className="sm:max-w-xs bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-semibold">Excluir Nota</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Tem certeza que deseja excluir esta nota? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowConfirmDelete(false)}
+              disabled={isDeleting}
+              className="h-8 text-xs"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="h-8 text-xs"
+            >
+              Excluir
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }
 
 

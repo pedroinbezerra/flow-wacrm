@@ -31,6 +31,7 @@ import {
   MessageSquare,
   DollarSign,
   Loader2,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -381,19 +382,19 @@ export function DealForm({
                 <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   {t("pipelines.statusLabel")}
                 </p>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <Button
                     type="button"
                     onClick={() => handleStatusChange("won")}
                     disabled={!!statusAction || deal.status === "won"}
-                    className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50 text-xs px-2 h-9"
                   >
                     {statusAction === "won" ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <>
-                        <Check className="mr-1 h-4 w-4" />
-                        {t("pipelines.markAsWon")}
+                        <Check className="mr-1 h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{t("pipelines.statusWon")}</span>
                       </>
                     )}
                   </Button>
@@ -401,29 +402,34 @@ export function DealForm({
                     type="button"
                     onClick={() => handleStatusChange("lost")}
                     disabled={!!statusAction || deal.status === "lost"}
-                    className="flex-1 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                    className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 text-xs px-2 h-9"
                   >
                     {statusAction === "lost" ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <>
-                        <X className="mr-1 h-4 w-4" />
-                        {t("pipelines.markAsLost")}
+                        <X className="mr-1 h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{t("pipelines.statusLost")}</span>
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleStatusChange("open")}
+                    disabled={!!statusAction || (deal.status || "open") === "open"}
+                    className="border-border text-foreground hover:bg-muted disabled:opacity-50 text-xs px-2 h-9"
+                  >
+                    {statusAction === "open" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <RotateCcw className="mr-1 h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{t("pipelines.reopenDeal")}</span>
                       </>
                     )}
                   </Button>
                 </div>
-                {deal.status && deal.status !== "open" && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => handleStatusChange("open")}
-                    disabled={!!statusAction}
-                    className="w-full text-muted-foreground hover:text-foreground"
-                  >
-                    {t("pipelines.reopenDeal")}
-                  </Button>
-                )}
               </div>
             )}
           </div>

@@ -58,6 +58,10 @@ import type {
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/hooks/use-translation"
+import {
+  validateStepsForActivation,
+  validateTriggerForActivation,
+} from "@/lib/automations/validate"
 
 // ------------------------------------------------------------
 // Types (builder-local — mirror the flattened rows we POST)
@@ -528,6 +532,19 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
   }
 
   async function save() {
+    const apiSteps = toApiSteps(state.steps)
+    const issues = [
+      ...validateTriggerForActivation(state.trigger_type, state.trigger_config),
+      ...validateStepsForActivation(
+        apiSteps as unknown as { step_type: string; step_config: Record<string, unknown> }[],
+      ),
+    ]
+
+    if (issues.length > 0) {
+      toast.error(issues[0].message)
+      return
+    }
+
     setSaving(true)
     try {
       const payload = {
@@ -536,7 +553,7 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
         trigger_type: state.trigger_type,
         trigger_config: state.trigger_config,
         is_active: state.is_active,
-        steps: toApiSteps(state.steps),
+        steps: apiSteps,
       }
 
       const res = isEditing
@@ -559,9 +576,7 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
         const firstIssue: { path?: string; message?: string } | undefined =
           body?.issues?.[0]
         if (firstIssue?.message) {
-          toast.error(firstIssue.message, {
-            description: firstIssue.path ? `at ${firstIssue.path}` : undefined,
-          })
+          toast.error(firstIssue.message)
         } else {
           toast.error(body?.error ?? t("automations.failedSave"))
         }

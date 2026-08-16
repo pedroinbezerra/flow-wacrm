@@ -18,6 +18,12 @@ import {
 const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
+  // Eixo de tamanho óptico. Serve o corte display ao monograma de
+  // contato (ver bloco IDENTIDADE em globals.css), que o fixa em
+  // `opsz 32`; no resto da interface o padrão `font-optical-sizing:
+  // auto` passa a ajustar o desenho da letra ao corpo em que ela é
+  // usada, que é o comportamento correto da Inter variável.
+  axes: ["opsz"],
 });
 
 export const metadata: Metadata = {

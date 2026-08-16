@@ -75,23 +75,17 @@ export async function POST(request: Request) {
     )
   }
 
-  // Block activation of a clearly broken automation up-front instead of
-  // letting every trigger silently produce a failed log row. Drafts
-  // (is_active=false) are allowed to be incomplete so users can save
-  // progress mid-build.
-  if (is_active) {
-    const issues = [
-      ...validateTriggerForActivation(effectiveTriggerType, effectiveTriggerConfig ?? {}),
-      ...validateStepsForActivation(
-        (effectiveSteps ?? []) as unknown as { step_type: string; step_config: Record<string, unknown> }[],
-      ),
-    ]
-    if (issues.length > 0) {
-      return NextResponse.json(
-        { error: 'Cannot activate automation with invalid configuration', issues },
-        { status: 400 },
-      )
-    }
+  const issues = [
+    ...validateTriggerForActivation(effectiveTriggerType, effectiveTriggerConfig ?? {}),
+    ...validateStepsForActivation(
+      (effectiveSteps ?? []) as unknown as { step_type: string; step_config: Record<string, unknown> }[],
+    ),
+  ]
+  if (issues.length > 0) {
+    return NextResponse.json(
+      { error: 'Não é possível criar automação com configurações inválidas.', issues },
+      { status: 400 },
+    )
   }
 
   const admin = supabaseAdmin()

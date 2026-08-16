@@ -155,18 +155,20 @@ export function EditorHeader() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <button
-          type="button"
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => router.push("/flows")}
-          className="inline-flex items-center gap-1 hover:text-foreground"
+          className="gap-2 text-xs font-medium"
+          title={t("flows.backToFlows", {}, "Voltar para lista de fluxos")}
         >
-          <ArrowLeft className="h-3 w-3" />
-          {t("flows.flowsNav")}
-        </button>
+          <ArrowLeft className="h-4 w-4" />
+          {t("flows.backToFlows", {}, "Voltar para Fluxos")}
+        </Button>
       </div>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
           <Workflow className="h-5 w-5 shrink-0 text-primary" />
           <Input
             value={state.name}
@@ -174,27 +176,31 @@ export function EditorHeader() {
               setState((s) => ({ ...s, name: e.target.value }))
             }
             placeholder={t("flows.flowNamePlaceholder")}
-            className="max-w-md bg-card text-lg font-semibold"
+            className="w-full sm:max-w-md bg-card text-base sm:text-lg font-semibold"
           />
-          <StatusBadge status={state.status} />
-          {dirty && (
-            <span
-              className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-amber-300"
-              title={t("flows.unsavedChanges")}
-              aria-live="polite"
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-              {t("flows.edited")}
-            </span>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            <StatusBadge status={state.status} />
+            {dirty && (
+              <span
+                className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-amber-300"
+                title={t("flows.unsavedChanges")}
+                aria-live="polite"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                {t("flows.edited")}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           {state.trigger_type === "manual" && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => setDispatchOpen(true)}
               disabled={state.status !== "active" || dirty || saving}
+              className="text-xs px-2.5 py-1 h-8"
               title={
                 state.status !== "active"
                   ? t("flows.manualDispatchRequiresActive")
@@ -204,25 +210,25 @@ export function EditorHeader() {
               }
             >
               <Play className="h-3.5 w-3.5" />
-              {t("flows.manualDispatch")}
+              <span>{t("flows.manualDispatch")}</span>
             </Button>
           )}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push(`/flows/${flow.id}/runs`)}
+            className="text-xs px-2.5 py-1 h-8"
           >
             <History className="h-3.5 w-3.5" />
-            {t("flows.runs")}
+            <span>{t("flows.runs")}</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => void deleteFlow()}
-            className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            className="text-destructive hover:bg-destructive hover:text-destructive-foreground text-xs px-2 py-1 h-8"
           >
             <Trash2 className="h-3.5 w-3.5" />
-            {t("common.delete")}
           </Button>
           {state.status === "active" ? (
             <Button
@@ -230,13 +236,14 @@ export function EditorHeader() {
               size="sm"
               onClick={() => void setStatus("draft")}
               disabled={activating}
+              className="text-xs px-2.5 py-1 h-8"
             >
               {activating ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <PauseCircle className="h-3.5 w-3.5" />
               )}
-              {t("flows.pause")}
+              <span>{t("flows.pause")}</span>
             </Button>
           ) : (
             <Button
@@ -244,6 +251,7 @@ export function EditorHeader() {
               size="sm"
               onClick={() => void setStatus("active")}
               disabled={activating || !canActivate}
+              className="text-xs px-2.5 py-1 h-8"
               title={
                 !canActivate
                   ? t("flows.fixIssuesBeforeActivating")
@@ -255,16 +263,21 @@ export function EditorHeader() {
               ) : (
                 <PlayCircle className="h-3.5 w-3.5" />
               )}
-              {t("flows.activate")}
+              <span>{t("flows.activate")}</span>
             </Button>
           )}
-          <Button onClick={() => void save()} disabled={saving} size="sm">
+          <Button
+            onClick={() => void save()}
+            disabled={saving}
+            size="sm"
+            className="text-xs px-3 py-1 h-8"
+          >
             {saving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <Save className="h-3.5 w-3.5" />
             )}
-            {t("common.save")}
+            <span>{t("common.save")}</span>
           </Button>
         </div>
       </div>
@@ -274,29 +287,29 @@ export function EditorHeader() {
           setState((s) => ({ ...s, description: e.target.value }))
         }
         placeholder={t("flows.descriptionPlaceholder")}
-        className="bg-card text-sm"
+        className="bg-card text-xs sm:text-sm"
       />
 
       <Dialog open={dispatchOpen} onOpenChange={setDispatchOpen}>
-        <DialogContent className="border-border bg-popover sm:max-w-lg">
+        <DialogContent className="border-border bg-popover sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 flex flex-col text-popover-foreground">
           <DialogHeader>
-            <DialogTitle className="text-popover-foreground">
+            <DialogTitle className="text-base sm:text-lg text-popover-foreground">
               {t("flows.manualDispatch")}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">
               {t("flows.manualDispatchDescription")}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3">
+          <div className="space-y-3 py-2">
             <Input
               value={contactQuery}
               onChange={(e) => setContactQuery(e.target.value)}
               placeholder={t("flows.searchContactPlaceholder")}
-              className="bg-muted"
+              className="bg-muted text-xs sm:text-sm"
             />
 
-            <div className="max-h-64 space-y-2 overflow-y-auto rounded-md border border-border p-2">
+            <div className="max-h-48 sm:max-h-64 space-y-1.5 overflow-y-auto rounded-md border border-border p-2">
               {loadingContacts ? (
                 <div className="py-4 text-center text-xs text-muted-foreground">
                   {t("common.loading")}
@@ -314,17 +327,17 @@ export function EditorHeader() {
                       type="button"
                       onClick={() => setSelectedContactId(contact.id)}
                       className={cn(
-                        "flex w-full items-center justify-between rounded-md border px-3 py-2 text-left",
+                        "flex w-full items-center justify-between rounded-md border px-3 py-2 text-left transition-colors",
                         selected
                           ? "border-primary/60 bg-primary/10"
                           : "border-border bg-card hover:bg-muted",
                       )}
                     >
                       <div className="min-w-0">
-                        <div className="truncate text-sm font-medium text-foreground">
+                        <div className="truncate text-xs sm:text-sm font-medium text-foreground">
                           {contact.name || t("inbox.unknownContact")}
                         </div>
-                        <div className="truncate text-xs text-muted-foreground">
+                        <div className="truncate text-[11px] text-muted-foreground">
                           {contact.phone}
                         </div>
                       </div>
@@ -335,17 +348,19 @@ export function EditorHeader() {
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
             <Button
               variant="ghost"
               onClick={() => setDispatchOpen(false)}
               disabled={dispatching}
+              className="w-full sm:w-auto text-xs"
             >
               {t("common.cancel")}
             </Button>
             <Button
               onClick={() => void handleManualDispatch()}
               disabled={!selectedContactId || dispatching}
+              className="w-full sm:w-auto text-xs"
             >
               {dispatching ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />

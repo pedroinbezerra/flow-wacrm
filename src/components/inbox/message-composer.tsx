@@ -751,16 +751,16 @@ export function MessageComposer({
               readOnly
                 ? t("inbox.composer.readOnlyReply")
                 : mode === "note"
-                  ? t("inbox.notes.placeholder", {}, "Escreva uma nota interna... (@para mencionar)")
+                  ? "Escreva uma nota interna..."
                   : sessionExpired
                     ? t("inbox.composer.sessionExpiredPlaceholder")
-                    : t("inbox.composer.messagePlaceholder")
+                    : "Digite uma mensagem..."
             }
             disabled={readOnly || (mode === "message" && sessionExpired)}
             rows={1}
             title={readOnly ? t("inbox.composer.readOnlySend") : undefined}
             className={cn(
-              "flex-1 resize-none rounded-xl border bg-muted px-4 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none transition-all",
+              "flex-1 min-w-0 resize-none rounded-xl border bg-muted px-3 py-2 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/80 outline-none transition-all",
               mode === "note"
                 ? "border-amber-500/50 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50"
                 : "border-border focus:border-primary/50 focus:ring-1 focus:ring-primary/30",

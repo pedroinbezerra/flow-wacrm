@@ -13,22 +13,20 @@ import {
   PauseCircle,
   ChevronDown,
   ChevronRight,
+  Workflow,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
 /**
- * Run history viewer.
- *
- * Lists the 50 most recent runs for a flow, newest first. Each row
- * collapses to a one-liner (contact + status + time); expanding shows
- * the full `flow_run_events` timeline for that run — useful for
- * debugging "why didn't my flow advance?" by surfacing the engine's
- * own log.
+ * Run history viewer — Log de Execuções e Auditoria.
+ * Totalmente responsivo para dispositivos móveis com baixa carga cognitiva.
  */
 
 interface RunRow {
@@ -68,7 +66,8 @@ function getStatusMeta(
   > = {
     active: {
       label: t("flows.statusActive"),
-      classes: "border-emerald-600/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+      classes:
+        "border-emerald-600/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
       icon: PlayCircle,
     },
     completed: {
@@ -78,7 +77,8 @@ function getStatusMeta(
     },
     handed_off: {
       label: t("flows.statusHandedOff"),
-      classes: "border-amber-600/40 bg-amber-500/10 text-amber-800 dark:text-amber-300",
+      classes:
+        "border-amber-600/40 bg-amber-500/10 text-amber-800 dark:text-amber-300",
       icon: UserPlus,
     },
     timed_out: {
@@ -158,47 +158,91 @@ export default function FlowRunsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="flex h-full items-center justify-center py-24">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
+
   if (notFound || !flow) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3">
+      <div className="flex h-full flex-col items-center justify-center gap-4 py-24 p-4 text-center">
         <p className="text-sm text-muted-foreground">{t("flows.flowNotFound")}</p>
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => router.push("/flows")}
-          className="text-sm text-primary hover:opacity-80"
+          className="w-full sm:w-auto"
         >
-          ← {t("flows.backToFlows")}
-        </button>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          {t("flows.backToFlows")}
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
-      <button
-        type="button"
-        onClick={() => router.push(`/flows/${flow.id}`)}
-        className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-3 w-3" />
-        {flow.name}
-      </button>
-      <h1 className="text-xl font-semibold text-foreground">{t("flows.runs")}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
+    <div className="mx-auto max-w-5xl space-y-4 sm:space-y-6 p-4 sm:p-6">
+      {/* Navigation Header Bar */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-3 sm:pb-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/flows")}
+            className="gap-2 text-xs font-medium w-full sm:w-auto justify-center"
+            title={t("flows.backToFlows", {}, "Voltar para lista de fluxos")}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {t("flows.backToFlows", {}, "Voltar para Fluxos")}
+          </Button>
+
+          <div className="h-4 w-px bg-border hidden sm:block" />
+
+          <div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Workflow className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span className="font-medium text-foreground truncate max-w-[200px] sm:max-w-xs">
+                {flow.name}
+              </span>
+            </div>
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
+              {t("flows.runs", {}, "Execuções")}
+            </h1>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push(`/flows/${flow.id}`)}
+            className="gap-1.5 text-xs w-full sm:w-auto justify-center"
+            title="Abrir construtor visual deste fluxo"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            <span>Editar no Canvas</span>
+          </Button>
+        </div>
+      </div>
+
+      <p className="text-xs sm:text-sm text-muted-foreground">
         {t("flows.runsDescription")}
       </p>
 
+      {/* Content / Logs List */}
       {runs.length === 0 ? (
-        <div className="mt-6 rounded-lg border border-dashed border-border bg-card/50 px-6 py-12 text-center text-sm text-muted-foreground">
-          {t("flows.noRunsYet")}
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 px-4 py-12 sm:px-6 sm:py-16 text-center">
+          <Clock className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground/60 mb-2" />
+          <p className="text-xs sm:text-sm font-medium text-foreground">
+            {t("flows.noRunsYet")}
+          </p>
+          <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+            Acione este fluxo enviando a palavra-chave configurada ou iniciando uma execução manual.
+          </p>
         </div>
       ) : (
-        <div className="mt-6 flex flex-col gap-2">
+        <div className="flex flex-col gap-2">
           {runs.map((run) => (
             <RunCard
               key={run.id}
@@ -237,12 +281,13 @@ function RunCard({
         addSuffix: false,
       })
     : null;
+
   return (
-    <div className="rounded-lg border border-border bg-card">
+    <div className="rounded-lg border border-border bg-card transition-colors">
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left"
+        className="flex w-full items-center gap-2.5 sm:gap-3 px-3 py-2.5 sm:px-4 sm:py-3 text-left hover:bg-muted/40 rounded-lg transition-colors"
       >
         {expanded ? (
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -250,22 +295,27 @@ function RunCard({
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
         )}
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="truncate text-sm font-medium text-foreground">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <span className="truncate text-xs sm:text-sm font-medium text-foreground">
               {contactLabel}
             </span>
-            <Badge variant="outline" className={cn("gap-1", meta.classes)}>
+            <Badge
+              variant="outline"
+              className={cn("gap-1 text-[10px] shrink-0", meta.classes)}
+            >
               <StatusIcon className="h-3 w-3" />
               {meta.label}
             </Badge>
             {run.status === "active" && run.current_node_key && (
-              <code className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+              <code className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground shrink-0">
                 at {run.current_node_key}
               </code>
             )}
           </div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-            <span>{t("flows.started")} {format(new Date(run.started_at), "PP p")}</span>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] text-muted-foreground">
+            <span>
+              {t("flows.started")} {format(new Date(run.started_at), "PP p")}
+            </span>
             {run.reprompt_count > 0 && (
               <span>· {run.reprompt_count} {t("flows.reprompts")}</span>
             )}
@@ -273,19 +323,20 @@ function RunCard({
           </div>
         </div>
       </button>
+
       {expanded && (
-        <div className="border-t border-border px-4 py-3">
+        <div className="border-t border-border px-3 py-2.5 sm:px-4 sm:py-3 bg-muted/20">
           {Object.keys(run.vars).length > 0 && (
             <details className="mb-3">
-              <summary className="cursor-pointer text-xs text-muted-foreground">
+              <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground">
                 {t("flows.capturedVars")} ({Object.keys(run.vars).length})
               </summary>
-              <pre className="mt-2 overflow-x-auto rounded-md bg-background p-2 text-[11px] text-muted-foreground">
+              <pre className="mt-2 overflow-x-auto rounded-md bg-background p-2.5 text-[10px] sm:text-[11px] text-muted-foreground border border-border">
                 {JSON.stringify(run.vars, null, 2)}
               </pre>
             </details>
           )}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 sm:gap-1.5">
             {events.length === 0 ? (
               <p className="text-xs text-muted-foreground">
                 {t("flows.noEventsRecorded")}
@@ -301,34 +352,34 @@ function RunCard({
 }
 
 const EVENT_COLOR: Record<string, string> = {
-  started: "text-emerald-300",
+  started: "text-emerald-500 dark:text-emerald-400 font-semibold",
   node_entered: "text-muted-foreground",
-  message_sent: "text-sky-300",
-  reply_received: "text-primary",
-  fallback_fired: "text-amber-300",
-  handoff: "text-amber-300",
+  message_sent: "text-sky-600 dark:text-sky-300 font-medium",
+  reply_received: "text-primary font-medium",
+  fallback_fired: "text-amber-600 dark:text-amber-300 font-medium",
+  handoff: "text-amber-600 dark:text-amber-300 font-semibold",
   timeout: "text-muted-foreground",
-  error: "text-red-300",
-  completed: "text-emerald-300",
+  error: "text-red-600 dark:text-red-400 font-semibold",
+  completed: "text-emerald-500 dark:text-emerald-400 font-semibold",
 };
 
 function EventLine({ ev }: { ev: EventRow }) {
   const cls = EVENT_COLOR[ev.event_type] ?? "text-muted-foreground";
   return (
-    <div className="flex items-start gap-2 rounded-md px-2 py-1 text-xs">
-      <span className="w-32 shrink-0 text-[10px] text-muted-foreground">
+    <div className="flex flex-wrap sm:flex-nowrap items-start gap-1 sm:gap-2.5 rounded-md px-2 py-1 text-xs hover:bg-muted/50">
+      <span className="w-16 sm:w-20 shrink-0 text-[10px] text-muted-foreground font-mono">
         {format(new Date(ev.created_at), "HH:mm:ss")}
       </span>
-      <span className={cn("w-32 shrink-0 font-mono text-[10px]", cls)}>
+      <span className={cn("w-28 sm:w-32 shrink-0 font-mono text-[10px]", cls)}>
         {ev.event_type}
       </span>
       {ev.node_key && (
-        <code className="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground">
+        <code className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground font-mono">
           {ev.node_key}
         </code>
       )}
       {Object.keys(ev.payload).length > 0 && (
-        <span className="min-w-0 truncate text-[10px] text-muted-foreground">
+        <span className="w-full sm:w-auto min-w-0 truncate text-[10px] text-muted-foreground">
           {summarizePayload(ev.payload)}
         </span>
       )}
@@ -337,8 +388,6 @@ function EventLine({ ev }: { ev: EventRow }) {
 }
 
 function summarizePayload(payload: Record<string, unknown>): string {
-  // Show the keys that matter most to a human debugger; full JSON is
-  // available via the "Captured vars" details panel for the run.
   const keys = ["reply_id", "captured_key", "reason", "advancing_to"];
   for (const k of keys) {
     if (k in payload && payload[k] !== null && payload[k] !== undefined) {

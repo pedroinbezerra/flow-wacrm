@@ -32,14 +32,15 @@
 | 1 | Dashboard (Home) | `/dashboard` | [`01-home-dashboard.md`](01-home-dashboard.md) | Implementado (parcial) — ver nota de implementação no mapa |
 | 2 | Inbox | `/inbox` | [`02-inbox.md`](02-inbox.md) | Rascunho |
 | 3 | Boards | `/boards` | — | Pendente |
-| 4 | Contacts | `/contacts` | — | Pendente |
+| 4 | Contacts | `/contacts` | [`04-contacts.md`](04-contacts.md) | Implementado |
 | 5 | Pipelines | `/pipelines` | — | Pendente |
 | 6 | Broadcasts | `/broadcasts` | — | Pendente |
-| 7 | Automations | `/automations` | — | Pendente |
+| 7 | Automations | `/automations` | [`07-automations.md`](07-automations.md) | Rascunho |
 | 8 | Document Delivery | `/processes/document-delivery` | — | Pendente |
-| 9 | Flows | `/flows` | — | Pendente |
+| 9 | Flows | `/flows` | [`09-flows.md`](09-flows.md) | Implementado |
 | 10 | AI Assistant | `/ai-assistant` | — | Pendente |
-| — | FAQ / Settings (fora da navegação principal) | `/faq`, `/settings` | — | Pendente, avaliar por último |
+| 11 | Central de Ajuda & FAQ | `/faq` | [`11-faq.md`](11-faq.md) | Implementado |
+| — | Settings (fora da navegação principal) | `/settings` | — | Pendente, avaliar por último |
 
 Um mapa muda de "Rascunho" para "Aprovado" apenas por decisão explícita do
 responsável de produto. Nenhuma implementação começa a partir de um mapa em

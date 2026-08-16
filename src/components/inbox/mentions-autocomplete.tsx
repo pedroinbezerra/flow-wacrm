@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ContactAvatar } from "@/components/ui/contact-avatar";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types";
 
@@ -84,10 +84,11 @@ export function MentionsAutocomplete({
             }}
             className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-accent/60 transition-colors"
           >
-            <Avatar className="h-5 w-5">
-              <AvatarImage src={p.avatar_url} />
-              <AvatarFallback className="text-[9px]">{p.full_name?.charAt(0)}</AvatarFallback>
-            </Avatar>
+            <ContactAvatar
+              name={p.full_name}
+              avatarUrl={p.avatar_url}
+              size="xs"
+            />
             <span className="font-medium text-foreground truncate">{p.full_name}</span>
           </button>
         ))}

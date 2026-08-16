@@ -84,7 +84,7 @@ export default function DocumentDeliveryProcessesPage() {
             size="sm"
             onClick={handleEmergencyPauseAll}
             className="gap-2 text-xs font-semibold"
-            title="Pausa de emergência em 1 clique (FH-54.11)"
+            title="Pausa de emergência em 1 clique"
           >
             <PauseOctagon className="h-4 w-4" />
             Pausa de Emergência

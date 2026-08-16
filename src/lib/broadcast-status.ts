@@ -1,14 +1,9 @@
 /**
  * Shared status badge config for broadcasts + recipients.
  *
- * Previously `statusConfig` was defined inline in both
- * /broadcasts/page.tsx and /broadcasts/[id]/page.tsx with slight
- * drift risk. One source of truth now.
- *
- * Badge shape: bg-*-500/10 + text-*-400 + border-*-500/20. The
- * translucent fills sit fine on both light and dark surfaces; neutral
- * statuses use text-muted-foreground so the label stays legible in
- * light mode (a solid slate-400 would be too faint on white).
+ * One source of truth for broadcast and recipient status badges.
+ * Uses adaptive dual-theme classes (light: text-*-700, dark: text-*-300)
+ * to guarantee WCAG AA contrast ratio compliance on all backgrounds.
  */
 
 import type { BroadcastStatus, RecipientStatus } from "@/types";
@@ -26,51 +21,51 @@ export interface StatusDisplay {
 export const broadcastStatusConfig: Record<BroadcastStatus, StatusDisplay> = {
   draft: {
     label: "Rascunho",
-    classes: "bg-slate-500/10 text-muted-foreground border-slate-500/20",
+    classes: "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20",
   },
   scheduled: {
     label: "Agendada",
-    classes: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    classes: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20",
   },
   sending: {
     label: "Enviando",
-    classes: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+    classes: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20",
     pulse: true,
   },
   sent: {
     label: "Enviada",
-    classes: "bg-primary/10 text-primary border-primary/20",
+    classes: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
   },
   failed: {
     label: "Falha",
-    classes: "bg-red-500/10 text-red-400 border-red-500/20",
+    classes: "bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/20",
   },
 };
 
 export const recipientStatusConfig: Record<RecipientStatus, StatusDisplay> = {
   pending: {
     label: "Pendente",
-    classes: "bg-slate-500/10 text-muted-foreground border-slate-500/20",
+    classes: "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20",
   },
   sent: {
     label: "Enviada",
-    classes: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    classes: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20",
   },
   delivered: {
     label: "Entregue",
-    classes: "bg-primary/10 text-primary border-primary/20",
+    classes: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
   },
   read: {
     label: "Lida",
-    classes: "bg-primary/10 text-primary border-primary/20",
+    classes: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20",
   },
   replied: {
     label: "Respondida",
-    classes: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+    classes: "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20",
   },
   failed: {
     label: "Falha",
-    classes: "bg-red-500/10 text-red-400 border-red-500/20",
+    classes: "bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/20",
   },
 };
 
@@ -92,3 +87,4 @@ export function getRecipientStatus(status: string): StatusDisplay {
     recipientStatusConfig.pending
   );
 }
+

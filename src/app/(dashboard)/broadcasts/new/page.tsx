@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { useTranslation } from '@/hooks/use-translation';
@@ -23,6 +23,10 @@ const steps = [
 
 export default function NewBroadcastPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const cloneFromId = searchParams.get('cloneFrom');
+  const draftId = searchParams.get('draftId');
+
   const { accountId } = useAuth();
   const { t } = useTranslation();
   const { createAndSendBroadcast, isProcessing, progress } = useBroadcastSending();
@@ -44,6 +48,59 @@ export default function NewBroadcastPage() {
     Record<string, { type: 'static' | 'field' | 'custom_field'; value: string }>
   >({});
   const [name, setName] = useState('');
+
+  // Load clone or draft data on mount if present
+  useEffect(() => {
+    const targetId = cloneFromId || draftId;
+    if (!targetId) return;
+
+    async function loadTarget() {
+      try {
+        const supabase = createClient();
+        const { data: bc, error } = await supabase
+          .from('broadcasts')
+          .select('*')
+          .eq('id', targetId)
+          .single();
+
+        if (error || !bc) return;
+
+        setName(cloneFromId ? `${bc.name} (${t('broadcasts.clone')})` : bc.name);
+
+        if (bc.template_variables) {
+          setVariables(bc.template_variables as Record<string, { type: 'static' | 'field' | 'custom_field'; value: string }>);
+        }
+
+        if (bc.audience_filter) {
+          setAudience((prev) => ({
+            ...prev,
+            ...(bc.audience_filter as Partial<typeof prev>),
+          }));
+        }
+
+        // Fetch corresponding message template
+        if (bc.template_name) {
+          const { data: tmpl } = await supabase
+            .from('message_templates')
+            .select('*')
+            .eq('name', bc.template_name)
+            .maybeSingle();
+
+          if (tmpl) {
+            setTemplate(tmpl);
+          }
+        }
+
+        if (cloneFromId) {
+          toast.success(t('broadcasts.cloneSuccess'));
+        }
+      } catch (err) {
+        console.error('Failed to load clone/draft broadcast:', err);
+      }
+    }
+
+    void loadTarget();
+  }, [cloneFromId, draftId, t]);
 
   async function handleSend() {
     if (!template) return;

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Pipeline, PipelineStage, Deal } from "@/types";
+import type { Pipeline, PipelineStage, Deal, Profile } from "@/types";
 import { PipelineBoard } from "@/components/pipelines/pipeline-board";
 import { PipelineSettings } from "@/components/pipelines/pipeline-settings";
 import { DealForm } from "@/components/pipelines/deal-form";
@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GitBranch, Plus, ChevronDown, Settings } from "lucide-react";
+import { GitBranch, Plus, ChevronDown, Settings, Search, BarChart2, X, Filter } from "lucide-react";
 import { toast } from "sonner";
 import { useCan } from "@/hooks/use-can";
 import { useAuth } from "@/hooks/use-auth";
@@ -49,14 +49,24 @@ export default function PipelinesPage() {
   const supabase = createClient();
   const canEditSettings = useCan("edit-settings");
   const canCreateDeals = useCan("send-messages");
-  const { accountId } = useAuth();
+  const { accountId, user } = useAuth();
   const { t } = useTranslation();
 
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>("");
   const [stages, setStages] = useState<PipelineStage[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Search & Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [showAnalytics, setShowAnalytics] = useState(true);
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Dialog / sheet state
   const [newPipelineOpen, setNewPipelineOpen] = useState(false);
@@ -232,6 +242,22 @@ export default function PipelinesPage() {
     [supabase, refreshDeals, t],
   );
 
+  // Load team profiles for assignee filtering
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("full_name");
+      if (cancelled) return;
+      setProfiles((data ?? []) as Profile[]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase]);
+
   const handleAddDeal = useCallback(
     (stageId?: string) => {
       setEditingDeal(null);
@@ -239,6 +265,78 @@ export default function PipelinesPage() {
       setDealFormOpen(true);
     },
     [stages],
+  );
+
+  // Global Keyboard Shortcuts (/ for search, N for new deal)
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const tag = document.activeElement?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+      if (e.key === "/") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if ((e.key === "n" || e.key === "N") && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        if (canCreateDeals && selectedPipelineId && stages.length > 0) {
+          handleAddDeal();
+        }
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [canCreateDeals, selectedPipelineId, stages.length, handleAddDeal]);
+
+  // Compute filtered deals based on search term, assignee, and status
+  const filteredDeals = useMemo(() => {
+    let list = deals;
+
+    if (statusFilter !== "all") {
+      list = list.filter((d) => (d.status || "open") === statusFilter);
+    }
+
+    if (assigneeFilter === "me") {
+      if (user?.id) list = list.filter((d) => d.assigned_to === user.id);
+    } else if (assigneeFilter !== "all") {
+      list = list.filter((d) => d.assigned_to === assigneeFilter);
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter((d) => {
+        const titleMatch = d.title.toLowerCase().includes(q);
+        const contactNameMatch = d.contact?.name?.toLowerCase().includes(q);
+        const contactPhoneMatch = d.contact?.phone?.includes(q);
+        return titleMatch || contactNameMatch || contactPhoneMatch;
+      });
+    }
+
+    return list;
+  }, [deals, statusFilter, assigneeFilter, searchQuery, user?.id]);
+
+  const handleStatusChanged = useCallback(
+    async (dealId: string, newStatus: "won" | "lost" | "open") => {
+      setDeals((prev) =>
+        prev.map((d) => (d.id === dealId ? { ...d, status: newStatus } : d)),
+      );
+      const { error } = await supabase
+        .from("deals")
+        .update({ status: newStatus })
+        .eq("id", dealId);
+      if (error) {
+        toast.error(t("pipelines.failedUpdateStatus"));
+        refreshDeals();
+      } else {
+        const msg =
+          newStatus === "won"
+            ? t("pipelines.markedWon")
+            : newStatus === "lost"
+            ? t("pipelines.markedLost")
+            : t("pipelines.reopened");
+        toast.success(msg);
+      }
+    },
+    [supabase, refreshDeals, t],
   );
 
   const handleEditDeal = useCallback((deal: Deal) => {
@@ -313,25 +411,170 @@ export default function PipelinesPage() {
     );
   }
 
+  const activeFilterCount =
+    (searchQuery ? 1 : 0) +
+    (assigneeFilter !== "all" ? 1 : 0) +
+    (statusFilter !== "all" ? 1 : 0);
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div id="tour-pipelines-header" className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+      {/* Header Toolbar */}
+      <div id="tour-pipelines-header" className="flex items-center justify-between gap-3">
+        {/* Desktop Header Toolbar (>= md) */}
+        <div className="hidden md:flex flex-wrap items-center justify-between gap-3 w-full">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Pipeline selector dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors data-[popup-open]:bg-muted"
+              >
+                <GitBranch className="h-4 w-4 text-primary" />
+                <span className="font-semibold">
+                  {selectedPipeline?.name ?? t("pipelines.selectPipeline")}
+                </span>
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                className="w-64 border-border bg-popover text-popover-foreground"
+              >
+                {pipelines.length === 0 && (
+                  <DropdownMenuItem disabled className="text-muted-foreground">
+                    {t("pipelines.noPipelines")}
+                  </DropdownMenuItem>
+                )}
+                {pipelines.map((p) => (
+                  <DropdownMenuItem
+                    key={p.id}
+                    onClick={() => setSelectedPipelineId(p.id)}
+                    className={
+                      p.id === selectedPipelineId
+                        ? "text-primary"
+                        : "text-popover-foreground"
+                    }
+                  >
+                    <GitBranch className="mr-2 h-3.5 w-3.5" />
+                    {p.name}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator className="bg-border" />
+                {selectedPipeline && (
+                  <DropdownMenuItem
+                    onClick={() => setSettingsOpen(true)}
+                    className="text-popover-foreground"
+                  >
+                    <Settings className="mr-2 h-3.5 w-3.5" />
+                    {t("pipelines.managePipelines")}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Search input */}
+            <div className="relative min-w-[180px] flex-1 max-w-xs">
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                ref={searchInputRef}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t("pipelines.searchPlaceholder")}
+                className="h-9 border-border bg-card pl-8 pr-7 text-xs text-foreground placeholder:text-muted-foreground"
+              />
+              {searchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              ) : (
+                <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-border bg-muted px-1 py-0.5 text-[10px] font-mono text-muted-foreground">
+                  /
+                </kbd>
+              )}
+            </div>
+
+            {/* Assignee Filter */}
+            <select
+              value={assigneeFilter}
+              onChange={(e) => setAssigneeFilter(e.target.value)}
+              className="h-9 rounded-lg border border-border bg-card px-2.5 text-xs text-foreground outline-none focus:border-primary"
+            >
+              <option value="all">{t("pipelines.allAssignees")}</option>
+              <option value="me">{t("pipelines.myDeals")}</option>
+              {profiles.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.full_name || p.email}
+                </option>
+              ))}
+            </select>
+
+            {/* Status Filter */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-9 rounded-lg border border-border bg-card px-2.5 text-xs text-foreground outline-none focus:border-primary"
+            >
+              <option value="open">{t("pipelines.statusOpen")}</option>
+              <option value="all">{t("pipelines.allStatuses")}</option>
+              <option value="won">{t("pipelines.statusWon")}</option>
+              <option value="lost">{t("pipelines.statusLost")}</option>
+            </select>
+
+            {/* Toggle Analytics */}
+            <Button
+              variant={showAnalytics ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => setShowAnalytics((v) => !v)}
+              className="h-9 border-border text-xs gap-1.5"
+              title={t("pipelines.toggleAnalytics")}
+            >
+              <BarChart2 className="h-3.5 w-3.5" />
+              <span>{t("pipelines.toggleAnalytics")}</span>
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <GatedButton
+              variant="outline"
+              canAct={canEditSettings}
+              gateReason="create pipelines"
+              onClick={() => setNewPipelineOpen(true)}
+              className="border-border bg-card text-foreground hover:bg-muted"
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              {t("pipelines.addPipeline")}
+            </GatedButton>
+            <GatedButton
+              canAct={canCreateDeals}
+              gateReason="create deals"
+              disabled={!selectedPipelineId || stages.length === 0}
+              onClick={() => handleAddDeal()}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              {t("pipelines.addDeal")}
+            </GatedButton>
+          </div>
+        </div>
+
+        {/* Mobile Header Toolbar (< md) */}
+        <div className="flex md:hidden items-center justify-between gap-2 w-full">
           {/* Pipeline selector dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors data-[popup-open]:bg-muted"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground hover:bg-muted transition-colors truncate max-w-[150px]"
             >
-              <GitBranch className="h-4 w-4 text-primary" />
-              <span className="font-semibold">
+              <GitBranch className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span className="font-semibold truncate">
                 {selectedPipeline?.name ?? t("pipelines.selectPipeline")}
               </span>
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="start"
-              className="w-64 border-border bg-popover text-popover-foreground"
+              className="w-56 border-border bg-popover text-popover-foreground"
             >
               {pipelines.length === 0 && (
                 <DropdownMenuItem disabled className="text-muted-foreground">
@@ -364,31 +607,127 @@ export default function PipelinesPage() {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <GatedButton
-            variant="outline"
-            canAct={canEditSettings}
-            gateReason="create pipelines"
-            onClick={() => setNewPipelineOpen(true)}
-            className="border-border bg-card text-foreground hover:bg-muted"
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            {t("pipelines.addPipeline")}
-          </GatedButton>
-          <GatedButton
-            canAct={canCreateDeals}
-            gateReason="create deals"
-            disabled={!selectedPipelineId || stages.length === 0}
-            onClick={() => handleAddDeal()}
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            {t("pipelines.addDeal")}
-          </GatedButton>
+          <div className="flex items-center gap-1.5">
+            {/* Filter Trigger Button */}
+            <Button
+              variant={activeFilterCount > 0 ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => setMobileFilterOpen(true)}
+              className="h-8 px-2.5 text-xs gap-1 border-border relative"
+              aria-label={t("pipelines.mobileFiltersTitle")}
+            >
+              <Filter className="h-3.5 w-3.5" />
+              {activeFilterCount > 0 && (
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                  {activeFilterCount}
+                </span>
+              )}
+            </Button>
+
+            {/* Toggle Analytics */}
+            <Button
+              variant={showAnalytics ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => setShowAnalytics((v) => !v)}
+              className="h-8 px-2.5 border-border"
+              title={t("pipelines.toggleAnalytics")}
+            >
+              <BarChart2 className="h-3.5 w-3.5" />
+            </Button>
+
+            {/* Quick Add Deal Button */}
+            <GatedButton
+              canAct={canCreateDeals}
+              gateReason="create deals"
+              disabled={!selectedPipelineId || stages.length === 0}
+              onClick={() => handleAddDeal()}
+              size="sm"
+              className="h-8 px-2.5 bg-primary text-primary-foreground hover:bg-primary/90 text-xs gap-1"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>{t("pipelines.addDeal")}</span>
+            </GatedButton>
+          </div>
         </div>
       </div>
+
+      {/* Mobile Filter Modal */}
+      <Dialog open={mobileFilterOpen} onOpenChange={setMobileFilterOpen}>
+        <DialogContent className="sm:max-w-md bg-popover border-border">
+          <DialogHeader>
+            <DialogTitle className="text-popover-foreground">
+              {t("pipelines.mobileFiltersTitle")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid gap-2">
+              <Label className="text-muted-foreground">{t("common.search")}</Label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t("pipelines.searchPlaceholder")}
+                  className="border-border bg-muted pl-8 text-foreground"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label className="text-muted-foreground">{t("pipelines.filterAssignee")}</Label>
+              <select
+                value={assigneeFilter}
+                onChange={(e) => setAssigneeFilter(e.target.value)}
+                className="h-10 w-full rounded-lg border border-border bg-muted px-3 text-sm text-foreground outline-none focus:border-primary"
+              >
+                <option value="all">{t("pipelines.allAssignees")}</option>
+                <option value="me">{t("pipelines.myDeals")}</option>
+                {profiles.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.full_name || p.email}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label className="text-muted-foreground">{t("pipelines.filterStatus")}</Label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="h-10 w-full rounded-lg border border-border bg-muted px-3 text-sm text-foreground outline-none focus:border-primary"
+              >
+                <option value="open">{t("pipelines.statusOpen")}</option>
+                <option value="all">{t("pipelines.allStatuses")}</option>
+                <option value="won">{t("pipelines.statusWon")}</option>
+                <option value="lost">{t("pipelines.statusLost")}</option>
+              </select>
+            </div>
+          </div>
+          <DialogFooter className="flex items-center justify-between border-border bg-popover/50">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearchQuery("");
+                setAssigneeFilter("all");
+                setStatusFilter("all");
+              }}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              {t("pipelines.clearFilters")}
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setMobileFilterOpen(false)}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {t("common.close")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Board */}
       {pipelines.length === 0 ? (
@@ -412,12 +751,13 @@ export default function PipelinesPage() {
         </div>
       ) : (
         <>
-          <PipelineAnalytics stages={stages} deals={deals} />
+          {showAnalytics && <PipelineAnalytics stages={stages} deals={deals} />}
           <div id="tour-pipelines-stages">
             <PipelineBoard
               stages={stages}
-              deals={deals}
+              deals={filteredDeals}
               onDealMoved={handleDealMoved}
+              onStatusChanged={handleStatusChanged}
               onAddDeal={handleAddDeal}
               onEditDeal={handleEditDeal}
             />

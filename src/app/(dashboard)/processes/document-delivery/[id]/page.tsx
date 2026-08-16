@@ -166,7 +166,7 @@ export default function DocumentDeliveryProcessDetailPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-emerald-500" />
-            Trilha de Auditoria & Histórico de Execução (FH-11.06 / FH-53.10)
+            Trilha de Auditoria & Histórico de Execução
           </h2>
           <Button variant="outline" size="sm" onClick={fetchDetailAndLogs} className="gap-1.5 text-xs">
             <RefreshCw className="h-3.5 w-3.5" />

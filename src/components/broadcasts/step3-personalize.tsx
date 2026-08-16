@@ -133,6 +133,34 @@ export function Step3Personalize({
     return missing;
   }, [placeholders, variables]);
 
+  // Intelligent Auto-Mapping for placeholders
+  useEffect(() => {
+    if (placeholders.length === 0) return;
+    let changed = false;
+    const nextVars = { ...variables };
+
+    const defaultFields: Record<string, string> = {
+      '1': 'name',
+      '2': 'company',
+      '3': 'email',
+      '4': 'phone',
+    };
+
+    for (const p of placeholders) {
+      const key = p.replace(/^\{\{|\}\}$/g, '');
+      if (!nextVars[key] || !nextVars[key].value?.trim()) {
+        const suggestedField = defaultFields[key] || 'name';
+        nextVars[key] = { type: 'field', value: suggestedField };
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      onUpdate(nextVars);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [placeholders]);
+
   function updateVariable(key: string, patch: Partial<VariableMapping>) {
     const current = variables[key] ?? { type: 'static' as VariableType, value: '' };
     onUpdate({
@@ -312,8 +340,7 @@ export function Step3Personalize({
         </div>
       )}
 
-      {/* Live Preview — rendered as a WhatsApp-style bubble so the user
-          sees approximately what the recipient will see. */}
+      {/* Live Preview — adaptive WhatsApp-style bubble for both themes */}
       <div className="rounded-xl border border-border bg-card/50 p-4">
         <div className="mb-3 flex items-center gap-2">
           <Eye className="h-4 w-4 text-primary" />
@@ -323,9 +350,9 @@ export function Step3Personalize({
             <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
           )}
         </div>
-        <div className="rounded-lg bg-[#0e1a12] p-3">
-          <div className="ml-auto max-w-[85%] rounded-lg bg-primary/30 px-3 py-2 shadow-sm">
-            <p className="whitespace-pre-wrap text-sm text-primary">
+        <div className="rounded-lg bg-emerald-500/10 dark:bg-[#0e1a12] p-3 border border-emerald-500/20">
+          <div className="ml-auto max-w-[85%] rounded-lg bg-emerald-100 dark:bg-emerald-900/60 border border-emerald-300/50 dark:border-emerald-700/50 px-3 py-2 shadow-sm">
+            <p className="whitespace-pre-wrap text-sm text-emerald-950 dark:text-emerald-50">
               {previewText}
             </p>
           </div>

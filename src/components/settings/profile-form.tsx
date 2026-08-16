@@ -10,11 +10,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@/components/ui/avatar';
+import { ContactAvatar } from '@/components/ui/contact-avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { SettingsPanelHead } from './settings-panel-head';
 
@@ -78,9 +74,6 @@ export function ProfileForm() {
   const currentAvatar =
     previewUrl ?? (!removeAvatar ? profile?.avatar_url ?? null : null);
 
-  const initial = (fullName || profile?.full_name || profile?.email || 'U')
-    .charAt(0)
-    .toUpperCase();
 
   const onPickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -255,14 +248,11 @@ export function ProfileForm() {
           <CardContent className="space-y-6">
           {/* Avatar row */}
           <div className="flex flex-wrap items-center gap-5">
-            <Avatar size="lg" className="size-16">
-              {currentAvatar ? (
-                <AvatarImage src={currentAvatar} alt={fullName || 'Avatar'} />
-              ) : null}
-              <AvatarFallback className="bg-primary/10 text-base text-primary">
-                {initial}
-              </AvatarFallback>
-            </Avatar>
+            <ContactAvatar
+              name={fullName || profile?.email}
+              avatarUrl={currentAvatar}
+              size="2xl"
+            />
 
             <div className="flex flex-wrap gap-2">
               <input

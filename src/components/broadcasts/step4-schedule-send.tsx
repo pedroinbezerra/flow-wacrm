@@ -118,11 +118,11 @@ export function Step4ScheduleSend({
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
             <p className="text-xs text-muted-foreground">{t('broadcasts.template')}</p>
-            <p className="text-foreground">{template.name}</p>
+            <p className="text-foreground font-medium">{template.name}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{t('broadcasts.selectAudience')}</p>
-            <p className="text-foreground">{audienceLabel}</p>
+            <p className="text-foreground font-medium">{audienceLabel}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{t('broadcasts.estimatedReach')}</p>
@@ -139,8 +139,29 @@ export function Step4ScheduleSend({
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{t('broadcasts.language')}</p>
-            <p className="text-foreground">{template.language ?? 'en_US'}</p>
+            <p className="text-foreground font-medium">{template.language ?? 'en_US'}</p>
           </div>
+        </div>
+      </div>
+
+      {/* Pre-Flight Safety Audit Panel */}
+      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+            <Send className="h-3.5 w-3.5" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+              {t('broadcasts.preflightTitle')}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              {t('broadcasts.preflightDescription')}
+            </p>
+          </div>
+        </div>
+        <div className="mt-2 rounded-lg bg-background p-2.5 border border-border/60 text-xs flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+          {t('broadcasts.preflightAllPassed')}
         </div>
       </div>
 

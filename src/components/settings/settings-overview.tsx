@@ -9,7 +9,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import { useTheme } from '@/hooks/use-theme';
 import { THEMES } from '@/lib/themes';
 import { CURRENCIES } from '@/lib/currency';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ContactAvatar } from '@/components/ui/contact-avatar';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -140,7 +140,6 @@ export function SettingsOverview({
   }, [user, accountId, canManageMembers]);
 
   const displayName = profile?.full_name || profile?.email || 'Your account';
-  const initial = (profile?.full_name || profile?.email || 'U').charAt(0).toUpperCase();
   const roleMeta = accountRole ? ROLE_META[accountRole] : null;
   const RoleIcon = roleMeta?.icon;
 
@@ -223,14 +222,11 @@ export function SettingsOverview({
     <section className="animate-in fade-in-50 duration-200">
       {/* Identity */}
       <Card className="flex-row items-center gap-4 px-5 py-5">
-        <Avatar size="lg" className="size-14">
-          {profile?.avatar_url ? (
-            <AvatarImage src={profile.avatar_url} alt={displayName} />
-          ) : null}
-          <AvatarFallback className="bg-primary/10 text-xl text-primary">
-            {initial}
-          </AvatarFallback>
-        </Avatar>
+        <ContactAvatar
+          name={displayName}
+          avatarUrl={profile?.avatar_url}
+          size="2xl"
+        />
         <div className="min-w-0 flex-1">
           <div className="truncate text-base font-semibold text-foreground">
             {displayName}
