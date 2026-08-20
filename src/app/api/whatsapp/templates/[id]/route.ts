@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/whatsapp/encryption'
+import { TEMPLATE_MISSING_STATUS } from '@/lib/whatsapp/template-availability'
+import { tApiError } from '@/lib/i18n/api-errors'
 import {
   deleteMessageTemplate,
   editMessageTemplate,
@@ -102,18 +104,30 @@ export async function PATCH(
 
     if (!existing.meta_template_id) {
       return NextResponse.json(
-        {
-          error:
-            'This template was never submitted to Meta — use New Template to submit it instead.',
-        },
+        { error: tApiError(request, 'whatsapp.templateNeverSubmitted') },
         { status: 400 },
       )
     }
 
     if (!EDITABLE_STATUSES.has(existing.status)) {
+      // Editar altera o que existe na Meta. Cada motivo de "nao da para
+      // editar" leva a um caminho diferente, entao a resposta diz qual e
+      // — devolver o nome do estado interno ("status MISSING") obriga a
+      // pessoa a adivinhar o proximo passo.
+      const editBlockKey =
+        existing.status === TEMPLATE_MISSING_STATUS
+          ? 'whatsapp.templateMissingCannotEdit'
+          : existing.status === 'PENDING' || existing.status === 'IN_APPEAL'
+            ? 'whatsapp.templateUnderReviewCannotEdit'
+            : 'whatsapp.templateTerminalCannotEdit'
+
       return NextResponse.json(
         {
-          error: `Templates in status ${existing.status} cannot be edited. Allowed: APPROVED, REJECTED, PAUSED.`,
+          error: tApiError(request, editBlockKey),
+          // O cliente usa isto para mandar o reenvio pela rota de
+          // criacao em vez de insistir na edicao.
+          template_unavailable:
+            existing.status === TEMPLATE_MISSING_STATUS ? 'missing' : undefined,
         },
         { status: 400 },
       )
@@ -279,7 +293,7 @@ export async function DELETE(
 
     const { data: existing, error: lookupErr } = await supabase
       .from('message_templates')
-      .select('id, name, meta_template_id')
+      .select('id, name, meta_template_id, status, waba_id')
       .eq('id', id)
       .eq('account_id', accountId)
       .maybeSingle()
@@ -291,12 +305,25 @@ export async function DELETE(
     const hasMetaId = typeof existing.meta_template_id === 'string' && existing.meta_template_id.trim() !== ''
     const isValidMetaId = hasMetaId && existing.meta_template_id.startsWith('m_')
 
-    if (isValidMetaId && !isDryRun()) {
-      const { data: config, error: configError } = await supabase
+    // Modelo ja reconciliado como ausente nao tem o que apagar na Meta.
+    // Tentar mesmo assim devolvia 502 e prendia a pessoa com uma linha
+    // que ela nao consegue nem usar nem remover.
+    const existsAtMeta = existing.status !== TEMPLATE_MISSING_STATUS
+
+    if (isValidMetaId && existsAtMeta && !isDryRun()) {
+      // A exclusao acontece na WABA que hospeda o modelo, nao na conexao
+      // principal do momento: com mais de um numero, apagar pelo padrao
+      // erraria de catalogo.
+      const { data: configs, error: configError } = await supabase
         .from('whatsapp_config')
         .select('*')
         .eq('account_id', accountId)
-        .single()
+        .order('is_default', { ascending: false })
+
+      const config = existing.waba_id
+        ? configs?.find((c) => c.waba_id === existing.waba_id)
+        : configs?.find((c) => c.waba_id)
+
       if (configError || !config || !config.waba_id) {
         return NextResponse.json(
           { error: 'WhatsApp not configured — cannot delete on Meta.' },

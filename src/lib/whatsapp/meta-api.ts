@@ -9,8 +9,10 @@
  * instead of a runtime rejection from Meta.
  */
 
-const META_API_VERSION = 'v21.0'
-const META_API_BASE = `https://graph.facebook.com/${META_API_VERSION}`
+import { META_API_BASE, META_API_VERSION } from './api-version'
+import { recordMetaUsage } from '@/lib/meta-platform/app-usage'
+
+export { META_API_BASE, META_API_VERSION }
 
 export interface MetaSendResult {
   messageId: string
@@ -55,6 +57,9 @@ interface MetaErrorResponse {
 }
 
 async function throwMetaError(response: Response, fallback: string): Promise<never> {
+  // Toda falha da Meta passa por aqui — é o ponto mais barato para
+  // registrar quota, e é exatamente quando ela costuma importar.
+  void recordMetaUsage(response.headers, 'meta-api:error')
   let message = fallback
   try {
     const data = (await response.json()) as MetaErrorResponse
@@ -366,6 +371,44 @@ export async function registerPhoneNumber(
   throw new Error(message)
 }
 
+export interface SetTwoStepPinArgs {
+  phoneNumberId: string
+  accessToken: string
+  /** Novo PIN de 6 dígitos. */
+  pin: string
+}
+
+/**
+ * Define (ou substitui) o PIN de verificação em duas etapas do número.
+ *
+ * A Meta não expõe leitura do PIN em lugar nenhum — nem por API, nem no
+ * Gerenciador do WhatsApp. Em compensação, gravar um novo NÃO exige o
+ * anterior: o token da conta basta. É isso que permite reativar um número
+ * sem pedir ao usuário um segredo que ele não tem como consultar.
+ *
+ * Duas consequências que o chamador precisa respeitar:
+ *   * Escrever aqui INVALIDA o PIN que o cliente tinha. Se ele usa o mesmo
+ *     número em outra ferramenta, aquela ferramenta perde a reativação.
+ *     Por isso esta chamada só acontece a pedido explícito, nunca junto de
+ *     um salvar comum.
+ *   * Não existe endpoint para desligar a verificação em duas etapas. Uma
+ *     vez ligada, fica ligada.
+ */
+export async function setTwoStepPin(args: SetTwoStepPinArgs): Promise<void> {
+  const { phoneNumberId, accessToken, pin } = args
+  const response = await fetch(`${META_API_BASE}/${phoneNumberId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ pin }),
+  })
+  if (!response.ok) {
+    await throwMetaError(response, `Meta API error: ${response.status}`)
+  }
+}
+
 export interface SubscribeWabaToAppArgs {
   wabaId: string
   accessToken: string
@@ -463,6 +506,7 @@ export async function sendTextMessage(
     },
     body: JSON.stringify(body),
   })
+  void recordMetaUsage(response.headers, 'sendTextMessage')
   if (!response.ok) {
     await throwMetaError(response, `Meta API error: ${response.status}`)
   }
@@ -666,6 +710,7 @@ export async function sendTemplateMessage(
     },
     body: JSON.stringify(body),
   })
+  void recordMetaUsage(response.headers, 'sendTemplateMessage')
   if (!response.ok) {
     await throwMetaError(response, `Meta API error: ${response.status}`)
   }

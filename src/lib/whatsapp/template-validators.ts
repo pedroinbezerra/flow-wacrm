@@ -6,7 +6,8 @@
  *
  * Every validator throws `Error(message)` — callers catch and surface
  * to the UI. Caps follow Meta's published limits for the Cloud API
- * template surface (v21.0):
+ * template surface, reconferidos contra a documentação da v25.0 em
+ * 20/08/2026 — todos os limites abaixo seguem valendo:
  *   https://developers.facebook.com/docs/whatsapp/business-management-api/message-templates
  *
  * Per-element button validation lives here rather than as a JSONB CHECK

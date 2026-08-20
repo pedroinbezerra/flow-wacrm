@@ -318,6 +318,7 @@
     "adminAnalytics": "Inteligência Comercial",
     "adminConsumption": "Telemetria & Consumo",
     "adminOnboarding": "Inteligência & Onboarding",
+    "adminMetaPlatform": "Saúde da Plataforma Meta",
     "aiConfig": "Configuração de IA",
     "faq": "Central de Ajuda & FAQ",
     "liveSupport": "Ajuda",
@@ -1885,8 +1886,15 @@
       "registerNumber": "Registrar número",
       "twoStepPin": "PIN de verificação em duas etapas",
       "optional": "(opcional)",
-      "pinPlaceholder": "PIN de 6 dígitos do Meta WhatsApp Manager",
-      "pinHelp": "O PIN de seis dígitos da verificação em duas etapas da conta, definido no Gerenciador do WhatsApp em Configurações → Verificação em duas etapas. Ele reativa o número quando o registro cai — na conexão em um clique você normalmente nunca precisa dele.",
+      "pinPlaceholder": "PIN de 6 dígitos",
+      "pinHelp": "Use este campo apenas se você já tem um PIN definido e quer mantê-lo. Sem ele, a reativação define um PIN novo automaticamente.",
+      "reactivateNumber": "Reativar número",
+      "reactivateDescription": "Este número saiu do ar e precisa ser reativado. Podemos cuidar disso agora — leva alguns segundos e não há nada para você procurar.",
+      "reactivateRenewsPin": "Reativar define um PIN novo de duas etapas para este número. Se ele também estiver conectado em outra ferramenta, aquela ferramenta vai precisar do PIN novo.",
+      "useOwnPin": "Prefiro informar meu próprio PIN",
+      "pinRenewedTitle": "Anote o PIN novo",
+      "pinRenewedBody": "O PIN de duas etapas deste número passou a ser {pin}. Ele não fica guardado aqui e não será exibido de novo — anote se você usa este número em outro lugar. Se perder, é só reativar de novo.",
+      "pinRenewedButRegistrationFailed": "O PIN de duas etapas foi trocado, mas a reativação não concluiu. Anote mesmo assim: o PIN anterior não vale mais.",
       "webhookTitle": "Configuração do webhook",
       "webhookDescription": "Use esta URL como callback do webhook no Meta App Dashboard.",
       "webhookUrlLabel": "URL de callback do webhook",
@@ -1959,7 +1967,10 @@
         "deleteMetaAndLocalAria": "Excluir modelo na Meta e localmente",
         "deleteLocalAria": "Excluir modelo localmente",
         "deleteMetaAndLocalTitle": "Excluir na Meta e localmente",
-        "deleteLocalTitle": "Excluir localmente"
+        "deleteLocalTitle": "Excluir localmente",
+        "missingTitle": "Este modelo não existe mais na conta de WhatsApp deste número.",
+        "missingExplanation": "Modelo não acompanha troca de número. Para voltar a usar, envie para aprovação de novo — ou remova daqui.",
+        "missingSince": "Detectado em {date}."
       },
       "toasts": {
         "failedLoadTemplates": "Falha ao carregar modelos",
@@ -1986,7 +1997,11 @@
         "headerImageTypeInvalid": "A imagem do cabeçalho deve ser JPEG ou PNG.",
         "headerImageTooLarge": "A imagem tem {size} MB e o limite da Meta é 5 MB.",
         "imageUploaded": "Imagem enviada.",
-        "uploadFailed": "Falha no upload."
+        "uploadFailed": "Falha no upload.",
+        "syncedMissing": " · {count} deixaram de existir na Meta",
+        "syncPartial": "Sincronização incompleta: {count} conexão(ões) não puderam ser lidas. Os modelos delas ficaram como estavam.",
+        "syncNothingChanged": "Nada mudou desde a última sincronização.",
+        "recreatedOnCurrentNumber": "Modelo reenviado para aprovação no número conectado agora. A Meta costuma revisar em até 24 horas."
       },
       "deleteDialog": {
         "title": "Excluir modelo?",
@@ -2003,7 +2018,8 @@
         "paused": "Pausado",
         "disabled": "Desabilitado",
         "inAppeal": "Em recurso",
-        "pendingDeletion": "Exclusão pendente"
+        "pendingDeletion": "Exclusão pendente",
+        "missing": "Indisponível"
       },
       "dialog": {
         "newTitle": "Novo modelo de mensagem",
@@ -2073,7 +2089,9 @@
         "saving": "Salvando...",
         "submitting": "Enviando...",
         "saveAndResubmit": "Salvar e reenviar",
-        "submitForApproval": "Enviar para aprovação"
+        "submitForApproval": "Enviar para aprovação",
+        "recreateTitle": "Reenviar modelo para aprovação",
+        "recreateDescription": "Este modelo não existe mais na conta de WhatsApp deste número. Reenviar cria ele no número conectado agora, e a Meta revisa como se fosse novo. Nome e idioma continuam os mesmos."
       }
     }
   },
@@ -2171,7 +2189,6 @@
         "sidebarTitle": "Painel do Cliente & Linha do Tempo 👤",
         "sidebarDesc": "Veja dados do cliente, tags do CRM e inspecione todos os eventos da Linha do Tempo com linguagem natural."
       },
-
       "contacts": {
         "headerTitle": "Gestão de Contatos 👥",
         "headerDesc": "Centralize a lista de clientes e prospects da sua empresa.",

@@ -140,6 +140,11 @@ export function TemplateManager() {
   // submit handler from POST /submit to PATCH /[id] and changes the
   // dialog title + CTA. Set to the template id to pre-fill from a row.
   const [editingId, setEditingId] = useState<string | null>(null);
+  // Um modelo indisponivel nao existe mais na Meta: nao ha o que editar,
+  // so o que recriar. O formulario e o mesmo — muda a rota de destino,
+  // que passa a ser a de criacao. Sem isto, o reenvio batia no PATCH e
+  // voltava recusado por causa do proprio estado que motivou o reenvio.
+  const [recreating, setRecreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   // Template selected for the confirm-delete dialog. The destructive
   // action goes through this two-step so a slip on the trash icon
@@ -203,8 +208,14 @@ export function TemplateManager() {
     if (statusKey === 'PENDING_DELETION') {
       return t('settings.templates.status.pendingDeletion');
     }
+    if (statusKey === 'MISSING') return t('settings.templates.status.missing');
     return fallback;
   }
+
+  // Editar altera o que ja existe na Meta; recriar manda um modelo novo.
+  // Nome e idioma seguem travados nos dois casos — sao a chave da linha,
+  // e trocar um deles deixaria o modelo indisponivel para tras.
+  const isEditing = editingId !== null && !recreating;
 
   // Resize body_samples so it always has exactly bodyVarCount entries.
   // (We mutate via setForm in an effect so React owns the state.)
@@ -275,6 +286,7 @@ export function TemplateManager() {
 
   function openEdit(template: MessageTemplate) {
     setEditingId(template.id);
+    setRecreating(template.status === 'MISSING');
     setForm({
       name: template.name,
       category: template.category,
@@ -293,6 +305,7 @@ export function TemplateManager() {
 
   function openCreate() {
     setEditingId(null);
+    setRecreating(false);
     setForm(emptyForm);
     setDialogOpen(true);
   }
@@ -303,7 +316,10 @@ export function TemplateManager() {
     if (form.category === 'Authentication') return;
     try {
       setSubmitting(true);
-      const isEdit = editingId !== null;
+      // Recriar percorre a rota de criacao mesmo tendo vindo de uma
+      // linha existente: o upsert por (nome, idioma) reaproveita a mesma
+      // linha e a religa ao numero conectado agora.
+      const isEdit = editingId !== null && !recreating;
       const url = isEdit
         ? `/api/whatsapp/templates/${editingId}`
         : '/api/whatsapp/templates/submit';
@@ -334,11 +350,14 @@ export function TemplateManager() {
             : t('settings.templates.toasts.dryRunSaved')
           : isEdit
             ? t('settings.templates.toasts.editSubmitted')
-            : t('settings.templates.toasts.submittedToMeta'),
+            : recreating
+              ? t('settings.templates.toasts.recreatedOnCurrentNumber')
+              : t('settings.templates.toasts.submittedToMeta'),
       );
       setDialogOpen(false);
       setForm(emptyForm);
       setEditingId(null);
+      setRecreating(false);
     } catch (err) {
       console.error('Submit error:', err);
       toast.error(
@@ -365,18 +384,46 @@ export function TemplateManager() {
             }),
         );
       }
-      toast.success(
+      // O relatorio precisa incluir o que DEIXOU de existir. Antes ele
+      // so contava o que a Meta devolveu, entao uma sincronizacao com
+      // zero modelos era anunciada como sucesso enquanto o catalogo
+      // local seguia exibindo "Aprovado" para modelo nenhum.
+      const missing = Number(data.missing ?? 0);
+      const summary =
         t('settings.templates.toasts.syncedFromMeta', {
           total: data.total,
           plural: data.total === 1 ? '' : 's',
         }) +
-          (data.inserted || data.updated
-            ? t('settings.templates.toasts.syncedBreakdown', {
-                inserted: data.inserted,
-                updated: data.updated,
-              })
-            : ''),
-      );
+        (data.inserted || data.updated
+          ? t('settings.templates.toasts.syncedBreakdown', {
+              inserted: data.inserted,
+              updated: data.updated,
+            })
+          : '') +
+        (missing > 0
+          ? t('settings.templates.toasts.syncedMissing', { count: missing })
+          : '');
+
+      if (missing > 0) {
+        // Modelo que sumiu quebra transmissao e automacao que apontam
+        // para ele: fica na tela tempo de ler, nao de piscar.
+        toast.error(summary, { duration: 10000 });
+      } else if (!data.inserted && !data.updated && data.total === 0) {
+        toast.success(t('settings.templates.toasts.syncNothingChanged'));
+      } else {
+        toast.success(summary);
+      }
+
+      // Conexao que nao pode ser lida deixa o resultado parcial — dizer
+      // "sincronizado" sobre ela seria afirmar o que nao se observou.
+      if (Array.isArray(data.fetch_failures) && data.fetch_failures.length > 0) {
+        toast.error(
+          t('settings.templates.toasts.syncPartial', {
+            count: data.fetch_failures.length,
+          }),
+          { duration: 10000 },
+        );
+      }
       if (Array.isArray(data.errors) && data.errors.length > 0) {
         const preview = data.errors.slice(0, 3).map(
           (e: { name: string; language: string; message: string }) =>
@@ -657,6 +704,29 @@ export function TemplateManager() {
                         {template.footer_text}
                       </p>
                     )}
+                    {statusKey === 'MISSING' && (
+                      // O catalogo tem que dizer por que este modelo
+                      // parou de servir, e no lugar onde a pessoa o
+                      // encontra — descobrir isso no envio foi o
+                      // problema que esta tela deixou passar.
+                      <div className="flex items-start gap-1.5 text-xs text-red-400 bg-red-950/20 border border-red-900/40 rounded px-2 py-1.5">
+                        <AlertCircle className="size-3.5 mt-0.5 shrink-0" />
+                        <span>
+                          {t('settings.templates.manager.missingTitle')}{' '}
+                          {t('settings.templates.manager.missingExplanation')}
+                          {template.missing_since && (
+                            <>
+                              {' '}
+                              {t('settings.templates.manager.missingSince', {
+                                date: new Date(
+                                  template.missing_since,
+                                ).toLocaleDateString(),
+                              })}
+                            </>
+                          )}
+                        </span>
+                      </div>
+                    )}
                     {(template.rejection_reason || template.submission_error) && (
                       <div className="flex items-start gap-1.5 text-xs text-red-400 bg-red-950/20 border border-red-900/40 rounded px-2 py-1.5">
                         <AlertCircle className="size-3.5 mt-0.5 shrink-0" />
@@ -680,7 +750,9 @@ export function TemplateManager() {
                         {t('settings.templates.manager.edit')}
                       </Button>
                     )}
-                    {(statusKey === 'REJECTED' || statusKey === 'PAUSED') && (
+                    {(statusKey === 'REJECTED' ||
+                      statusKey === 'PAUSED' ||
+                      statusKey === 'MISSING') && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -737,14 +809,18 @@ export function TemplateManager() {
         <DialogContent className="bg-popover border-border sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-popover-foreground">
-              {editingId
+              {isEditing
                 ? t('settings.templates.dialog.editTitle')
-                : t('settings.templates.dialog.newTitle')}
+                : recreating
+                  ? t('settings.templates.dialog.recreateTitle')
+                  : t('settings.templates.dialog.newTitle')}
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              {editingId
+              {isEditing
                 ? t('settings.templates.dialog.editDescription')
-                : t('settings.templates.dialog.newDescription')}
+                : recreating
+                  ? t('settings.templates.dialog.recreateDescription')
+                  : t('settings.templates.dialog.newDescription')}
             </DialogDescription>
           </DialogHeader>
 
@@ -1214,11 +1290,11 @@ export function TemplateManager() {
               {submitting ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
-                  {editingId
+                  {isEditing
                     ? t('settings.templates.dialog.saving')
                     : t('settings.templates.dialog.submitting')}
                 </>
-              ) : editingId ? (
+              ) : isEditing ? (
                 t('settings.templates.dialog.saveAndResubmit')
               ) : (
                 t('settings.templates.dialog.submitForApproval')

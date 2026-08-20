@@ -382,7 +382,12 @@ export type MessageTemplateStatus =
   | 'PAUSED'
   | 'DISABLED'
   | 'IN_APPEAL'
-  | 'PENDING_DELETION';
+  | 'PENDING_DELETION'
+  // Estado local, nunca vindo da Meta: a linha tinha contrapartida
+  // remota e a Meta nao a lista mais na WABA de origem. Escrito pela
+  // reconciliacao (sincronizacao, desconexao de numero, auto-correcao
+  // no envio). Ver src/lib/whatsapp/template-availability.ts.
+  | 'MISSING';
 
 export type TemplateButton =
   | { type: 'QUICK_REPLY'; text: string }
@@ -411,6 +416,13 @@ export interface MessageTemplate {
   sample_values?: TemplateSampleValues;
   status?: MessageTemplateStatus;
   meta_template_id?: string;
+  /**
+   * WABA que hospeda o modelo na Meta. NULL/undefined = origem nao
+   * verificada (linha anterior a migracao 068). Nunca tratar ausencia
+   * como "pertence a conexao atual".
+   */
+  waba_id?: string | null;
+  missing_since?: string | null;
   rejection_reason?: string;
   quality_score?: 'GREEN' | 'YELLOW' | 'RED';
   submission_error?: string;

@@ -5,6 +5,8 @@ import { sendTemplateMessage } from '@/lib/whatsapp/meta-api'
 import { decrypt } from '@/lib/whatsapp/encryption'
 import type { SendTimeParams } from '@/lib/whatsapp/template-send-builder'
 import { isMessageTemplate } from '@/lib/whatsapp/template-row-guard'
+import { evaluateTemplateAvailability } from '@/lib/whatsapp/template-availability'
+import { tApiError } from '@/lib/i18n/api-errors'
 import {
   sanitizePhoneForMeta,
   isValidE164,
@@ -182,6 +184,28 @@ export async function POST(request: Request) {
       )
     }
     const templateRow = rawTemplateRow ?? null
+
+    // Modelo indisponivel derruba a transmissao inteira, um destinatario
+    // por vez, com o mesmo erro. Verificar antes de comecar evita gastar
+    // a janela de envio para descobrir no fim que nao havia o que mandar.
+    const availability = evaluateTemplateAvailability({
+      template: templateRow,
+      activeWabaId: config.waba_id as string | null,
+    })
+    if (!availability.sendable) {
+      return NextResponse.json(
+        {
+          error: tApiError(
+            request,
+            availability.reason === 'foreign_waba'
+              ? 'whatsapp.templateFromAnotherNumber'
+              : 'whatsapp.templateMissingAtMeta',
+          ),
+          template_unavailable: availability.reason,
+        },
+        { status: 409 },
+      )
+    }
 
     // Load opted-out contacts for this account to prevent sending campaigns to them
     const { data: optOutContacts } = await supabase

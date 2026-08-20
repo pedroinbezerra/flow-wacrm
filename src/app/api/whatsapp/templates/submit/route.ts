@@ -25,6 +25,12 @@ function buildUpsertRow(
     status: 'DRAFT' | string
     metaTemplateId: string | null
     submissionError: string | null
+    /**
+     * WABA que passou a hospedar o modelo. Null enquanto o envio a Meta
+     * nao aconteceu (dry-run, falha) — origem so se afirma quando ha
+     * contrapartida real. Ver migracao 068.
+     */
+    wabaId?: string | null
   },
 ) {
   return {
@@ -49,6 +55,10 @@ function buildUpsertRow(
     sample_values: payload.sample_values ?? null,
     status: extras.status,
     meta_template_id: extras.metaTemplateId,
+    waba_id: extras.wabaId ?? null,
+    // Reenviar um modelo que a reconciliacao havia marcado como ausente
+    // o traz de volta; a data de ausencia deixa de valer.
+    missing_since: null,
     submission_error: extras.submissionError,
     // Clear stale rejection_reason whenever we re-submit; the
     // webhook will set it again if Meta still rejects.
@@ -145,16 +155,25 @@ export async function POST(request: Request) {
 
     let metaTemplateId: string
     let metaStatus: string
+    // WABA que passou a hospedar o modelo. So e afirmada quando a Meta
+    // aceitou a criacao — em dry-run nao ha contrapartida a declarar.
+    let submittedWabaId: string | null = null
 
     if (dryRun) {
       metaTemplateId = `dry-run-${crypto.randomUUID()}`
       metaStatus = 'PENDING'
     } else {
+      // Conexao principal da conta. `.single()` estourava quando a conta
+      // tinha mais de um numero — e, sem ordenacao, qual numero receberia
+      // o modelo era indeterminado. O modelo nasce na WABA da conexao
+      // principal, e o carimbo abaixo registra qual foi.
       const { data: config, error: configError } = await supabase
         .from('whatsapp_config')
         .select('*')
         .eq('account_id', accountId)
-        .single()
+        .order('is_default', { ascending: false })
+        .limit(1)
+        .maybeSingle()
       if (configError || !config) {
         return NextResponse.json(
           {
@@ -207,6 +226,7 @@ export async function POST(request: Request) {
         })
         metaTemplateId = meta.id
         metaStatus = meta.status
+        submittedWabaId = config.waba_id as string
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Meta submit failed.'
         // Persist the failure so the user can retry; row stays DRAFT
@@ -217,6 +237,7 @@ export async function POST(request: Request) {
             status: 'DRAFT',
             metaTemplateId: null,
             submissionError: message,
+            wabaId: null,
           }),
         )
         const isRateLimit = /\b429\b/.test(message)
@@ -237,6 +258,7 @@ export async function POST(request: Request) {
         status: normalizeStatus(metaStatus),
         metaTemplateId,
         submissionError: null,
+        wabaId: submittedWabaId,
       }),
     )
 

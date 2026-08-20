@@ -10,6 +10,7 @@ import { useTotalUnread } from "@/hooks/use-total-unread";
 import { FlowLogo } from "@/components/layout/flow-logo";
 import { ContactAvatar } from "@/components/ui/contact-avatar";
 import {
+  Activity,
   CreditCard,
   Crown,
   GitBranch,
@@ -382,6 +383,22 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                   >
                     <Sparkles className="h-4 w-4 shrink-0" />
                     {!isCollapsed && <span className="truncate">{t("navigation.adminOnboarding")}</span>}
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/admin/meta-platform"
+                    title={isCollapsed ? t("navigation.adminMetaPlatform") : undefined}
+                    className={cn(
+                      "relative flex items-center gap-3 rounded-lg text-sm font-medium transition-colors",
+                      isCollapsed ? "justify-center p-2.5" : "px-3 py-2",
+                      pathname.startsWith("/admin/meta-platform")
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    <Activity className="h-4 w-4 shrink-0" />
+                    {!isCollapsed && <span className="truncate">{t("navigation.adminMetaPlatform")}</span>}
                   </Link>
                 </li>
                 <li>

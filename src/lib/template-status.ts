@@ -50,4 +50,11 @@ export const templateStatusConfig: Record<
     label: 'Pending Deletion',
     classes: 'bg-slate-700/30 text-muted-foreground border-slate-700/40',
   },
+  // Nao vem da Meta: e o que a reconciliacao escreve quando o modelo
+  // deixou de existir na WABA de origem. Vermelho, e nao cinza, porque
+  // toda transmissao e automacao que aponta para ele vai falhar.
+  MISSING: {
+    label: 'Missing at Meta',
+    classes: 'bg-red-950/30 text-red-400 border-red-900/50',
+  },
 };

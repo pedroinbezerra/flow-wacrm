@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/hooks/use-theme";
 import { ThemedToaster } from "@/components/themed-toaster";
 import { CookieConsentProvider } from "@/components/cookies/cookie-consent-provider";
 import { I18nProvider } from "@/lib/i18n/provider";
+import { META_API_VERSION } from "@/lib/whatsapp/api-version";
 import {
   DEFAULT_MODE,
   DEFAULT_THEME,
@@ -93,7 +94,7 @@ window.fbAsyncInit = function() {
       appId      : ${JSON.stringify(process.env.NEXT_PUBLIC_META_APP_ID || '')},
       cookie     : true,
       xfbml      : true,
-      version    : 'v21.0'
+      version    : ${JSON.stringify(META_API_VERSION)}
     });
   }
 };

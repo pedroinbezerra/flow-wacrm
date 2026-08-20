@@ -2,13 +2,18 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import {
-  registerPhoneNumber,
   subscribeWabaToApp,
   verifyPhoneNumber,
 } from '@/lib/whatsapp/meta-api'
+import { reactivatePhoneNumber } from '@/lib/whatsapp/reactivation'
 import { encrypt, decrypt } from '@/lib/whatsapp/encryption'
+import { ForbiddenError, UnauthorizedError, requireRole } from '@/lib/auth/account'
 import { tApiError } from '@/lib/i18n/api-errors'
 import { checkAccountLimit } from '@/lib/plans/limits'
+import {
+  STATUSES_CLAIMING_META_COUNTERPART,
+  TEMPLATE_MISSING_STATUS,
+} from '@/lib/whatsapp/template-availability'
 
 /**
  * Resolve the caller's account_id from their profile.
@@ -154,6 +159,12 @@ export async function POST(request: Request) {
         { status: 403 },
       )
     }
+
+    // Salvar credencial já era ato de configuração; reativar número é mais
+    // que isso — grava um PIN novo na Meta e mata o anterior de forma
+    // irreversível, inclusive para outra ferramenta que use o mesmo número.
+    // Agente e visualizador não têm por que alcançar isso.
+    await requireRole('admin', { isWriteOperation: true })
 
     const body = await request.json()
     const { phone_number_id, waba_id, access_token, verify_token, pin } = body
@@ -311,22 +322,39 @@ export async function POST(request: Request) {
     let registrationError: string | null = null
     let registrationSkipped = false
 
-    const needsRegistration = !sameNumber || (typeof pin === 'string' && pin.length > 0)
+    // Reativação sem PIN: o usuário pediu explicitamente (botão dedicado),
+    // então geramos um PIN, gravamos na Meta e registramos com ele. Nunca
+    // acontece em um salvar comum — trocar o PIN invalida o que o cliente
+    // tinha, e isso não pode ser efeito colateral de outra ação.
+    const wantsGeneratedPin = body?.auto_two_step_pin === true
+
+    // PIN gerado nesta requisição, devolvido UMA vez para o dono da conta
+    // anotar caso use o mesmo número em outra ferramenta. Não é gravado:
+    // como a Meta aceita sobrescrever sem o anterior, sempre sorteamos um
+    // novo na próxima reativação — guardar só criaria mais um segredo em
+    // repouso sem utilidade.
+    let generatedPin: string | null = null
+
+    const needsRegistration =
+      !sameNumber || (typeof pin === 'string' && pin.length > 0) || wantsGeneratedPin
     if (needsRegistration) {
-      if (!pin) {
+      if (!pin && !wantsGeneratedPin) {
         registrationSkipped = true
       } else {
-        try {
-          await registerPhoneNumber({
-            phoneNumberId: phone_number_id,
-            accessToken: activeAccessToken,
-            pin,
-          })
+        const outcome = await reactivatePhoneNumber({
+          phoneNumberId: phone_number_id,
+          accessToken: activeAccessToken,
+          pin: pin as string | undefined,
+        })
+        generatedPin = outcome.generatedPin
+        if (outcome.registered) {
           registeredAt = new Date().toISOString()
-        } catch (err) {
-          registrationError =
-            err instanceof Error ? err.message : 'Unknown Meta API error'
-          console.error('Phone number /register failed:', registrationError)
+        } else {
+          registrationError = outcome.error ?? 'Unknown Meta API error'
+          // O PIN nunca entra em log. A mensagem não afirma qual chamada
+          // falhou: a reativação faz mais de uma, e rotular tudo como
+          // "/register" já mandou uma investigação para o lado errado.
+          console.error('Phone number reactivation failed:', registrationError)
         }
       }
     }
@@ -399,6 +427,9 @@ export async function POST(request: Request) {
         saved: true,
         registered: false,
         registration_error: registrationError,
+        // Vai junto no erro de propósito: se chegamos a gravar o PIN novo,
+        // o antigo morreu — falhar o registro depois não desfaz isso.
+        two_step_pin: generatedPin,
         phone_info: phoneInfo,
       })
     }
@@ -408,9 +439,16 @@ export async function POST(request: Request) {
       saved: true,
       registered: registeredAt != null,
       registration_skipped: registrationSkipped,
+      two_step_pin: generatedPin,
       phone_info: phoneInfo,
     })
   } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 })
+    }
     console.error('Error in WhatsApp config POST:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -493,6 +531,9 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Remover a conexão derruba o atendimento da conta inteira.
+    await requireRole('admin', { isWriteOperation: true })
+
     const accountId = await resolveAccountId(supabase, user.id)
     if (!accountId) {
       return NextResponse.json({ error: 'No account linked' }, { status: 400 })
@@ -501,6 +542,20 @@ export async function DELETE(req: Request) {
     const url = new URL(req.url)
     const configId = url.searchParams.get('id')
     const phoneNumberId = url.searchParams.get('phone_number_id')
+
+    // Quais contas de WhatsApp Business saem junto com esta conexao.
+    // Precisa ser lido ANTES do delete: depois, nao ha como saber a
+    // quais modelos a conta perdeu acesso.
+    const removedQuery = supabase
+      .from('whatsapp_config')
+      .select('waba_id')
+      .eq('account_id', accountId)
+    if (configId) {
+      removedQuery.eq('id', configId)
+    } else if (phoneNumberId) {
+      removedQuery.eq('phone_number_id', phoneNumberId)
+    }
+    const { data: removingConfigs } = await removedQuery
 
     let deleteQuery = supabase.from('whatsapp_config').delete().eq('account_id', accountId)
 
@@ -523,7 +578,10 @@ export async function DELETE(req: Request) {
     // Check if any remaining configs exist and make sure at least one is default
     const { data: remaining } = await supabase
       .from('whatsapp_config')
-      .select('id, is_default')
+      // waba_id entra na leitura porque a reconciliacao de modelos
+      // abaixo precisa saber quais contas de WhatsApp Business ainda
+      // tem numero conectado.
+      .select('id, is_default, waba_id')
       .eq('account_id', accountId)
       .order('created_at', { ascending: true })
 
@@ -537,8 +595,62 @@ export async function DELETE(req: Request) {
       }
     }
 
+    // Modelo pertence a conta de WhatsApp Business do numero, nao ao
+    // flowhub: desconectar o numero significa que aqueles modelos
+    // deixaram de existir para esta conta. Marcamos no ato — esperar a
+    // proxima sincronizacao era exatamente o que mantinha um modelo
+    // exibido como "Aprovado" ate falhar no envio com (#132001).
+    //
+    // Uma WABA pode hospedar mais de um numero: so rebaixa os modelos de
+    // WABA que nao sobrou em nenhuma conexao.
+    const removedWabaIds = Array.from(
+      new Set(
+        (removingConfigs ?? [])
+          .map((c) => c.waba_id as string | null)
+          .filter((w): w is string => Boolean(w)),
+      ),
+    )
+
+    if (removedWabaIds.length > 0) {
+      const stillConnected = new Set(
+        (remaining ?? [])
+          .map((r) => (r as { waba_id?: string | null }).waba_id ?? null)
+          .filter((w): w is string => Boolean(w)),
+      )
+      const orphanedWabaIds = removedWabaIds.filter((w) => !stillConnected.has(w))
+
+      if (orphanedWabaIds.length > 0) {
+        const { error: flagError } = await supabase
+          .from('message_templates')
+          .update({
+            status: TEMPLATE_MISSING_STATUS,
+            missing_since: new Date().toISOString(),
+            quality_score: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('account_id', accountId)
+          .in('waba_id', orphanedWabaIds)
+          .in('status', STATUSES_CLAIMING_META_COUNTERPART as unknown as string[])
+
+        if (flagError) {
+          // Nao derruba a desconexao: o numero ja saiu. A sincronizacao
+          // reconcilia o catalogo na proxima passagem.
+          console.error(
+            'Failed to flag templates of the disconnected number:',
+            flagError.message,
+          )
+        }
+      }
+    }
+
     return NextResponse.json({ success: true, message: 'Conexão de WhatsApp removida com sucesso.' })
   } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 })
+    }
     console.error('Error in WhatsApp config DELETE:', error)
     return NextResponse.json(
       { error: 'Internal server error' },

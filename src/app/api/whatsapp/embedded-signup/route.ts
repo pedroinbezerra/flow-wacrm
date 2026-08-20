@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import {
+  META_API_BASE,
   discoverWhatsAppAccounts,
   exchangeCodeForAccessToken,
   isRegisteredOnCloudApi,
@@ -93,7 +94,7 @@ export async function POST(request: Request) {
     if (!resolvedPhoneNumberId && accessToken) {
       const appId = process.env.NEXT_PUBLIC_META_APP_ID || process.env.META_APP_ID
       const appSecret = process.env.META_APP_SECRET
-      const metaBase = 'https://graph.facebook.com/v21.0'
+      const metaBase = META_API_BASE
 
       // Strategy A: Use debug_token with App Access Token to find WABA IDs from granular scopes
       if (appId && appSecret) {

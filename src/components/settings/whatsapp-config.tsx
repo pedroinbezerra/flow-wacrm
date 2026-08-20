@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { META_API_VERSION } from '@/lib/whatsapp/api-version';
 import Script from 'next/script';
 import { toast } from 'sonner';
 import {
@@ -75,6 +76,11 @@ export function WhatsAppConfig() {
   const [wabaId, setWabaId] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [pin, setPin] = useState('');
+  // Campo manual recolhido: só para quem já tem um PIN e quer mantê-lo.
+  const [showManualPin, setShowManualPin] = useState(false);
+  // PIN definido pelo servidor nesta reativação. Vive só neste estado —
+  // não é gravado no banco nem volta em outra requisição.
+  const [generatedPin, setGeneratedPin] = useState<string | null>(null);
   const [tokenEdited, setTokenEdited] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
@@ -192,7 +198,23 @@ export function WhatsAppConfig() {
     fetchConfig(accountId);
   }, [authLoading, profileLoading, user, accountId, fetchConfig]);
 
+  /** Salvar normal: nunca mexe no PIN de duas etapas do número. */
   async function handleSave() {
+    await submitConfig({ autoPin: false });
+  }
+
+  /**
+   * Reativação pedida pelo usuário. `autoPin` autoriza o servidor a
+   * definir um PIN novo — é o único caminho que faz isso, e nunca roda
+   * junto de um salvar comum (trocar o PIN invalida o que o cliente
+   * tinha, então precisa ser ato deliberado).
+   */
+  async function handleReactivate() {
+    setGeneratedPin(null);
+    await submitConfig({ autoPin: true });
+  }
+
+  async function submitConfig({ autoPin }: { autoPin: boolean }) {
     if (!phoneNumberId.trim()) {
       toast.error(t('settings.whatsappConfig.phoneNumberIdRequired'));
       return;
@@ -211,6 +233,8 @@ export function WhatsAppConfig() {
         waba_id: wabaId.trim() || null,
         pin: pin.trim() || null,
       };
+
+      if (autoPin) payload.auto_two_step_pin = true;
 
       // Rotulo vazio nao vai no payload: quem renomeia e a lista de
       // conexoes, e um salvar por outro motivo nao pode reescrever o
@@ -235,11 +259,19 @@ export function WhatsAppConfig() {
         return;
       }
 
+      // O PIN novo aparece mesmo quando o registro falha depois dele: a
+      // troca na Meta já aconteceu e o PIN anterior morreu ali.
+      if (typeof data.two_step_pin === 'string') {
+        setGeneratedPin(data.two_step_pin);
+      }
+
       if (data.registered === false && data.registration_error) {
         toast.error(
-          t('settings.whatsappConfig.savedButRegistrationFailed', {
-            message: data.registration_error,
-          }),
+          data.two_step_pin
+            ? t('settings.whatsappConfig.pinRenewedButRegistrationFailed')
+            : t('settings.whatsappConfig.savedButRegistrationFailed', {
+                message: data.registration_error,
+              }),
           { duration: 12000 },
         );
       } else if (data.registration_skipped) {
@@ -456,7 +488,7 @@ export function WhatsAppConfig() {
                   appId,
                   autoLogAppEvents: true,
                   xfbml: true,
-                  version: 'v21.0',
+                  version: META_API_VERSION,
                 });
                 resolve();
               } catch (e) {
@@ -477,7 +509,7 @@ export function WhatsAppConfig() {
                       appId,
                       autoLogAppEvents: true,
                       xfbml: true,
-                      version: 'v21.0',
+                      version: META_API_VERSION,
                     });
                   } catch {
                     /* keep existing init */
@@ -499,7 +531,7 @@ export function WhatsAppConfig() {
                       appId,
                       autoLogAppEvents: true,
                       xfbml: true,
-                      version: 'v21.0',
+                      version: META_API_VERSION,
                     });
                   } catch {
                     /* keep existing init */
@@ -518,7 +550,7 @@ export function WhatsAppConfig() {
               appId,
               autoLogAppEvents: true,
               xfbml: true,
-              version: 'v21.0',
+              version: META_API_VERSION,
             });
           } catch {
             /* Keep existing init */
@@ -989,45 +1021,95 @@ export function WhatsAppConfig() {
               )}
             </AlertDescription>
 
-            {/* O PIN e saida de emergencia, nao etapa: so aparece quando
+            {/* Reativar e saida de emergencia, nao etapa: so aparece quando
                 o registro esta pendente, e no ponto onde a correcao
                 acontece (FH-44.03). Na conexao de 1 clique a Meta
-                registra o numero sozinha e ninguem nunca ve isto. */}
+                registra o numero sozinha e ninguem nunca ve isto.
+
+                O PIN nao e pedido: a Meta nao exibe o PIN vigente em lugar
+                nenhum, entao mandar o usuario "buscar" o dele e mandar
+                procurar o que nao existe. Aqui o proprio FlowHub define um
+                PIN novo e registra com ele. O campo manual fica recolhido
+                para quem ja tem um PIN e quer manter. */}
             {!isRegistered && (
-              <div className="mt-3 rounded-lg border border-border bg-background/80 dark:bg-card/60 px-3.5 py-3 space-y-2">
-                <Label className="text-xs text-foreground">
-                  {t('settings.whatsappConfig.twoStepPin')}
-                </Label>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    placeholder={t('settings.whatsappConfig.pinPlaceholder')}
-                    value={pin}
-                    onChange={(e) =>
-                      setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
-                    }
-                    className="bg-muted border-border text-foreground placeholder:text-muted-foreground tracking-widest sm:max-w-[220px]"
-                  />
-                  <Button
-                    size="sm"
-                    onClick={handleSave}
-                    disabled={saving || pin.trim().length !== 6}
-                    className="h-10 sm:h-9"
-                  >
-                    {saving ? (
-                      <>
-                        <Loader2 className="size-4 animate-spin" />
-                        {t('common.saving')}
-                      </>
-                    ) : (
-                      t('settings.whatsappConfig.registerNumber')
-                    )}
-                  </Button>
-                </div>
+              <div className="mt-3 rounded-lg border border-border bg-background/80 dark:bg-card/60 px-3.5 py-3 space-y-2.5">
+                <p className="text-xs text-foreground leading-relaxed">
+                  {t('settings.whatsappConfig.reactivateDescription')}
+                </p>
+                <Button
+                  size="sm"
+                  onClick={handleReactivate}
+                  disabled={saving}
+                  className="h-10 sm:h-9 w-full sm:w-auto"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      {t('common.saving')}
+                    </>
+                  ) : (
+                    t('settings.whatsappConfig.reactivateNumber')
+                  )}
+                </Button>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  {t('settings.whatsappConfig.pinHelp')}
+                  {t('settings.whatsappConfig.reactivateRenewsPin')}
+                </p>
+
+                {showManualPin ? (
+                  <div className="pt-1 space-y-2 border-t border-border">
+                    <Label className="text-xs text-foreground pt-2 block">
+                      {t('settings.whatsappConfig.twoStepPin')}
+                    </Label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder={t('settings.whatsappConfig.pinPlaceholder')}
+                        value={pin}
+                        onChange={(e) =>
+                          setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
+                        }
+                        className="bg-muted border-border text-foreground placeholder:text-muted-foreground tracking-widest sm:max-w-[220px]"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleSave}
+                        disabled={saving || pin.trim().length !== 6}
+                        className="h-10 sm:h-9"
+                      >
+                        {t('settings.whatsappConfig.registerNumber')}
+                      </Button>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      {t('settings.whatsappConfig.pinHelp')}
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowManualPin(true)}
+                    className="text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                  >
+                    {t('settings.whatsappConfig.useOwnPin')}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Exibido UMA vez, e so aqui: o PIN novo nao e gravado em
+                lugar nenhum. Fica em bloco fixo, nao em toast, porque o
+                usuario precisa de tempo para anotar. */}
+            {generatedPin && (
+              <div className="mt-3 rounded-lg border border-amber-300 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/30 px-3.5 py-3 space-y-1.5">
+                <p className="text-xs font-medium text-amber-900 dark:text-amber-200">
+                  {t('settings.whatsappConfig.pinRenewedTitle')}
+                </p>
+                <p className="text-[11px] text-amber-900/90 dark:text-amber-200/90 leading-relaxed">
+                  {t('settings.whatsappConfig.pinRenewedBody', {
+                    pin: generatedPin,
+                  })}
                 </p>
               </div>
             )}
@@ -1389,7 +1471,7 @@ export function WhatsAppConfig() {
               appId,
               autoLogAppEvents: true,
               xfbml: true,
-              version: 'v21.0',
+              version: META_API_VERSION,
             });
           } catch (err) {
             console.error('Meta FB.init error:', err);

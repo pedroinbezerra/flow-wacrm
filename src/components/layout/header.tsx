@@ -32,6 +32,7 @@ const pageTitles: Record<string, string> = {
   "/admin/support": "navigation.adminSupport",
   "/admin/plans": "navigation.adminPlans",
   "/admin/analytics": "navigation.adminAnalytics",
+  "/admin/meta-platform": "navigation.adminMetaPlatform",
   "/admin/onboarding": "navigation.adminOnboarding",
 };
 

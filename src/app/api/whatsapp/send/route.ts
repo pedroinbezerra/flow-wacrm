@@ -23,6 +23,12 @@ import {
 import { formatConversationPreview } from '@/lib/conversation-preview'
 import type { MessageTemplate } from '@/types'
 import { isMessageTemplate } from '@/lib/whatsapp/template-row-guard'
+import {
+  evaluateTemplateAvailability,
+  isTemplateMissingAtMetaError,
+  TEMPLATE_MISSING_STATUS,
+} from '@/lib/whatsapp/template-availability'
+import { tApiError } from '@/lib/i18n/api-errors'
 import { resolveSendableMediaLink } from '@/lib/storage/media-access'
 import { parseStorageReference } from '@/lib/storage/media-src'
 
@@ -283,6 +289,31 @@ export async function POST(request: Request) {
         )
       }
       templateRow = data ?? null
+
+      // Modelo existe dentro da conta de WhatsApp do numero. Se a
+      // reconciliacao ja constatou que a Meta nao o lista mais, ou se
+      // ele pertence a um numero que nao e mais o conectado, a chamada
+      // so voltaria como `(#132001) Template name does not exist in the
+      // translation`. Recusar aqui troca o codigo da Meta por uma frase
+      // que diz o que aconteceu e o que fazer.
+      const availability = evaluateTemplateAvailability({
+        template: templateRow,
+        activeWabaId: config.waba_id as string | null,
+      })
+      if (!availability.sendable) {
+        return NextResponse.json(
+          {
+            error: tApiError(
+              request,
+              availability.reason === 'foreign_waba'
+                ? 'whatsapp.templateFromAnotherNumber'
+                : 'whatsapp.templateMissingAtMeta',
+            ),
+            template_unavailable: availability.reason,
+          },
+          { status: 409 },
+        )
+      }
     }
 
     const attempt = async (phone: string): Promise<string> => {
@@ -364,6 +395,39 @@ export async function POST(request: Request) {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown Meta API error'
       console.error('Meta API send failed for all variants:', message)
+
+      // A Meta acabou de dizer que o modelo nao existe. O catalogo local
+      // esta desatualizado — corrigi-lo agora e o que impede a mesma
+      // pessoa de tropecar no mesmo modelo no proximo envio, e tira o
+      // modelo do seletor, que so oferece APPROVED.
+      if (templateRow && isTemplateMissingAtMetaError(message)) {
+        const { error: healErr } = await supabase
+          .from('message_templates')
+          .update({
+            status: TEMPLATE_MISSING_STATUS,
+            missing_since: new Date().toISOString(),
+            quality_score: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', templateRow.id)
+          .eq('account_id', accountId)
+
+        if (healErr) {
+          console.error(
+            'Failed to flag template as missing at Meta:',
+            healErr.message,
+          )
+        }
+
+        return NextResponse.json(
+          {
+            error: tApiError(request, 'whatsapp.templateJustDetectedMissing'),
+            template_unavailable: 'missing',
+          },
+          { status: 409 },
+        )
+      }
+
       return NextResponse.json(
         { error: `Meta API error: ${message}` },
         { status: 502 }

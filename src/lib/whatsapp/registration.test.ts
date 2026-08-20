@@ -3,6 +3,7 @@ import {
   getSubscribedApps,
   isRegisteredOnCloudApi,
   registerPhoneNumber,
+  setTwoStepPin,
   subscribeWabaToApp,
 } from './meta-api';
 
@@ -100,6 +101,45 @@ describe('registerPhoneNumber', () => {
         pin: '123456',
       }),
     ).rejects.toThrow(/Internal Meta error/);
+  });
+});
+
+describe('setTwoStepPin', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+  beforeEach(() => {
+    fetchMock = vi.fn().mockResolvedValue(okResponse({ success: true }));
+    vi.stubGlobal('fetch', fetchMock);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('POSTs the pin to /{phone_number_id} — no messaging_product, no old pin', async () => {
+    // O corpo é só `{ pin }`, como a referência oficial descreve — e
+    // sem campo para o PIN anterior, que é justamente o que permite
+    // reativar sem conhecê-lo. Se messaging_product seria REJEITADO aqui
+    // nunca foi testado contra a Meta; não afirme que sim.
+    await setTwoStepPin({
+      phoneNumberId: 'PNID_123',
+      accessToken: 'tok',
+      pin: '482910',
+    });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toMatch(/\/PNID_123$/);
+    expect(init.method).toBe('POST');
+    expect(init.headers.Authorization).toBe('Bearer tok');
+    expect(JSON.parse(init.body)).toEqual({ pin: '482910' });
+  });
+
+  it("surfaces Meta's error message verbatim", async () => {
+    fetchMock.mockResolvedValueOnce(
+      errorResponse(400, {
+        error: { message: 'Invalid parameter', code: 100 },
+      }),
+    );
+    await expect(
+      setTwoStepPin({ phoneNumberId: 'P', accessToken: 't', pin: '482910' }),
+    ).rejects.toThrow(/Invalid parameter/);
   });
 });
 

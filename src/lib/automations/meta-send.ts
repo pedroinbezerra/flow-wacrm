@@ -6,6 +6,11 @@ import {
   phoneVariants,
   isRecipientNotAllowedError,
 } from '@/lib/whatsapp/phone-utils'
+import {
+  evaluateTemplateAvailability,
+  isTemplateMissingAtMetaError,
+  TEMPLATE_MISSING_STATUS,
+} from '@/lib/whatsapp/template-availability'
 import { supabaseAdmin } from './admin-client'
 
 // ------------------------------------------------------------
@@ -96,6 +101,53 @@ async function sendViaMeta(input: SendInput): Promise<{ whatsapp_message_id: str
 
   const accessToken = decrypt(config.access_token)
 
+  // Automacao repete. Um modelo que deixou de existir na conta de
+  // WhatsApp deste numero falharia a cada disparo, sempre com o mesmo
+  // codigo cru da Meta. Verificar antes, e corrigir o catalogo depois,
+  // troca a repeticao por um estado que a pessoa consegue ver na tela
+  // de modelos.
+  let templateRowId: string | null = null
+  if (input.kind === 'template') {
+    const { data: templateRow } = await db
+      .from('message_templates')
+      .select('id, status, waba_id, meta_template_id')
+      .eq('account_id', input.accountId)
+      .eq('name', input.templateName)
+      .eq('language', input.language || 'en_US')
+      .maybeSingle()
+
+    templateRowId = (templateRow?.id as string | undefined) ?? null
+
+    const availability = evaluateTemplateAvailability({
+      template: templateRow,
+      activeWabaId: config.waba_id as string | null,
+    })
+    if (!availability.sendable) {
+      throw new Error(
+        availability.reason === 'foreign_waba'
+          ? `modelo "${input.templateName}" e de um numero que nao esta mais conectado — envie para aprovacao no numero atual`
+          : `modelo "${input.templateName}" nao existe mais na conta de WhatsApp deste numero — envie para aprovacao de novo`,
+      )
+    }
+  }
+
+  const markTemplateMissing = async () => {
+    if (!templateRowId) return
+    const { error } = await db
+      .from('message_templates')
+      .update({
+        status: TEMPLATE_MISSING_STATUS,
+        missing_since: new Date().toISOString(),
+        quality_score: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', templateRowId)
+      .eq('account_id', input.accountId)
+    if (error) {
+      console.error('Failed to flag template as missing at Meta:', error.message)
+    }
+  }
+
   const attempt = async (phone: string): Promise<string> => {
     if (input.kind === 'template') {
       const r = await sendTemplateMessage({
@@ -132,6 +184,12 @@ async function sendViaMeta(input: SendInput): Promise<{ whatsapp_message_id: str
       break
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
+      if (isTemplateMissingAtMetaError(msg)) {
+        await markTemplateMissing()
+        throw new Error(
+          `modelo "${input.kind === 'template' ? input.templateName : ''}" nao existe mais na conta de WhatsApp deste numero — marcado como indisponivel; envie para aprovacao de novo`,
+        )
+      }
       if (!isRecipientNotAllowedError(msg)) throw err
       lastError = err
     }
