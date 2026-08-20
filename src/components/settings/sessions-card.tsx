@@ -51,55 +51,63 @@ export function SessionsCard() {
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-foreground">
-            <LogOut className="size-4 text-primary" />
+      <Card className="border border-destructive/20 bg-destructive/5 shadow-2xs">
+        <CardHeader className="p-5 sm:p-6 pb-4">
+          <CardTitle className="flex items-center gap-2 text-base font-bold text-destructive">
+            <LogOut className="size-4" />
             {t('settings.sessions.title')}
           </CardTitle>
-          <CardDescription className="text-muted-foreground">
+          <CardDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
             {t('settings.sessions.description')}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-5 sm:p-6 pt-0">
           <Button
             type="button"
-            variant="outline"
+            variant="destructive"
             onClick={() => setOpen(true)}
+            className="w-full sm:w-auto h-10 px-5 text-xs sm:text-sm font-semibold"
           >
-            <LogOut className="size-4" />
+            <LogOut className="size-4 mr-2" />
             {t('settings.sessions.signOutAll')}
           </Button>
         </CardContent>
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md p-6">
           <DialogHeader>
-            <DialogTitle>{t('settings.sessions.confirmSignOut')}</DialogTitle>
-            <DialogDescription>
-              Every device logged into this account will be signed out and
-              will need to log in again. You will be redirected to the login
-              page.
+            <DialogTitle className="text-lg font-bold text-foreground">
+              {t('settings.sessions.confirmSignOut')}
+            </DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed pt-1">
+              Todos os dispositivos conectados nesta conta serão desconectados imediatamente e você precisará realizar login novamente.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2 pt-4">
             <Button
               type="button"
               variant="ghost"
               onClick={() => setOpen(false)}
               disabled={signingOut}
+              className="w-full sm:w-auto h-10 text-xs sm:text-sm"
             >
-              Cancel
+              Cancelar
             </Button>
-            <Button type="button" onClick={onConfirm} disabled={signingOut}>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={onConfirm}
+              disabled={signingOut}
+              className="w-full sm:w-auto h-10 text-xs sm:text-sm font-semibold"
+            >
               {signingOut ? (
                 <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Signing out…
+                  <Loader2 className="size-4 animate-spin mr-2" />
+                  Desconectando...
                 </>
               ) : (
-                'Sign out everywhere'
+                'Desconectar de Tudo'
               )}
             </Button>
           </DialogFooter>

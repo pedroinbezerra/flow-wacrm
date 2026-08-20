@@ -18,18 +18,21 @@ import {
 } from "lucide-react";
 import { SettingsPanelHead } from "./settings-panel-head";
 import { useCookieConsent } from "@/hooks/use-cookie-consent";
+import { useTranslation } from "@/hooks/use-translation";
 import { CookiePreferencesTrigger } from "@/components/cookies/cookie-preferences-trigger";
 
 export function PrivacyPanel() {
   const { preferences, isLoaded } = useCookieConsent();
+  const { t } = useTranslation();
 
   const isAnalyticsAllowed = preferences?.analytics ?? false;
 
   return (
     <section className="max-w-3xl animate-in fade-in-50 duration-200 space-y-8">
       <SettingsPanelHead
-        title="Privacidade, Governança e LGPD"
-        description="Consulte os documentos legais, gerencie suas preferências de consentimento de cookies e exercite seus direitos de titular."
+        title={t("settings.privacy.title")}
+        description={t("settings.privacy.description")}
+        scope="account"
       />
 
       {/* Card de Status Atual do Consentimento */}
@@ -41,15 +44,15 @@ export function PrivacyPanel() {
             </div>
             <div>
               <h3 className="text-sm font-semibold text-foreground">
-                Seu Consentimento de Cookies
+                {t("settings.privacy.cookieConsent")}
               </h3>
               <p className="text-xs text-muted-foreground">
-                LGPD (Lei nº 13.709/2018) — FLOW SYSTEMS LTDA
+                {t("settings.privacy.lgpdRef")}
               </p>
             </div>
           </div>
           <CookiePreferencesTrigger variant="button">
-            Alterar Preferências
+            {t("settings.privacy.changePreferences")}
           </CookiePreferencesTrigger>
         </div>
 
@@ -57,30 +60,30 @@ export function PrivacyPanel() {
           <div className="p-3 rounded-lg border border-border/60 bg-muted/20 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-medium text-foreground">
               <Lock className="size-4 text-emerald-500" />
-              <span>Cookies Necessários</span>
+              <span>{t("settings.privacy.necessaryCookies")}</span>
             </div>
             <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">
-              Sempre Ativos
+              {t("settings.privacy.alwaysActive")}
             </span>
           </div>
 
           <div className="p-3 rounded-lg border border-border/60 bg-muted/20 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-medium text-foreground">
               <BarChart3 className="size-4 text-primary" />
-              <span>Cookies de Análise</span>
+              <span>{t("settings.privacy.analyticsCookies")}</span>
             </div>
             {isLoaded ? (
               isAnalyticsAllowed ? (
                 <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">
-                  Autorizado (GA4/Clarity)
+                  {t("settings.privacy.authorized")}
                 </span>
               ) : (
                 <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500">
-                  Bloqueado
+                  {t("settings.privacy.blocked")}
                 </span>
               )
             ) : (
-              <span className="text-[11px] text-muted-foreground">Carregando...</span>
+              <span className="text-[11px] text-muted-foreground">{t("settings.privacy.loading")}</span>
             )}
           </div>
         </div>
@@ -90,7 +93,7 @@ export function PrivacyPanel() {
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <FileText className="size-4 text-primary" />
-          Documentos Legais e Contratuais da Plataforma
+          {t("settings.privacy.legalDocsTitle")}
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -103,9 +106,9 @@ export function PrivacyPanel() {
               <FileText className="size-4 text-primary shrink-0" />
               <div>
                 <span className="font-medium text-foreground block group-hover:underline">
-                  Política de Privacidade
+                  {t("settings.privacy.privacyPolicy")}
                 </span>
-                <span className="text-[11px] text-muted-foreground">Tratamento de Dados & Papéis</span>
+                <span className="text-[11px] text-muted-foreground">{t("settings.privacy.privacyPolicyDesc")}</span>
               </div>
             </div>
             <ExternalLink className="size-3.5 text-muted-foreground group-hover:text-primary" />
@@ -120,9 +123,9 @@ export function PrivacyPanel() {
               <Scale className="size-4 text-purple-500 shrink-0" />
               <div>
                 <span className="font-medium text-foreground block group-hover:underline">
-                  Termos de Uso
+                  {t("settings.privacy.termsOfUse")}
                 </span>
-                <span className="text-[11px] text-muted-foreground">Regras SaaS & Modelo BYOK</span>
+                <span className="text-[11px] text-muted-foreground">{t("settings.privacy.termsOfUseDesc")}</span>
               </div>
             </div>
             <ExternalLink className="size-3.5 text-muted-foreground group-hover:text-primary" />
@@ -137,9 +140,9 @@ export function PrivacyPanel() {
               <ShieldCheck className="size-4 text-emerald-500 shrink-0" />
               <div>
                 <span className="font-medium text-foreground block group-hover:underline">
-                  Acordo DPA
+                  {t("settings.privacy.dpaAgreement")}
                 </span>
-                <span className="text-[11px] text-muted-foreground">Operador ↔ Controlador</span>
+                <span className="text-[11px] text-muted-foreground">{t("settings.privacy.dpaAgreementDesc")}</span>
               </div>
             </div>
             <ExternalLink className="size-3.5 text-muted-foreground group-hover:text-primary" />
@@ -154,9 +157,9 @@ export function PrivacyPanel() {
               <Shield className="size-4 text-blue-500 shrink-0" />
               <div>
                 <span className="font-medium text-foreground block group-hover:underline">
-                  Segurança da Informação
+                  {t("settings.privacy.securityInfo")}
                 </span>
-                <span className="text-[11px] text-muted-foreground">Pilares & Criptografia</span>
+                <span className="text-[11px] text-muted-foreground">{t("settings.privacy.securityInfoDesc")}</span>
               </div>
             </div>
             <ExternalLink className="size-3.5 text-muted-foreground group-hover:text-primary" />
@@ -171,10 +174,10 @@ export function PrivacyPanel() {
               <Server className="size-4 text-amber-500 shrink-0" />
               <div>
                 <span className="font-medium text-foreground block group-hover:underline">
-                  Lista de Subprocessadores de Dados
+                  {t("settings.privacy.subprocessors")}
                 </span>
                 <span className="text-[11px] text-muted-foreground">
-                  Infraestrutura Supabase, Vercel, Meta Cloud API, Asaas e Provedores de IA
+                  {t("settings.privacy.subprocessorsDesc")}
                 </span>
               </div>
             </div>
@@ -187,18 +190,18 @@ export function PrivacyPanel() {
       <div className="p-5 rounded-xl border border-border bg-card/40 space-y-4">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <UserCheck className="size-4 text-emerald-500" />
-          Canal de Direitos do Titular de Dados (Art. 18 LGPD)
+          {t("settings.privacy.rightsTitle")}
         </h3>
 
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Você possui total direito de solicitar confirmação de tratamento, acesso, correção, eliminação de dados ou esclarecimentos técnicos diretamente com o nosso Encarregado pelo Tratamento de Dados Pessoais (DPO).
+          {t("settings.privacy.rightsDesc")}
         </p>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 border-t border-border/60 text-xs">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Mail className="size-4 text-primary shrink-0" />
             <span>
-              DPO Oficial:{" "}
+              {t("settings.privacy.dpoOfficial")}{" "}
               <strong className="text-foreground">flowsystems@flowofc.com.br</strong>
             </span>
           </div>
@@ -206,10 +209,10 @@ export function PrivacyPanel() {
           <Link
             href="/lgpd"
             target="_blank"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors shrink-0"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-xs hover:bg-primary/90 transition-all shadow-xs shrink-0"
           >
             <Download className="size-3.5" />
-            Abrir Solicitação LGPD
+            {t("settings.privacy.openLgpdRequest")}
           </Link>
         </div>
       </div>

@@ -176,7 +176,7 @@ export function CustomFieldsPanel() {
   return (
     <div className="space-y-4">
       {/* Create */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-center gap-2">
         <Input
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
@@ -187,17 +187,17 @@ export function CustomFieldsPanel() {
             }
           }}
           placeholder={t("common.placeholders.newFieldName")}
-          className="bg-muted text-foreground"
+          className="w-full sm:flex-1 h-9 text-sm bg-card text-foreground border-border"
         />
         <Button
           onClick={handleCreate}
           disabled={creating || !newName.trim()}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0"
+          className="w-full sm:w-auto h-9 px-4 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 gap-1.5"
         >
           {creating ? (
-            <Loader2 className="size-4 animate-spin" />
+            <Loader2 className="size-3.5 animate-spin" />
           ) : (
-            <Plus className="size-4" />
+            <Plus className="size-3.5" />
           )}
           {t('contacts.customFields.add')}
         </Button>

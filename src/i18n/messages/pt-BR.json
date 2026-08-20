@@ -312,13 +312,14 @@
     "members": "Membros",
     "whatsappConfig": "Configuração WhatsApp",
     "templates": "Modelos",
-    "betaFeatures": "Recursos Beta",
-    "adminPlans": "Planos Comerciais",
+    "adminPlans": "Planos",
     "adminSupport": "Suporte a Clientes",
     "adminAnalytics": "Inteligência Comercial",
     "adminConsumption": "Telemetria & Consumo",
-    "adminOnboarding": "Inteligência & Onboarding",
-    "adminMetaPlatform": "Saúde da Plataforma Meta",
+    "adminOnboarding": "Onboarding",
+    "adminMetaPlatform": "Saúde Meta",
+    "adminSuperAdmins": "Operadores",
+    "adminSection": "Administração",
     "aiConfig": "Configuração de IA",
     "faq": "Central de Ajuda & FAQ",
     "liveSupport": "Ajuda",
@@ -1614,8 +1615,55 @@
       "teamMembers": "Membros da equipe"
     },
     "groups": {
-      "account": "Conta",
-      "workspace": "Workspace"
+      "account": "Sua Conta",
+      "workspace": "Workspace & Operação"
+    },
+    "scopes": {
+      "personal": "Perfil Pessoal",
+      "account": "Conta & Workspace",
+      "personalDesc": "Opções associadas ao seu usuário individual",
+      "accountDesc": "Opções que afetam toda a conta e a equipe"
+    },
+    "mobileNav": {
+      "backToOverview": "Visão geral",
+      "selectSection": "Selecionar seção",
+      "allSections": "Todas as seções"
+    },
+    "fiscal": {
+      "cpfCnpjTitle": "CPF ou CNPJ (Dados Fiscais / Nota Fiscal)",
+      "cpfCnpjRequiredHint": "Obrigatório para Emissão de Nota Fiscal",
+      "cpfCnpjPlaceholder": "000.000.000-00 ou 00.000.000/0001-00",
+      "cpfCnpjDescription": "Necessário para emissão oficial de Nota Fiscal (NF-e) e aprovação de assinaturas e upgrades pelo Asaas.",
+      "invalidCpfCnpj": "O CPF ou CNPJ informado é inválido.",
+      "invalidCpfCnpjDesc": "Por favor, verifique a quantidade de números e os dígitos verificadores."
+    },
+    "privacy": {
+      "title": "Privacidade, Governança e LGPD",
+      "description": "Consulte documentos legais, gerencie preferências de consentimento e exercite seus direitos de titular.",
+      "cookieConsent": "Seu Consentimento de Cookies",
+      "lgpdRef": "LGPD (Lei nº 13.709/2018) — FLOW SYSTEMS LTDA",
+      "changePreferences": "Alterar Preferências",
+      "necessaryCookies": "Cookies Necessários",
+      "alwaysActive": "Sempre Ativos",
+      "analyticsCookies": "Cookies de Análise",
+      "authorized": "Autorizado (GA4/Clarity)",
+      "blocked": "Bloqueado",
+      "loading": "Carregando...",
+      "legalDocsTitle": "Documentos Legais e Contratuais da Plataforma",
+      "privacyPolicy": "Política de Privacidade",
+      "privacyPolicyDesc": "Tratamento de Dados & Papéis",
+      "termsOfUse": "Termos de Uso",
+      "termsOfUseDesc": "Regras SaaS & Modelo BYOK",
+      "dpaAgreement": "Acordo DPA",
+      "dpaAgreementDesc": "Operador ↔ Controlador",
+      "securityInfo": "Segurança da Informação",
+      "securityInfoDesc": "Pilares & Criptografia",
+      "subprocessors": "Lista de Subprocessadores de Dados",
+      "subprocessorsDesc": "Infraestrutura Supabase, Vercel, Meta Cloud API, Asaas e Provedores de IA",
+      "rightsTitle": "Canal de Direitos do Titular de Dados (Art. 18 LGPD)",
+      "rightsDesc": "Você possui total direito de solicitar confirmação de tratamento, acesso, correção, eliminação de dados ou esclarecimentos técnicos diretamente com o nosso Encarregado pelo Tratamento de Dados Pessoais (DPO).",
+      "dpoOfficial": "DPO Oficial:",
+      "openLgpdRequest": "Abrir Solicitação LGPD"
     },
     "password": {
       "title": "Senha",
@@ -1970,7 +2018,18 @@
         "deleteLocalTitle": "Excluir localmente",
         "missingTitle": "Este modelo não existe mais na conta de WhatsApp deste número.",
         "missingExplanation": "Modelo não acompanha troca de número. Para voltar a usar, envie para aprovação de novo — ou remova daqui.",
-        "missingSince": "Detectado em {date}."
+        "missingSince": "Detectado em {date}.",
+        "selectAll": "Selecionar todos",
+        "deselectAll": "Desmarcar todos",
+        "selectedCount": "{count} modelo selecionado",
+        "selectedCountPlural": "{count} modelos selecionados",
+        "bulkActions": "Ações em massa",
+        "bulkResend": "Reenviar selecionados",
+        "bulkResending": "Reenviando...",
+        "bulkDelete": "Excluir selecionados",
+        "bulkDeleting": "Excluindo...",
+        "enableConfirm": "Solicitar confirmação de exclusão",
+        "enableConfirmTitle": "Reativar o diálogo de confirmação ao excluir modelos individualmente"
       },
       "toasts": {
         "failedLoadTemplates": "Falha ao carregar modelos",
@@ -2001,12 +2060,19 @@
         "syncedMissing": " · {count} deixaram de existir na Meta",
         "syncPartial": "Sincronização incompleta: {count} conexão(ões) não puderam ser lidas. Os modelos delas ficaram como estavam.",
         "syncNothingChanged": "Nada mudou desde a última sincronização.",
-        "recreatedOnCurrentNumber": "Modelo reenviado para aprovação no número conectado agora. A Meta costuma revisar em até 24 horas."
+        "recreatedOnCurrentNumber": "Modelo reenviado para aprovação no número conectado agora. A Meta costuma revisar em até 24 horas.",
+        "bulkResendSuccess": "{count} modelo(s) reenviado(s) com sucesso",
+        "bulkResendPartial": "{successCount} de {total} modelo(s) reenviado(s) ({failCount} falha(s))",
+        "bulkDeleteSuccess": "{count} modelo(s) excluído(s) com sucesso",
+        "deleteConfirmReenabled": "Confirmação de exclusão reativada com sucesso"
       },
       "deleteDialog": {
         "title": "Excluir modelo?",
         "metaAndLocalDescription": "\"{name}\" será excluído da Meta e do flowhub. Transmissões ativas que usam esse modelo começarão a falhar no próximo envio. Essa ação não pode ser desfeita.",
         "localOnlyDescription": "\"{name}\" será excluído do flowhub. Este modelo nunca foi enviado à Meta, então não há limpeza remota necessária.",
+        "dontAskAgain": "Não solicitar novamente a confirmação de exclusão",
+        "bulkTitle": "Excluir modelos selecionados?",
+        "bulkDescription": "{count} modelo(s) selecionado(s) serão excluídos da Meta e do FlowHub. Transmissões ativas que usam esses modelos falharão. Essa ação não pode ser desfeita.",
         "deleting": "Excluindo...",
         "delete": "Excluir"
       },

@@ -71,12 +71,12 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
       <ExternalAnalytics />
       {/* Redirecionador automático para o 1º acesso de novos usuários */}
       <WelcomeRedirector />
-      {/* Widget Flutuante de Suporte ao Cliente em Tempo Real (FAB) */}
-      <SupportFloatingWidget />
       {/* Tour Guiado Interativo (Driver.js) */}
       <GuidedTour />
       {/* Modal de bloqueio por suspensão ou carência de exclusão */}
       <AccountSuspendedModal />
+      {/* Modal / Drawer de Suporte ao Cliente acionado por Header e Sidebar */}
+      <SupportFloatingWidget />
       {/* Reports this tab's online/away presence once we know a user is
           signed in. Headless — renders nothing. */}
       <PresenceHeartbeat />

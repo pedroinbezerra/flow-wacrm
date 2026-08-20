@@ -74,6 +74,7 @@ export function DealsSettings() {
       <SettingsPanelHead
         title={t("settings.deals.title")}
         description={t("settings.deals.description")}
+        scope="account"
       />
       <Card>
         <CardHeader>
@@ -86,13 +87,13 @@ export function DealsSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-2 sm:max-w-xs">
-            <Label className="text-muted-foreground">{t("settings.deals.currency")}</Label>
+          <div className="grid gap-2 sm:max-w-md">
+            <Label className="text-sm font-semibold text-foreground">{t("settings.deals.currency")}</Label>
             <select
               value={selected}
               onChange={(e) => setSelected(e.target.value)}
               disabled={!canEditSettings || profileLoading}
-              className="h-9 w-full rounded-lg border border-border bg-muted px-2.5 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-10 w-full rounded-xl border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-60 shadow-2xs"
             >
               {CURRENCIES.map((c) => (
                 <option key={c.code} value={c.code}>
@@ -108,20 +109,22 @@ export function DealsSettings() {
           </div>
 
           {canEditSettings && (
-            <Button
-              onClick={handleSave}
-              disabled={saving || !dirty}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  {t("common.saving")}
-                </>
-              ) : (
-                t("common.save")
-              )}
-            </Button>
+            <div className="pt-2 flex justify-end">
+              <Button
+                onClick={handleSave}
+                disabled={saving || !dirty}
+                className="w-full sm:w-auto h-10 px-6 font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin mr-2" />
+                    {t("common.saving")}
+                  </>
+                ) : (
+                  t("common.save")
+                )}
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>

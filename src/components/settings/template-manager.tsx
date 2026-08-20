@@ -26,6 +26,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { SettingsPanelHead } from './settings-panel-head';
 import {
   Dialog,
@@ -151,6 +152,23 @@ export function TemplateManager() {
   // doesn't take the template off Meta as well as locally.
   const [templateToDelete, setTemplateToDelete] =
     useState<MessageTemplate | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [skipDeleteConfirm, setSkipDeleteConfirm] = useState(false);
+  const [rememberDeleteChoice, setRememberDeleteChoice] = useState(false);
+  const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkResending, setBulkResending] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('flow_templates_skip_delete_confirm');
+      if (saved === 'true') {
+        setSkipDeleteConfirm(true);
+      }
+    } catch {
+      // localStorage restriction guard
+    }
+  }, []);
   // Header-image upload (issue #230). Uploads to the account-scoped
   // chat-media bucket and stores the public URL in header_media_url; the
   // submit route turns that into a Meta Resumable-Upload handle.
@@ -464,9 +482,47 @@ export function TemplateManager() {
     }
   }
 
-  async function confirmDelete() {
-    const target = templateToDelete;
-    if (!target || deletingId) return;
+  function toggleSelectAll() {
+    if (selectedIds.size === templates.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(templates.map((t) => t.id)));
+    }
+  }
+
+  function toggleSelectTemplate(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function resetDeleteConfirmPreference() {
+    try {
+      localStorage.removeItem('flow_templates_skip_delete_confirm');
+    } catch {
+      // ignore
+    }
+    setSkipDeleteConfirm(false);
+    toast.success(t('settings.templates.toasts.deleteConfirmReenabled'));
+  }
+
+  function handleRequestDelete(template: MessageTemplate) {
+    if (skipDeleteConfirm) {
+      void deleteSingleTemplate(template);
+    } else {
+      setRememberDeleteChoice(false);
+      setTemplateToDelete(template);
+    }
+  }
+
+  async function deleteSingleTemplate(target: MessageTemplate) {
+    if (deletingId) return;
     setDeletingId(target.id);
     try {
       // Route handler scopes the Meta delete via hsm_id (so sibling
@@ -486,6 +542,11 @@ export function TemplateManager() {
       }
       toast.success(t('settings.templates.toasts.templateDeleted'));
       setTemplates((prev) => prev.filter((t) => t.id !== target.id));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(target.id);
+        return next;
+      });
       setTemplateToDelete(null);
     } catch (err) {
       console.error('Delete error:', err);
@@ -496,6 +557,132 @@ export function TemplateManager() {
       );
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  async function confirmDelete() {
+    const target = templateToDelete;
+    if (!target) return;
+    if (rememberDeleteChoice) {
+      try {
+        localStorage.setItem('flow_templates_skip_delete_confirm', 'true');
+      } catch {
+        // ignore
+      }
+      setSkipDeleteConfirm(true);
+    }
+    await deleteSingleTemplate(target);
+  }
+
+  async function handleBulkDeleteConfirm() {
+    if (selectedIds.size === 0 || bulkDeleting) return;
+    setBulkDeleting(true);
+    let successCount = 0;
+    let failCount = 0;
+    const targets = templates.filter((t) => selectedIds.has(t.id));
+
+    for (const target of targets) {
+      try {
+        const res = await fetch(`/api/whatsapp/templates/${target.id}`, {
+          method: 'DELETE',
+        });
+        if (res.ok) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch {
+        failCount++;
+      }
+    }
+
+    if (user) await fetchTemplates(user.id);
+    setSelectedIds(new Set());
+    setBulkDeleteModalOpen(false);
+    setBulkDeleting(false);
+
+    if (failCount === 0) {
+      toast.success(
+        t('settings.templates.toasts.bulkDeleteSuccess', { count: successCount }),
+      );
+    } else {
+      toast.error(
+        `${successCount} de ${targets.length} modelo(s) excluído(s) (${failCount} falha(s))`,
+      );
+    }
+  }
+
+  async function handleBulkResend() {
+    if (selectedIds.size === 0 || bulkResending) return;
+    setBulkResending(true);
+    let successCount = 0;
+    let failCount = 0;
+    const targets = templates.filter((t) => selectedIds.has(t.id));
+
+    for (const template of targets) {
+      try {
+        const sample_values: TemplateSampleValues = {};
+        if (template.sample_values?.body) {
+          sample_values.body = template.sample_values.body;
+        }
+        if (template.sample_values?.header) {
+          sample_values.header = template.sample_values.header;
+        }
+
+        const payload = {
+          name: template.name,
+          category: template.category,
+          language: template.language || 'en_US',
+          header_type: template.header_type ?? undefined,
+          header_content: template.header_content ?? undefined,
+          header_media_url: template.header_media_url ?? undefined,
+          body_text: template.body_text,
+          footer_text: template.footer_text ?? undefined,
+          buttons: template.buttons ?? undefined,
+          sample_values:
+            Object.keys(sample_values).length > 0 ? sample_values : undefined,
+        };
+
+        const isEdit =
+          template.meta_template_id &&
+          template.status !== 'MISSING' &&
+          Boolean(template.status && ['APPROVED', 'REJECTED', 'PAUSED'].includes(template.status));
+
+        const url = isEdit
+          ? `/api/whatsapp/templates/${template.id}`
+          : '/api/whatsapp/templates/submit';
+
+        const res = await fetch(url, {
+          method: isEdit ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch {
+        failCount++;
+      }
+    }
+
+    if (user) await fetchTemplates(user.id);
+    setBulkResending(false);
+
+    if (failCount === 0) {
+      toast.success(
+        t('settings.templates.toasts.bulkResendSuccess', { count: successCount }),
+      );
+    } else {
+      toast.error(
+        t('settings.templates.toasts.bulkResendPartial', {
+          successCount,
+          total: targets.length,
+          failCount,
+        }),
+      );
     }
   }
 
@@ -625,8 +812,20 @@ export function TemplateManager() {
         description={
           t('settings.templates.manager.description')
         }
+        scope="account"
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {skipDeleteConfirm && (
+              <Button
+                variant="outline"
+                onClick={resetDeleteConfirmPreference}
+                title={t('settings.templates.manager.enableConfirmTitle')}
+                className="border-border text-muted-foreground hover:bg-muted"
+              >
+                <RotateCcw className="size-3.5" />
+                {t('settings.templates.manager.enableConfirm')}
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={handleSyncFromMeta}
@@ -646,6 +845,51 @@ export function TemplateManager() {
         }
       />
 
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 animate-in fade-in-50 duration-150">
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="font-medium text-xs">
+              {selectedIds.size === 1
+                ? t('settings.templates.manager.selectedCount', { count: selectedIds.size })
+                : t('settings.templates.manager.selectedCountPlural', { count: selectedIds.size })}
+            </Badge>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBulkResend}
+              disabled={bulkResending || bulkDeleting}
+              className="h-8 text-xs gap-1.5"
+            >
+              <RotateCcw className={`size-3.5 ${bulkResending ? 'animate-spin' : ''}`} />
+              {bulkResending
+                ? t('settings.templates.manager.bulkResending')
+                : t('settings.templates.manager.bulkResend')}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setBulkDeleteModalOpen(true)}
+              disabled={bulkResending || bulkDeleting}
+              className="h-8 text-xs gap-1.5 bg-red-600 hover:bg-red-700 text-white"
+            >
+              <Trash2 className="size-3.5" />
+              {t('settings.templates.manager.bulkDelete')}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIds(new Set())}
+              disabled={bulkResending || bulkDeleting}
+              className="h-8 text-xs text-muted-foreground hover:bg-muted"
+            >
+              {t('settings.templates.manager.deselectAll')}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {templates.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
@@ -658,141 +902,173 @@ export function TemplateManager() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-3 xl:grid-cols-2">
-          {templates.map((template) => {
-            const statusKey = template.status || 'DRAFT';
-            const status = templateStatusConfig[statusKey];
-            return (
-              <Card key={template.id}>
-                <CardContent className="flex items-start justify-between pt-4">
-                  <div className="space-y-2 min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-medium text-foreground">{template.name}</h3>
-                      <Badge
-                        className={`text-xs border ${categoryColors[template.category] || ''}`}
-                      >
-                        {categoryLabel(template.category)}
-                      </Badge>
-                      <Badge className={`text-xs border ${status.classes}`}>
-                        {statusLabel(statusKey, status.label)}
-                      </Badge>
-                      {template.language && (
-                        <span className="text-xs text-muted-foreground uppercase">
-                          {template.language}
-                        </span>
-                      )}
-                      {template.quality_score && (
-                        <span
-                          className={`text-[10px] uppercase font-medium ${
-                            template.quality_score === 'GREEN'
-                              ? 'text-emerald-400'
-                              : template.quality_score === 'YELLOW'
-                                ? 'text-yellow-400'
-                                : 'text-red-400'
-                          }`}
-                          title={t('settings.templates.manager.metaQualityScore')}
-                        >
-                          {template.quality_score}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {template.body_text}
-                    </p>
-                    {template.footer_text && (
-                      <p className="text-xs text-muted-foreground italic">
-                        {template.footer_text}
-                      </p>
-                    )}
-                    {statusKey === 'MISSING' && (
-                      // O catalogo tem que dizer por que este modelo
-                      // parou de servir, e no lugar onde a pessoa o
-                      // encontra — descobrir isso no envio foi o
-                      // problema que esta tela deixou passar.
-                      <div className="flex items-start gap-1.5 text-xs text-red-400 bg-red-950/20 border border-red-900/40 rounded px-2 py-1.5">
-                        <AlertCircle className="size-3.5 mt-0.5 shrink-0" />
-                        <span>
-                          {t('settings.templates.manager.missingTitle')}{' '}
-                          {t('settings.templates.manager.missingExplanation')}
-                          {template.missing_since && (
-                            <>
-                              {' '}
-                              {t('settings.templates.manager.missingSince', {
-                                date: new Date(
-                                  template.missing_since,
-                                ).toLocaleDateString(),
-                              })}
-                            </>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground px-1 pb-1">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="select-all-templates"
+                checked={selectedIds.size === templates.length && templates.length > 0}
+                onCheckedChange={toggleSelectAll}
+              />
+              <label htmlFor="select-all-templates" className="cursor-pointer font-medium select-none">
+                {selectedIds.size === templates.length
+                  ? t('settings.templates.manager.deselectAll')
+                  : t('settings.templates.manager.selectAll')}
+              </label>
+            </div>
+            <span>
+              {templates.length} {templates.length === 1 ? 'modelo' : 'modelos'}
+            </span>
+          </div>
+
+          <div className="grid gap-3 xl:grid-cols-2">
+            {templates.map((template) => {
+              const statusKey = template.status || 'DRAFT';
+              const status = templateStatusConfig[statusKey];
+              const isSelected = selectedIds.has(template.id);
+              return (
+                <Card
+                  key={template.id}
+                  className={isSelected ? 'border-primary/50 bg-primary/5 transition-colors' : 'transition-colors'}
+                >
+                  <CardContent className="flex items-start justify-between pt-4">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleSelectTemplate(template.id)}
+                        className="mt-1 shrink-0"
+                        aria-label={`Selecionar ${template.name}`}
+                      />
+                      <div className="space-y-2 min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-medium text-foreground">{template.name}</h3>
+                          <Badge
+                            className={`text-xs border ${categoryColors[template.category] || ''}`}
+                          >
+                            {categoryLabel(template.category)}
+                          </Badge>
+                          <Badge className={`text-xs border ${status.classes}`}>
+                            {statusLabel(statusKey, status.label)}
+                          </Badge>
+                          {template.language && (
+                            <span className="text-xs text-muted-foreground uppercase">
+                              {template.language}
+                            </span>
                           )}
-                        </span>
+                          {template.quality_score && (
+                            <span
+                              className={`text-[10px] uppercase font-medium ${
+                                template.quality_score === 'GREEN'
+                                  ? 'text-emerald-400'
+                                  : template.quality_score === 'YELLOW'
+                                    ? 'text-yellow-400'
+                                    : 'text-red-400'
+                              }`}
+                              title={t('settings.templates.manager.metaQualityScore')}
+                            >
+                              {template.quality_score}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {template.body_text}
+                        </p>
+                        {template.footer_text && (
+                          <p className="text-xs text-muted-foreground italic">
+                            {template.footer_text}
+                          </p>
+                        )}
+                        {statusKey === 'MISSING' && (
+                          // O catalogo tem que dizer por que este modelo
+                          // parou de servir, e no lugar onde a pessoa o
+                          // encontra — descobrir isso no envio foi o
+                          // problema que esta tela deixou passar.
+                          <div className="flex items-start gap-1.5 text-xs text-red-400 bg-red-950/20 border border-red-900/40 rounded px-2 py-1.5">
+                            <AlertCircle className="size-3.5 mt-0.5 shrink-0" />
+                            <span>
+                              {t('settings.templates.manager.missingTitle')}{' '}
+                              {t('settings.templates.manager.missingExplanation')}
+                              {template.missing_since && (
+                                <>
+                                  {' '}
+                                  {t('settings.templates.manager.missingSince', {
+                                    date: new Date(
+                                      template.missing_since,
+                                    ).toLocaleDateString(),
+                                  })}
+                                </>
+                              )}
+                            </span>
+                          </div>
+                        )}
+                        {(template.rejection_reason || template.submission_error) && (
+                          <div className="flex items-start gap-1.5 text-xs text-red-400 bg-red-950/20 border border-red-900/40 rounded px-2 py-1.5">
+                            <AlertCircle className="size-3.5 mt-0.5 shrink-0" />
+                            <span>
+                              {template.rejection_reason || template.submission_error}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {(template.rejection_reason || template.submission_error) && (
-                      <div className="flex items-start gap-1.5 text-xs text-red-400 bg-red-950/20 border border-red-900/40 rounded px-2 py-1.5">
-                        <AlertCircle className="size-3.5 mt-0.5 shrink-0" />
-                        <span>
-                          {template.rejection_reason || template.submission_error}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0 ml-2">
-                    {statusKey === 'APPROVED' && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEdit(template)}
-                        title={t('settings.templates.manager.editTitle')}
-                        aria-label={t('settings.templates.manager.editAria')}
-                        className="text-muted-foreground hover:text-primary hover:bg-primary/10 h-8 px-2"
-                      >
-                        <Pencil className="size-3.5" />
-                        {t('settings.templates.manager.edit')}
-                      </Button>
-                    )}
-                    {(statusKey === 'REJECTED' ||
-                      statusKey === 'PAUSED' ||
-                      statusKey === 'MISSING') && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEdit(template)}
-                        title={t('settings.templates.manager.resubmitTitle')}
-                        aria-label={t('settings.templates.manager.resubmitAria')}
-                        className="text-muted-foreground hover:text-primary hover:bg-primary/10 h-8 px-2"
-                      >
-                        <RotateCcw className="size-3.5" />
-                        {t('settings.templates.manager.resubmit')}
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setTemplateToDelete(template)}
-                      disabled={deletingId === template.id}
-                      aria-label={
-                        template.meta_template_id
-                          ? t('settings.templates.manager.deleteMetaAndLocalAria')
-                          : t('settings.templates.manager.deleteLocalAria')
-                      }
-                      title={
-                        template.meta_template_id
-                          ? t('settings.templates.manager.deleteMetaAndLocalTitle')
-                          : t('settings.templates.manager.deleteLocalTitle')
-                      }
-                      className="text-muted-foreground hover:text-red-400 hover:bg-red-950/30 h-8 w-8"
-                    >
-                      {deletingId === template.id ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="size-4" />
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0 ml-2">
+                      {statusKey === 'APPROVED' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEdit(template)}
+                          title={t('settings.templates.manager.editTitle')}
+                          aria-label={t('settings.templates.manager.editAria')}
+                          className="text-muted-foreground hover:text-primary hover:bg-primary/10 h-8 px-2"
+                        >
+                          <Pencil className="size-3.5" />
+                          {t('settings.templates.manager.edit')}
+                        </Button>
                       )}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                      {(statusKey === 'REJECTED' ||
+                        statusKey === 'PAUSED' ||
+                        statusKey === 'MISSING') && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEdit(template)}
+                          title={t('settings.templates.manager.resubmitTitle')}
+                          aria-label={t('settings.templates.manager.resubmitAria')}
+                          className="text-muted-foreground hover:text-primary hover:bg-primary/10 h-8 px-2"
+                        >
+                          <RotateCcw className="size-3.5" />
+                          {t('settings.templates.manager.resubmit')}
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRequestDelete(template)}
+                        disabled={deletingId === template.id}
+                        aria-label={
+                          template.meta_template_id
+                            ? t('settings.templates.manager.deleteMetaAndLocalAria')
+                            : t('settings.templates.manager.deleteLocalAria')
+                        }
+                        title={
+                          template.meta_template_id
+                            ? t('settings.templates.manager.deleteMetaAndLocalTitle')
+                            : t('settings.templates.manager.deleteLocalTitle')
+                        }
+                        className="text-muted-foreground hover:text-red-400 hover:bg-red-950/30 h-8 w-8"
+                      >
+                        {deletingId === template.id ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="size-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -806,7 +1082,7 @@ export function TemplateManager() {
           }
         }}
       >
-        <DialogContent className="bg-popover border-border sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-popover border-border w-[calc(100%-2rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-popover-foreground">
               {isEditing
@@ -1310,7 +1586,10 @@ export function TemplateManager() {
       <Dialog
         open={templateToDelete !== null}
         onOpenChange={(open) => {
-          if (!open) setTemplateToDelete(null);
+          if (!open) {
+            setTemplateToDelete(null);
+            setRememberDeleteChoice(false);
+          }
         }}
       >
         <DialogContent className="bg-popover border-border sm:max-w-sm">
@@ -1328,6 +1607,21 @@ export function TemplateManager() {
                   })}
             </DialogDescription>
           </DialogHeader>
+
+          <div className="flex items-center gap-2 pt-2 border-t border-border mt-2">
+            <Checkbox
+              id="remember-delete-choice"
+              checked={rememberDeleteChoice}
+              onCheckedChange={(checked) => setRememberDeleteChoice(!!checked)}
+            />
+            <Label
+              htmlFor="remember-delete-choice"
+              className="text-xs text-muted-foreground cursor-pointer font-normal select-none"
+            >
+              {t('settings.templates.deleteDialog.dontAskAgain')}
+            </Label>
+          </div>
+
           <DialogFooter className="bg-popover border-border">
             <Button
               variant="outline"
@@ -1343,6 +1637,46 @@ export function TemplateManager() {
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               {deletingId !== null ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  {t('settings.templates.deleteDialog.deleting')}
+                </>
+              ) : (
+                t('settings.templates.deleteDialog.delete')
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Delete Confirm Dialog */}
+      <Dialog open={bulkDeleteModalOpen} onOpenChange={setBulkDeleteModalOpen}>
+        <DialogContent className="bg-popover border-border sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-popover-foreground">
+              {t('settings.templates.deleteDialog.bulkTitle')}
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              {t('settings.templates.deleteDialog.bulkDescription', {
+                count: selectedIds.size,
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="bg-popover border-border">
+            <Button
+              variant="outline"
+              onClick={() => setBulkDeleteModalOpen(false)}
+              disabled={bulkDeleting}
+              className="border-border text-muted-foreground hover:bg-muted"
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleBulkDeleteConfirm}
+              disabled={bulkDeleting}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {bulkDeleting ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
                   {t('settings.templates.deleteDialog.deleting')}

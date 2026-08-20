@@ -714,6 +714,7 @@ export function WhatsAppConfig() {
         <SettingsPanelHead
           title={t('settings.whatsappConfig.title')}
           description={t('settings.whatsappConfig.description')}
+          scope="account"
         />
         <div className="flex items-center justify-center py-12">
           <Loader2 className="size-6 animate-spin text-primary" />
@@ -729,6 +730,7 @@ export function WhatsAppConfig() {
       <SettingsPanelHead
         title={t('settings.whatsappConfig.title')}
         description={t('settings.whatsappConfig.description')}
+        scope="account"
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
       {/* Main config form */}

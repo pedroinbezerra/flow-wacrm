@@ -11,7 +11,9 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ConsumptionDashboardCard } from "@/components/consumption/consumption-dashboard-card";
 import { useAuth } from "@/hooks/use-auth";
+import { useTranslation } from "@/hooks/use-translation";
 import { isValidCpfOrCnpj, formatCpfCnpj } from "@/lib/validation/fiscal";
+import { SettingsPanelHead } from "./settings-panel-head";
 
 interface NativeCheckoutData {
   paymentUrl: string | null;
@@ -25,6 +27,7 @@ interface NativeCheckoutData {
 }
 
 export function BillingPanel() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState<CommercialPlan | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -352,22 +355,18 @@ export function BillingPanel() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-primary" />
-            Plano & Área Financeira
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Gerencie o plano contratado, recursos adicionais e notas fiscais da sua empresa.
-          </p>
-        </div>
-        <Button onClick={openUpgradeModal} className="gap-2">
-          <ArrowUpRight className="h-4 w-4" />
-          Alterar / Upgrade de Plano
-        </Button>
-      </div>
+    <div className="space-y-6 animate-in fade-in-50 duration-200">
+      <SettingsPanelHead
+        title={t('settings.sections.billing')}
+        description="Gerencie o plano contratado, recursos adicionais e notas fiscais da sua empresa."
+        scope="account"
+        action={
+          <Button onClick={openUpgradeModal} className="gap-2">
+            <ArrowUpRight className="h-4 w-4" />
+            Alterar / Upgrade de Plano
+          </Button>
+        }
+      />
 
       {/* Main Subscription Card */}
       <Card className="border-border bg-card">
@@ -520,53 +519,91 @@ export function BillingPanel() {
               Nenhuma fatura registrada até o momento. As faturas pagas aparecerão aqui automaticamente.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-border bg-muted/50 text-xs font-semibold uppercase text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3">Data</th>
-                    <th className="px-4 py-3">Valor</th>
-                    <th className="px-4 py-3">Método</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-right">Documentos</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {invoices.map((inv) => (
-                    <tr key={inv.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 font-medium">
+            <div>
+              {/* Mobile Card View (<640px) */}
+              <div className="block sm:hidden space-y-3">
+                {invoices.map((inv) => (
+                  <div key={inv.id} className="p-4 rounded-xl border border-border bg-card space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground font-medium">
                         {inv.paid_at ? new Date(inv.paid_at).toLocaleDateString("pt-BR") : new Date(inv.created_at).toLocaleDateString("pt-BR")}
-                      </td>
-                      <td className="px-4 py-3 font-bold text-primary">
-                        R$ {Number(inv.amount).toFixed(2)}
-                      </td>
-                      <td className="px-4 py-3 text-xs">
-                        {inv.billing_type || "Asaas"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={inv.status === "paid" ? "default" : "secondary"}>
-                          {inv.status === "paid" ? "Pago" : inv.status}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {inv.pdf_url ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="gap-1.5"
-                            onClick={() => window.open(inv.pdf_url!, "_blank")}
-                          >
-                            <Download className="h-3.5 w-3.5" />
-                            Nota Fiscal / Recibo
-                          </Button>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Processando NF...</span>
-                        )}
-                      </td>
+                      </span>
+                      <Badge variant={inv.status === "paid" ? "default" : "secondary"}>
+                        {inv.status === "paid" ? "Pago" : inv.status}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-base font-extrabold text-primary">
+                        R$ {Number(inv.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{inv.billing_type || "Asaas"}</span>
+                    </div>
+                    {inv.pdf_url && (
+                      <div className="pt-2 border-t border-border/50">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full gap-1.5 text-xs h-9"
+                          onClick={() => window.open(inv.pdf_url!, "_blank")}
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          Baixar Nota Fiscal / Recibo
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View (≥640px) */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-border bg-muted/50 text-xs font-semibold uppercase text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-3">Data</th>
+                      <th className="px-4 py-3">Valor</th>
+                      <th className="px-4 py-3">Método</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3 text-right">Documentos</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {invoices.map((inv) => (
+                      <tr key={inv.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-4 py-3 font-medium">
+                          {inv.paid_at ? new Date(inv.paid_at).toLocaleDateString("pt-BR") : new Date(inv.created_at).toLocaleDateString("pt-BR")}
+                        </td>
+                        <td className="px-4 py-3 font-bold text-primary">
+                          R$ {Number(inv.amount).toFixed(2)}
+                        </td>
+                        <td className="px-4 py-3 text-xs">
+                          {inv.billing_type || "Asaas"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge variant={inv.status === "paid" ? "default" : "secondary"}>
+                            {inv.status === "paid" ? "Pago" : inv.status}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {inv.pdf_url ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="gap-1.5"
+                              onClick={() => window.open(inv.pdf_url!, "_blank")}
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              Nota Fiscal / Recibo
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Processando NF...</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </CardContent>

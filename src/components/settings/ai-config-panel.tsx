@@ -13,6 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { hasMinRole } from "@/lib/auth/roles";
+import { useTranslation } from "@/hooks/use-translation";
+import { SettingsPanelHead } from "./settings-panel-head";
 
 const DEFAULT_OPENAI_URL = "https://api.openai.com/v1";
 
@@ -33,6 +35,7 @@ const MODEL_OPTIONS = [
 ];
 
 export function AIConfigPanel() {
+  const { t } = useTranslation();
   const { accountRole, isSuperAdmin } = useAuth();
   const canManageAI = Boolean(isSuperAdmin || (accountRole && hasMinRole(accountRole, "admin")));
 
@@ -196,16 +199,12 @@ export function AIConfigPanel() {
   }
 
   return (
-    <div className="space-y-6">
-      <div id="tour-ai-settings-header">
-        <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-          <Bot className="h-5 w-5 text-violet-500" />
-          Configuração de Inteligência Artificial
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Gerencie as chaves de API (BYOK), provedores e modelos de IA utilizados no Flow Hub.
-        </p>
-      </div>
+    <div className="space-y-6 animate-in fade-in-50 duration-200">
+      <SettingsPanelHead
+        title={t("navigation.aiConfig")}
+        description="Gerencie as chaves de API, provedores e modelos de Inteligência Artificial para atendimento e automações."
+        scope="account"
+      />
 
       {!canManageAI && (
         <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 space-y-2">

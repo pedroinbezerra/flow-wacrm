@@ -180,14 +180,11 @@ export function InviteMemberDialog({
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        // Reset state when the dialog closes — both for cancel and
-        // for dismissal after a successful create. The plaintext URL
-        // is intentionally NOT preserved across opens.
         if (!next) reset();
         onOpenChange(next);
       }}
     >
-      <DialogContent className="bg-popover border-border sm:max-w-md">
+      <DialogContent className="bg-popover border-border w-[calc(100%-2rem)] sm:max-w-md max-h-[90vh] overflow-y-auto p-5 sm:p-6 rounded-2xl">
         {result ? (
           <>
             <DialogHeader>

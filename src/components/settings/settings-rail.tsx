@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { ArrowLeft, ChevronDown, LayoutGrid, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/use-translation';
@@ -11,17 +12,8 @@ import {
   type SettingsSection,
 } from './settings-sections';
 
-// Width at/above which the rail is a vertical column (already in view, so
-// no auto-scroll needed). Mirrors the Tailwind `lg:` breakpoint that
-// drives the row→column switch in the markup below — keep the two in sync.
 const RAIL_DESKTOP_MIN_PX = 1024;
 
-/**
- * The settings left rail — grouped, vertical on desktop and a
- * horizontal scroller on narrow screens (mirrors the mockup's ≤920px
- * behaviour). The active item auto-scrolls into view when the rail is
- * horizontal so a deep-linked section is never off-screen.
- */
 export function SettingsRail({
   active,
   onSelect,
@@ -33,9 +25,12 @@ export function SettingsRail({
 }) {
   const { t } = useTranslation();
   const activeRef = useRef<HTMLButtonElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // When horizontal (mobile), keep the active chip in view. On desktop
-  // the rail is a static column, so skip.
+  const activeMeta = SECTION_META[active];
+  const ActiveIcon = activeMeta.icon;
+
+  // Auto-scroll active chip into view on mobile strip
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (window.matchMedia(`(min-width: ${RAIL_DESKTOP_MIN_PX}px)`).matches) return;
@@ -46,67 +41,180 @@ export function SettingsRail({
     });
   }, [active]);
 
+  const handleSelect = (section: SettingsSection) => {
+    onSelect(section);
+    setMobileMenuOpen(false);
+  };
+
   return (
-    <nav
-      id="tour-settings-rail"
-      aria-label="Settings sections"
-      className={cn(
-        'flex gap-1 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-        'border-b border-border',
-        'lg:sticky lg:top-0 lg:flex-col lg:overflow-visible lg:border-b-0 lg:pb-0',
-      )}
-    >
-      {RAIL_GROUPS.map(({ labelKey, group }) => {
-        const items = SETTINGS_SECTIONS.filter(
-          (s) => SECTION_META[s].group === group,
-        );
-        return (
-          <div
-            key={group}
-            className="flex shrink-0 gap-1 lg:flex-col lg:gap-0.5"
+    <>
+      {/* MOBILE CONTROL BAR (< 1024px) */}
+      <div className="block lg:hidden mb-6">
+        <div className="flex items-center justify-between gap-2 rounded-xl border border-border bg-card p-2 shadow-xs">
+          {active !== 'overview' ? (
+            <button
+              type="button"
+              onClick={() => handleSelect('overview')}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
+            >
+              <ArrowLeft className="size-4" />
+              <span>{t('settings.mobileNav.backToOverview')}</span>
+            </button>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-foreground">
+              <LayoutGrid className="size-4 text-primary" />
+              <span>{t('settings.title')}</span>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
           >
-            {labelKey ? (
-              <div className="hidden px-3 pt-3.5 pb-1.5 text-[11px] font-semibold tracking-[0.09em] text-muted-foreground uppercase lg:block">
-                {t(labelKey)}
+            <span className="flex items-center gap-2 truncate">
+              <ActiveIcon className="size-4 shrink-0 text-primary" />
+              <span className="truncate">{t(activeMeta.labelKey)}</span>
+            </span>
+            <ChevronDown
+              className={cn(
+                'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
+                mobileMenuOpen && 'rotate-180',
+              )}
+            />
+          </button>
+        </div>
+
+        {/* Mobile Dropdown Modal Overlay */}
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 z-50 flex flex-col bg-background/80 backdrop-blur-xs p-4 animate-in fade-in-50 duration-200">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex items-center gap-2">
+                <LayoutGrid className="size-5 text-primary" />
+                <span className="text-base font-bold text-foreground">
+                  {t('settings.mobileNav.allSections')}
+                </span>
               </div>
-            ) : null}
-            {items.map((s) => {
-              const meta = SECTION_META[s];
-              const Icon = meta.icon;
-              const isActive = s === active;
-              return (
-                <button
-                  key={s}
-                  ref={isActive ? activeRef : undefined}
-                  type="button"
-                  onClick={() => onSelect(s)}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={cn(
-                    'flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium whitespace-nowrap transition-colors',
-                    'lg:w-full',
-                    isActive
-                      ? 'bg-primary-soft text-primary'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                  )}
-                >
-                  <Icon className="size-4 shrink-0" />
-                  <span className="flex-1">{t(meta.labelKey)}</span>
-                  {hints?.[s] != null ? (
-                    <span
-                      className={cn(
-                        'hidden items-center gap-1.5 text-xs lg:inline-flex',
-                        isActive ? 'text-primary' : 'text-muted-foreground',
-                      )}
-                    >
-                      {hints[s]}
-                    </span>
-                  ) : null}
-                </button>
-              );
-            })}
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto py-4 space-y-4">
+              {RAIL_GROUPS.map(({ labelKey, group }) => {
+                const items = SETTINGS_SECTIONS.filter(
+                  (s) => SECTION_META[s].group === group,
+                );
+                return (
+                  <div key={group} className="space-y-1">
+                    {labelKey ? (
+                      <div className="px-2 pb-1 text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
+                        {t(labelKey)}
+                      </div>
+                    ) : null}
+                    <div className="grid grid-cols-1 gap-1">
+                      {items.map((s) => {
+                        const meta = SECTION_META[s];
+                        const Icon = meta.icon;
+                        const isActive = s === active;
+                        return (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => handleSelect(s)}
+                            className={cn(
+                              'flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm font-medium transition-colors border',
+                              isActive
+                                ? 'border-primary/40 bg-primary-soft text-primary font-semibold'
+                                : 'border-transparent bg-card hover:bg-muted text-foreground',
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                'flex size-8 shrink-0 items-center justify-center rounded-lg',
+                                isActive
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-muted text-muted-foreground',
+                              )}
+                            >
+                              <Icon className="size-4" />
+                            </span>
+                            <span className="flex-1">{t(meta.labelKey)}</span>
+                            {hints?.[s] != null ? (
+                              <span className="text-xs text-muted-foreground">
+                                {hints[s]}
+                              </span>
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        );
-      })}
-    </nav>
+        )}
+      </div>
+
+      {/* DESKTOP RAIL (≥ 1024px) */}
+      <nav
+        id="tour-settings-rail"
+        aria-label="Settings sections"
+        className="hidden lg:sticky lg:top-0 lg:flex lg:flex-col lg:gap-1 lg:w-58 lg:shrink-0"
+      >
+        {RAIL_GROUPS.map(({ labelKey, group }) => {
+          const items = SETTINGS_SECTIONS.filter(
+            (s) => SECTION_META[s].group === group,
+          );
+          return (
+            <div key={group} className="flex flex-col gap-0.5">
+              {labelKey ? (
+                <div className="px-3 pt-3.5 pb-1.5 text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
+                  {t(labelKey)}
+                </div>
+              ) : null}
+              {items.map((s) => {
+                const meta = SECTION_META[s];
+                const Icon = meta.icon;
+                const isActive = s === active;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => onSelect(s)}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={cn(
+                      'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium transition-all',
+                      isActive
+                        ? 'bg-primary-soft text-primary font-semibold shadow-2xs'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                    )}
+                  >
+                    <Icon className="size-4 shrink-0" />
+                    <span className="flex-1 truncate">{t(meta.labelKey)}</span>
+                    {hints?.[s] != null ? (
+                      <span
+                        className={cn(
+                          'inline-flex items-center text-xs',
+                          isActive ? 'text-primary font-semibold' : 'text-muted-foreground',
+                        )}
+                      >
+                        {hints[s]}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
+      </nav>
+    </>
   );
 }
+

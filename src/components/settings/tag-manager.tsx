@@ -202,50 +202,84 @@ export function TagManager() {
               </p>
             )}
 
-            {/* Inline create row */}
-            <div className="flex flex-wrap items-center gap-2.5">
-              <Input
-                placeholder="ex: Novidades, VIP"
-                value={newTagName}
-                onChange={(e) => setNewTagName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleCreate();
-                }}
-                disabled={saving}
-                maxLength={40}
-                className="min-w-[180px] flex-1"
-              />
-              <div className="flex gap-1.5">
-                {PRESET_COLORS.map((color) => (
-                  <button
-                    key={color.value}
-                    type="button"
-                    onClick={() => setSelectedColor(color.value)}
-                    aria-label={`Use ${color.name}`}
-                    aria-pressed={selectedColor === color.value}
-                    className={cn(
-                      'size-6 rounded-md transition-transform hover:scale-110',
-                      selectedColor === color.value &&
-                        'outline outline-2 outline-offset-2 outline-primary',
-                    )}
-                    style={{ backgroundColor: color.value }}
-                    title={color.name}
-                  />
-                ))}
+            {/* Tag Creation Block */}
+            <div className="space-y-3 pt-3 border-t border-border/60">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Input
+                  placeholder="Nome da tag (ex: Novidades, VIP, Suporte)"
+                  value={newTagName}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCreate();
+                  }}
+                  disabled={saving}
+                  maxLength={40}
+                  className="flex-1 h-9 text-sm"
+                />
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleCreate}
+                  disabled={saving || !newTagName.trim()}
+                  className="w-full sm:w-auto h-9 px-4 text-xs font-semibold gap-1.5 shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  {saving ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Plus className="size-3.5" />
+                  )}
+                  <span>{t('settings.fieldsAndTags.addTag')}</span>
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCreate}
-                disabled={saving || !newTagName.trim()}
-              >
-                {saving ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Plus className="size-4" />
-                )}
-                {t('settings.fieldsAndTags.addTag')}
-              </Button>
+
+              {/* Color selection row + Live Preview */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1.5">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground font-medium shrink-0">
+                    Cor:
+                  </span>
+                  <div className="flex items-center gap-3 sm:gap-3.5 flex-wrap">
+                    {PRESET_COLORS.map((color) => (
+                      <button
+                        key={color.value}
+                        type="button"
+                        onClick={() => setSelectedColor(color.value)}
+                        aria-label={`Usar cor ${color.name}`}
+                        aria-pressed={selectedColor === color.value}
+                        className={cn(
+                          'size-6 rounded-full transition-transform hover:scale-115 focus:outline-none shadow-xs',
+                          selectedColor === color.value
+                            ? 'ring-2 ring-foreground ring-offset-2 ring-offset-card scale-110'
+                            : 'opacity-80 hover:opacity-100',
+                        )}
+                        style={{ backgroundColor: color.value }}
+                        title={color.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Live tag preview chip */}
+                {newTagName.trim() ? (
+                  <div className="text-xs text-muted-foreground flex items-center gap-1.5 self-start sm:self-auto">
+                    <span>Prévia:</span>
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                      style={{
+                        backgroundColor: `${selectedColor}20`,
+                        color: selectedColor,
+                        border: `1px solid ${selectedColor}40`,
+                      }}
+                    >
+                      <span
+                        className="size-1.5 rounded-full"
+                        style={{ backgroundColor: selectedColor }}
+                      />
+                      {newTagName.trim()}
+                    </span>
+                  </div>
+                ) : null}
+              </div>
             </div>
           </>
         )}

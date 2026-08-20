@@ -305,6 +305,12 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
 
             {isSuperAdmin && (
               <>
+                <div className="my-3 border-t border-border" />
+                {!isCollapsed && (
+                  <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    {t("navigation.adminSection")}
+                  </div>
+                )}
                 <li>
                   <Link
                     href="/admin/support"
@@ -404,7 +410,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                 <li>
                   <Link
                     href="/admin/super-admins"
-                    title={isCollapsed ? "Operadores (Super Admin)" : undefined}
+                    title={isCollapsed ? t("navigation.adminSuperAdmins") : undefined}
                     className={cn(
                       "relative flex items-center gap-3 rounded-lg text-sm font-medium transition-colors",
                       isCollapsed ? "justify-center p-2.5" : "px-3 py-2",
@@ -414,7 +420,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                     )}
                   >
                     <UserCog className="h-4 w-4 shrink-0" />
-                    {!isCollapsed && <span className="truncate">Operadores (Super Admin)</span>}
+                    {!isCollapsed && <span className="truncate">{t("navigation.adminSuperAdmins")}</span>}
                   </Link>
                 </li>
               </>

@@ -234,30 +234,19 @@ export function SupportFloatingWidget() {
 
   return (
     <>
-      {/* Botão Flutuante (FAB) fixo no canto inferior direito - visível apenas em telas médias/grandes (desktop) */}
-      <div className="fixed bottom-6 right-6 z-50 hidden md:flex">
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="relative flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl transition-all duration-300 hover:scale-105 hover:bg-primary/90 focus:outline-none focus:ring-4 focus:ring-primary/30"
-          aria-label="Abrir Suporte Flow Systems"
-        >
-          {isOpen ? <X className="size-6" /> : <Headphones className="size-6" />}
-
-          {/* Badge de Mensagens Não Lidas */}
-          {!isOpen && totalUnreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex size-6 items-center justify-center rounded-full bg-rose-500 text-xs font-bold text-white shadow-md animate-pulse">
-              {totalUnreadCount > 9 ? "9+" : totalUnreadCount}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {/* Panel / Drawer Flutuante de Suporte - Responsivo no mobile e desktop */}
+      {/* Drawer / Modal de Atendimento e Suporte ao Cliente */}
       {isOpen && (
-        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-22 z-50 flex h-[470px] max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-6.5rem)] w-auto sm:w-[380px] max-w-[calc(100vw-2rem)] flex-col rounded-3xl border border-border/80 bg-card text-card-foreground shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
-          {/* Top Header */}
-          <div className="flex items-center justify-between border-b border-border bg-gradient-to-r from-primary/10 via-background to-accent/10 p-4">
+        <>
+          {/* Backdrop on mobile */}
+          <div
+            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 z-50 bg-background/60 backdrop-blur-xs md:hidden"
+            aria-hidden="true"
+          />
+
+          <div className="fixed inset-x-3 bottom-3 top-16 sm:top-auto sm:inset-x-auto sm:right-6 sm:bottom-6 z-50 flex h-auto sm:h-[500px] max-h-[calc(100vh-5rem)] sm:max-h-[calc(100vh-3rem)] w-auto sm:w-[400px] max-w-[calc(100vw-1.5rem)] flex-col rounded-2xl border border-border bg-card text-card-foreground shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
+            {/* Top Header */}
+            <div className="flex items-center justify-between border-b border-border bg-card p-4">
             <div className="flex items-center gap-3">
               <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
                 <Sparkles className="size-5" />
@@ -575,27 +564,28 @@ export function SupportFloatingWidget() {
                               </p>
                             </div>
 
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                                ticket.status === "open"
-                                  ? "bg-amber-500/10 text-amber-600"
-                                  : ticket.status === "resolved"
-                                  ? "bg-emerald-500/10 text-emerald-600"
-                                  : "bg-primary/10 text-primary"
-                              }`}
-                            >
-                              {ticket.status}
-                            </span>
-                          </button>
-                        ))
-                    )}
+                              <span
+                                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                  ticket.status === "open"
+                                    ? "bg-amber-500/10 text-amber-600"
+                                    : ticket.status === "resolved"
+                                    ? "bg-emerald-500/10 text-emerald-600"
+                                    : "bg-primary/10 text-primary"
+                                }`}
+                              >
+                                {ticket.status}
+                              </span>
+                            </button>
+                          ))
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           )}
         </div>
-      )}
-    </>
-  );
+      </>
+    )}
+  </>
+);
 }

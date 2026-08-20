@@ -25,22 +25,23 @@ export function AppearancePanel() {
   const { theme, setTheme, mode, setMode } = useTheme();
   const { t } = useTranslation();
   return (
-    <section className="max-w-3xl animate-in fade-in-50 duration-200">
+    <section className="max-w-3xl space-y-8 animate-in fade-in-50 duration-200">
       <SettingsPanelHead
         title={t('settings.appearance.title')}
         description={t('settings.appearance.description')}
+        scope="personal"
       />
 
       <div className="space-y-4">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <SunMoon className="size-4 text-muted-foreground" />
+        <h3 className="flex items-center gap-2 text-sm font-bold tracking-tight text-foreground">
+          <SunMoon className="size-4 text-primary" />
           {t('settings.appearance.mode')}
         </h3>
 
         <div
           role="radiogroup"
           aria-label="Color mode"
-          className="grid max-w-md grid-cols-2 gap-3"
+          className="grid grid-cols-1 sm:grid-cols-2 gap-3"
         >
           {MODES.map((m) => (
             <ModeCard
@@ -53,9 +54,9 @@ export function AppearancePanel() {
         </div>
       </div>
 
-      <div className="mt-8 space-y-4">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <Palette className="size-4 text-muted-foreground" />
+      <div className="space-y-4 pt-4 border-t border-border/60">
+        <h3 className="flex items-center gap-2 text-sm font-bold tracking-tight text-foreground">
+          <Palette className="size-4 text-primary" />
           {t('settings.appearance.accentColor')}
         </h3>
 
@@ -74,15 +75,15 @@ export function AppearancePanel() {
         </div>
       </div>
 
-      <div className="mt-10 pt-6 border-t border-border/60 space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">
-          Privacidade e Cookies (LGPD)
+      <div className="pt-6 border-t border-border/60 space-y-3">
+        <h3 className="text-sm font-bold text-foreground">
+          {t('settings.privacy.cookieConsent')}
         </h3>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Gerencie o consentimento para a utilização de cookies e ferramentas de análise (Google Analytics 4 e Microsoft Clarity).
+          {t('settings.privacy.description')}
         </p>
-        <CookiePreferencesTrigger variant="button" className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-colors">
-          Configurar Preferências de Cookies
+        <CookiePreferencesTrigger variant="button" className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-xl border border-border bg-card hover:bg-muted text-foreground transition-all shadow-2xs">
+          {t('settings.privacy.changePreferences')}
         </CookiePreferencesTrigger>
       </div>
     </section>

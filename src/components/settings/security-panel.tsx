@@ -16,6 +16,7 @@ export function SecurityPanel() {
       <SettingsPanelHead
         title={t('settings.security.title')}
         description={t('settings.security.description')}
+        scope="personal"
       />
       <div className="space-y-4">
         <PasswordForm />

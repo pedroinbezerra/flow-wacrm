@@ -23,6 +23,7 @@ export function FieldsAndTagsPanel() {
       <SettingsPanelHead
         title={t('settings.fieldsAndTags.title')}
         description={t('settings.fieldsAndTags.description')}
+        scope="account"
       />
       <TagManager />
       {canEditSettings ? <CustomFieldsSettings /> : null}

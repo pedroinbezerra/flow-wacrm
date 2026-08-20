@@ -32,8 +32,10 @@ const pageTitles: Record<string, string> = {
   "/admin/support": "navigation.adminSupport",
   "/admin/plans": "navigation.adminPlans",
   "/admin/analytics": "navigation.adminAnalytics",
+  "/admin/consumption": "navigation.adminConsumption",
   "/admin/meta-platform": "navigation.adminMetaPlatform",
   "/admin/onboarding": "navigation.adminOnboarding",
+  "/admin/super-admins": "navigation.adminSuperAdmins",
 };
 
 function getPageTitleKey(pathname: string): string {

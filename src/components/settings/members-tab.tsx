@@ -328,6 +328,7 @@ export function MembersTab() {
       <SettingsPanelHead
         title={t('settings.members.title')}
         description={t('settings.members.description')}
+        scope="account"
         action={
           <RequireRole min="admin">
             <Button onClick={() => setInviteOpen(true)}>
