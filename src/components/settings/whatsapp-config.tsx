@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 import {
   Eye,
   EyeOff,
-  Copy,
   CheckCircle2,
   XCircle,
   Loader2,
@@ -75,7 +74,6 @@ export function WhatsAppConfig() {
   const [phoneNumberId, setPhoneNumberId] = useState('');
   const [wabaId, setWabaId] = useState('');
   const [accessToken, setAccessToken] = useState('');
-  const [verifyToken, setVerifyToken] = useState('');
   const [pin, setPin] = useState('');
   const [tokenEdited, setTokenEdited] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -110,11 +108,9 @@ export function WhatsAppConfig() {
   };
   const [registrationProbe, setRegistrationProbe] =
     useState<RegistrationProbe | null>(null);
-
-  const webhookUrl =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}/api/whatsapp/webhook`
-      : '';
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [renaming, setRenaming] = useState(false);
 
   const fetchConfig = useCallback(async (acctId: string) => {
     setLoading(true);
@@ -140,7 +136,6 @@ export function WhatsAppConfig() {
         setWabaId(primary.waba_id || '');
         setLabel(primary.label || '');
         setAccessToken(MASKED_TOKEN);
-        setVerifyToken('');
         setPin('');
         setTokenEdited(false);
       } else {
@@ -149,7 +144,6 @@ export function WhatsAppConfig() {
         setWabaId('');
         setLabel('');
         setAccessToken('');
-        setVerifyToken('');
         setPin('');
         setTokenEdited(false);
         setIsFormOpen(true);
@@ -213,12 +207,15 @@ export function WhatsAppConfig() {
       setSaving(true);
 
       const payload: Record<string, unknown> = {
-        label: label.trim() || 'Conexão WhatsApp',
         phone_number_id: phoneNumberId.trim(),
         waba_id: wabaId.trim() || null,
-        verify_token: verifyToken.trim() || null,
         pin: pin.trim() || null,
       };
+
+      // Rotulo vazio nao vai no payload: quem renomeia e a lista de
+      // conexoes, e um salvar por outro motivo nao pode reescrever o
+      // nome que o operador deu a linha.
+      if (label.trim()) payload.label = label.trim();
 
       if (tokenEdited && accessToken !== MASKED_TOKEN && accessToken.trim()) {
         payload.access_token = accessToken.trim();
@@ -288,6 +285,35 @@ export function WhatsAppConfig() {
       }
     } catch (err) {
       toast.error('Erro de conexão ao definir número principal.');
+    }
+  }
+
+  async function handleRenameConfig(configId: string) {
+    const nextLabel = renameValue.trim();
+    if (!nextLabel) {
+      toast.error(t('settings.whatsappConfig.labelRequired'));
+      return;
+    }
+    setRenaming(true);
+    try {
+      const res = await fetch('/api/whatsapp/config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config_id: configId, action: 'update_label', label: nextLabel }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        toast.error(data.error || t('settings.whatsappConfig.failedSave'));
+        return;
+      }
+      setRenamingId(null);
+      setRenameValue('');
+      if (accountId) await fetchConfig(accountId);
+    } catch (err) {
+      console.error('Rename config failed:', err);
+      toast.error(t('settings.whatsappConfig.failedSave'));
+    } finally {
+      setRenaming(false);
     }
   }
 
@@ -386,7 +412,6 @@ export function WhatsAppConfig() {
       setPhoneNumberId('');
       setWabaId('');
       setAccessToken('');
-      setVerifyToken('');
       setTokenEdited(false);
       setConnectionStatus('disconnected');
       setResetReason(null);
@@ -399,10 +424,6 @@ export function WhatsAppConfig() {
     }
   }
 
-  function handleCopyWebhookUrl() {
-    navigator.clipboard.writeText(webhookUrl);
-    toast.success(t('settings.whatsappConfig.webhookCopied'));
-  }
 
   async function handleLaunchEmbeddedSignup() {
     if (typeof window !== 'undefined' && window.location.protocol === 'http:') {
@@ -511,13 +532,43 @@ export function WhatsAppConfig() {
         return;
       }
 
-      // Track session info from Meta Embedded Signup callback
+      // A Meta entrega os dados da jornada por postMessage, vindos de
+      // https://www.facebook.com — nao por callback passado em `extras`.
+      // Sem este listener, phone_number_id e waba_id chegam vazios no
+      // backend e ele precisa adivinhar o numero por debug_token. O
+      // `event` (FINISH / CANCEL / ERROR) e o `current_step` sao o que
+      // nos permite dizer ao operador onde a jornada parou, em vez de
+      // devolver silencio quando ele fecha a janela (FH-43.04).
       let embeddedPhoneNumberId: string | undefined;
       let embeddedWabaId: string | undefined;
+      let sessionEvent: string | undefined;
+      let sessionStep: string | undefined;
+      let sessionError: string | undefined;
+
+      const handleSessionInfo = (event: MessageEvent) => {
+        if (event.origin !== 'https://www.facebook.com') return;
+        try {
+          const parsed = JSON.parse(event.data);
+          if (parsed?.type !== 'WA_EMBEDDED_SIGNUP') return;
+          const info = parsed.data ?? {};
+          sessionEvent = parsed.event;
+          sessionStep = info.current_step;
+          sessionError = info.error_message;
+          if (info.phone_number_id) embeddedPhoneNumberId = info.phone_number_id;
+          if (info.waba_id) embeddedWabaId = info.waba_id;
+        } catch {
+          // Outra origem do facebook.com conversando na mesma janela.
+        }
+      };
+      window.addEventListener('message', handleSessionInfo);
+
+      const stopListening = () => window.removeEventListener('message', handleSessionInfo);
 
       window.FB.login(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (response: any) => {
+          stopListening();
+
           if (response?.authResponse?.code) {
             fetch('/api/whatsapp/embedded-signup', {
               method: 'POST',
@@ -542,8 +593,26 @@ export function WhatsAppConfig() {
                 toast.error('Erro de conexão ao salvar no servidor.');
               })
               .finally(() => setConnectingEmbedded(false));
+          } else if (sessionEvent === 'ERROR') {
+            toast.error(
+              t('settings.whatsappConfig.signupErrorFromMeta', {
+                message: sessionError || t('settings.whatsappConfig.signupErrorUnknown'),
+              }),
+              { duration: 10000 },
+            );
+            setConnectingEmbedded(false);
           } else {
-            console.warn('[Meta FB.login] User closed or canceled login popup:', response);
+            // A Meta cria passos novos sem aviso: sem rotulo traduzido,
+            // cai na mensagem generica em vez de exibir a chave crua.
+            const stepLabel = sessionStep
+              ? t(`settings.whatsappConfig.signupSteps.${sessionStep}`, undefined, '')
+              : '';
+            toast.info(
+              stepLabel
+                ? t('settings.whatsappConfig.signupCancelledAtStep', { step: stepLabel })
+                : t('settings.whatsappConfig.signupCancelled'),
+              { duration: 8000 },
+            );
             setConnectingEmbedded(false);
           }
         },
@@ -551,13 +620,8 @@ export function WhatsAppConfig() {
           config_id: configId,
           response_type: 'code',
           override_default_response_type: true,
-          extras: {
-            setup: {},
-            sessionInfoListener: (info: { phone_number_id?: string; waba_id?: string }) => {
-              embeddedPhoneNumberId = info?.phone_number_id;
-              embeddedWabaId = info?.waba_id;
-            },
-          },
+          // Versao do fluxo, exatamente como a Meta gera no painel do app.
+          extras: { version: 'v4' },
         }
       );
     } catch (err) {
@@ -665,7 +729,6 @@ export function WhatsAppConfig() {
                       setWabaId('');
                       setLabel('');
                       setAccessToken('');
-                      setVerifyToken('');
                       setPin('');
                       setIsFormOpen(true);
                     }
@@ -695,9 +758,42 @@ export function WhatsAppConfig() {
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-foreground text-sm">
-                          {cfg.label || `WhatsApp (${cfg.phone_number_id})`}
-                        </span>
+                        {renamingId === cfg.id ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              autoFocus
+                              value={renameValue}
+                              maxLength={60}
+                              placeholder={t('settings.whatsappConfig.labelPlaceholder')}
+                              onChange={(e) => setRenameValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleRenameConfig(cfg.id);
+                                if (e.key === 'Escape') setRenamingId(null);
+                              }}
+                              className="h-7 w-56 bg-muted border-border text-foreground text-sm"
+                            />
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs"
+                              disabled={renaming}
+                              onClick={() => handleRenameConfig(cfg.id)}
+                            >
+                              {renaming ? <Loader2 className="size-3.5 animate-spin" /> : t('common.save')}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs"
+                              onClick={() => setRenamingId(null)}
+                            >
+                              {t('common.cancel')}
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="font-bold text-foreground text-sm">
+                            {cfg.label || `WhatsApp (${cfg.phone_number_id})`}
+                          </span>
+                        )}
                         {cfg.is_default && (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                             ⭐ Principal
@@ -725,20 +821,19 @@ export function WhatsAppConfig() {
                           Tornar Principal
                         </Button>
                       )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs"
-                        onClick={() => {
-                          setConfig(cfg);
-                          setPhoneNumberId(cfg.phone_number_id || '');
-                          setWabaId(cfg.waba_id || '');
-                          setLabel(cfg.label || '');
-                          setIsFormOpen(true);
-                        }}
-                      >
-                        Editar
-                      </Button>
+                      {renamingId !== cfg.id && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          onClick={() => {
+                            setRenamingId(cfg.id);
+                            setRenameValue(cfg.label || '');
+                          }}
+                        >
+                          {t('settings.whatsappConfig.rename')}
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="ghost"
@@ -894,6 +989,49 @@ export function WhatsAppConfig() {
               )}
             </AlertDescription>
 
+            {/* O PIN e saida de emergencia, nao etapa: so aparece quando
+                o registro esta pendente, e no ponto onde a correcao
+                acontece (FH-44.03). Na conexao de 1 clique a Meta
+                registra o numero sozinha e ninguem nunca ve isto. */}
+            {!isRegistered && (
+              <div className="mt-3 rounded-lg border border-border bg-background/80 dark:bg-card/60 px-3.5 py-3 space-y-2">
+                <Label className="text-xs text-foreground">
+                  {t('settings.whatsappConfig.twoStepPin')}
+                </Label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder={t('settings.whatsappConfig.pinPlaceholder')}
+                    value={pin}
+                    onChange={(e) =>
+                      setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
+                    }
+                    className="bg-muted border-border text-foreground placeholder:text-muted-foreground tracking-widest sm:max-w-[220px]"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleSave}
+                    disabled={saving || pin.trim().length !== 6}
+                    className="h-10 sm:h-9"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" />
+                        {t('common.saving')}
+                      </>
+                    ) : (
+                      t('settings.whatsappConfig.registerNumber')
+                    )}
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  {t('settings.whatsappConfig.pinHelp')}
+                </p>
+              </div>
+            )}
+
             {registrationProbe && (
               <div className="mt-3 rounded-lg border border-border bg-background/80 dark:bg-card/60 px-3.5 py-2.5 space-y-1.5 text-[11px]">
                 <p className="font-medium text-foreground">
@@ -929,7 +1067,7 @@ export function WhatsAppConfig() {
         )}
 
         {/* Mode 1: 1-Click Embedded Signup */}
-        <Card className="border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/20">
+        <Card id="tour-whatsapp-connect" className="border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/20">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-foreground flex items-center gap-2">
@@ -1105,153 +1243,6 @@ export function WhatsAppConfig() {
           </CardContent>
         </Card>
 
-        {/* Mode 3: Manual API Credentials (Advanced) */}
-        <Accordion className="w-full border border-border rounded-lg bg-card px-4">
-          <AccordionItem value="manual-config" className="border-none">
-            <AccordionTrigger className="text-foreground hover:no-underline text-base font-semibold py-4">
-              <span className="flex items-center gap-2">
-                {t('settings.whatsappConfig.manualConfigTitle')}
-              </span>
-            </AccordionTrigger>
-            <AccordionContent className="space-y-4 pt-2 pb-4">
-              <p className="text-xs text-muted-foreground mb-4">
-                {t('settings.whatsappConfig.manualConfigDescription')}
-              </p>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Rótulo / Nome da Conexão</Label>
-                <Input
-                  placeholder="Ex: WhatsApp Vendas, WhatsApp Suporte"
-                  value={label}
-                  onChange={(e) => setLabel(e.target.value)}
-                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Identificação da linha de WhatsApp no sistema.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">{t('settings.whatsappConfig.phoneNumberId')}</Label>
-                <Input
-                  placeholder={t('settings.whatsappConfig.phoneNumberIdPlaceholder')}
-                  value={phoneNumberId}
-                  onChange={(e) => setPhoneNumberId(e.target.value)}
-                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">{t('settings.whatsappConfig.businessAccountId')}</Label>
-                <Input
-                  placeholder={t('settings.whatsappConfig.businessAccountIdPlaceholder')}
-                  value={wabaId}
-                  onChange={(e) => setWabaId(e.target.value)}
-                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">{t('settings.whatsappConfig.accessToken')}</Label>
-                <div className="relative">
-                  <Input
-                    type={showToken ? 'text' : 'password'}
-                    placeholder={t('settings.whatsappConfig.accessTokenPlaceholder')}
-                    value={accessToken}
-                    onChange={(e) => {
-                      setAccessToken(e.target.value);
-                      setTokenEdited(true);
-                    }}
-                    onFocus={() => {
-                      if (accessToken === MASKED_TOKEN) {
-                        setAccessToken('');
-                        setTokenEdited(true);
-                      }
-                    }}
-                    className="bg-muted border-border text-foreground placeholder:text-muted-foreground pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowToken(!showToken)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showToken ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                  </button>
-                </div>
-                {config && !tokenEdited && (
-                  <p className="text-xs text-muted-foreground">
-                    {t('settings.whatsappConfig.accessTokenHidden')}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">{t('settings.whatsappConfig.verifyToken')}</Label>
-                <Input
-                  placeholder={t('settings.whatsappConfig.verifyTokenPlaceholder')}
-                  value={verifyToken}
-                  onChange={(e) => setVerifyToken(e.target.value)}
-                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
-                />
-                <p className="text-xs text-muted-foreground">
-                  {t('settings.whatsappConfig.verifyTokenHelp')}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">
-                  {t('settings.whatsappConfig.twoStepPin')}
-                  <span className="ml-1 text-muted-foreground">{t('settings.whatsappConfig.optional')}</span>
-                </Label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder={t('settings.whatsappConfig.pinPlaceholder')}
-                  value={pin}
-                  onChange={(e) =>
-                    setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
-                  }
-                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground tracking-widest"
-                />
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {t('settings.whatsappConfig.pinHelp')}
-                </p>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-
-
-        {/* Webhook URL */}
-        <Card id="tour-whatsapp-webhook">
-          <CardHeader>
-            <CardTitle className="text-foreground">Webhook Configuration</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Use this URL as your webhook callback in the Meta App Dashboard.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">Webhook Callback URL</Label>
-              <div className="flex gap-2">
-                <Input
-                  readOnly
-                  value={webhookUrl}
-                  className="bg-muted border-border text-muted-foreground font-mono text-sm"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleCopyWebhookUrl}
-                  className="shrink-0 border-border text-muted-foreground hover:text-foreground hover:bg-muted"
-                >
-                  <Copy className="size-4" />
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Action Buttons */}
         <div id="tour-whatsapp-actions" className="flex flex-wrap gap-3">
           <Button
@@ -1369,23 +1360,6 @@ export function WhatsAppConfig() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem className="border-border">
-                <AccordionTrigger className="text-muted-foreground hover:text-foreground hover:no-underline">
-                  <span className="flex items-center gap-2">
-                    <span className="flex size-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">4</span>
-                    {t('settings.whatsappConfig.step4Title')}
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">
-                  <ol className="list-decimal list-inside space-y-1 text-sm">
-                    <li>{t('settings.whatsappConfig.step4Item1')}</li>
-                    <li>{t('settings.whatsappConfig.step4Item2')}</li>
-                    <li>{t('settings.whatsappConfig.step4Item3')} <strong className="text-foreground">{t('settings.whatsappConfig.webhookUrlLabel')}</strong></li>
-                    <li>{t('settings.whatsappConfig.step4Item4')} <strong className="text-foreground">{t('settings.whatsappConfig.verifyToken')}</strong></li>
-                    <li>{t('settings.whatsappConfig.step4Item5')}</li>
-                  </ol>
-                </AccordionContent>
-              </AccordionItem>
             </Accordion>
 
             <div className="mt-4 pt-4 border-t border-border">

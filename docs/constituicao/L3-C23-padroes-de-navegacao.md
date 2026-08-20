@@ -301,4 +301,4 @@ pendente de superfície no Anexo C.
 | Painel lateral | `src/components/ui/sheet.tsx` |
 | Modal | `src/components/ui/dialog.tsx` |
 | Sobreposição efêmera | `src/components/ui/popover.tsx`, `dropdown-menu.tsx`, `tooltip.tsx` |
-| Guardas de acesso e redirecionamento | `src/middleware.ts`, `src/app/auth/callback/route.ts` |
+| Guardas de acesso e redirecionamento | `src/proxy.ts`, `src/app/auth/callback/route.ts` |

@@ -23,8 +23,14 @@ cd flowhub
 
 cp .env.local.example .env.local   # fill in Supabase + Meta creds
 npm install
+
+# The dev server binds dev.flowhub.local (hCaptcha rejects bare "localhost"),
+# so add this line to your OS hosts file first:
+#   127.0.0.1 dev.flowhub.local
 npm run dev
 ```
+
+Then open <http://dev.flowhub.local:3000>.
 
 Full setup (Supabase migrations, WhatsApp Business API, deploy) lives in the codebase.
 
@@ -107,7 +113,8 @@ in your fork:
 
 | Command | What it does |
 | --- | --- |
-| `npm run dev` | Turbopack dev server on port 3000. |
+| `npm run dev` | Turbopack dev server on <http://dev.flowhub.local:3000>. Needs the hosts entry above. |
+| `npm run dev:lan` | Same server bound to every interface, for testing from another device. hCaptcha won't load. |
 | `npm run build` | Production build. Next also runs its own typecheck here. |
 | `npm run typecheck` | `tsc --noEmit`. Fast TS-only pass. |
 | `npm run lint` | ESLint. |

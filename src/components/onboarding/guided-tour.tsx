@@ -392,18 +392,10 @@ export function GuidedTour() {
             },
           },
           {
-            element: "#tour-whatsapp-credentials",
+            element: "#tour-whatsapp-connect",
             popover: {
-              title: t("onboarding.tour.settings.credentialsTitle"),
-              description: t("onboarding.tour.settings.credentialsDesc"),
-              side: "bottom",
-            },
-          },
-          {
-            element: "#tour-whatsapp-webhook",
-            popover: {
-              title: t("onboarding.tour.settings.webhookTitle"),
-              description: t("onboarding.tour.settings.webhookDesc"),
+              title: t("onboarding.tour.settings.connectTitle"),
+              description: t("onboarding.tour.settings.connectDesc"),
               side: "bottom",
             },
           },

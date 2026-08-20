@@ -194,7 +194,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
         {/* Logo row + Collapse toggle */}
         <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border px-3.5">
           <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
-            <FlowLogo height={26} />
+            <FlowLogo height={36} />
           </Link>
           <div className="flex items-center gap-1">
             <button

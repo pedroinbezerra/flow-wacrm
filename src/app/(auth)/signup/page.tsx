@@ -173,7 +173,7 @@ function SignupPageInner() {
                 <UsersRound className="h-6 w-6 text-primary" />
               </div>
             ) : (
-              <FlowLogo height={40} />
+              <FlowLogo height={55} />
             )}
           </div>
           <CardTitle className="text-xl text-foreground">

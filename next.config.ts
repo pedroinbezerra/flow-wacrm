@@ -1,5 +1,21 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+
+/**
+ * Raiz explicita do projeto.
+ *
+ * Sem isto o Turbopack infere a raiz subindo diretorios ate achar um
+ * lockfile — e acaba encontrando um pnpm-lock.yaml solto na pasta home do
+ * usuario, passando a tratar a home inteira como workspace (avisando no
+ * build e observando arquivos de fora do repositorio).
+ *
+ * Derivamos de import.meta.url (e nao de import.meta.dirname) porque o
+ * config e transpilado antes de rodar e dirname nem sempre esta presente.
+ */
+const PROJECT_ROOT = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * Baseline security headers applied to every response.
@@ -64,6 +80,9 @@ const SECURITY_HEADERS = [
 ] as const;
 
 const nextConfig: NextConfig = {
+  // Ancora a raiz do workspace (ver PROJECT_ROOT acima).
+  turbopack: { root: PROJECT_ROOT },
+
   /**
    * Cache-Control policy.
    *
@@ -93,7 +112,7 @@ const nextConfig: NextConfig = {
    *   /broadcasts, etc.) are server-rendered per request — Next.js
    *   and Supabase auth already prevent them from being served
    *   from a shared cache. The s-maxage here is a ceiling; Next.js
-   *   and auth middleware still set `private` / `no-store` for
+   *   and the auth proxy (src/proxy.ts) still set `private` / `no-store` for
    *   per-user responses.
    *
    * Security headers are appended via a separate catch-all rule
@@ -104,7 +123,9 @@ const nextConfig: NextConfig = {
 
   // "dev.flowhub.local" (mapped to 127.0.0.1 in the OS hosts file) lets
   // local dev pass hCaptcha's domain allowlist, which rejects bare
-  // "localhost" / "127.0.0.1" hostnames.
+  // "localhost" / "127.0.0.1" hostnames. The `dev` script binds this
+  // hostname (`next dev -H dev.flowhub.local`), so it is also the URL
+  // Next prints on startup. `dev:lan` binds 0.0.0.0 for device testing.
   allowedDevOrigins: ["127.0.0.1", "dev.flowhub.local"],
 
   async headers() {
@@ -141,7 +162,16 @@ export default withSentryConfig(nextConfig, {
   project: process.env.SENTRY_PROJECT,
   silent: !process.env.CI,
   widenClientFileUpload: true,
-  disableLogger: true,
-  automaticVercelMonitors: true,
+
+  // Opcoes de build do pipeline webpack do Sentry (nomes atuais; as formas
+  // antigas no nivel raiz estao deprecadas). O build deste projeto roda em
+  // Turbopack, onde elas sao no-op — ficam declaradas para continuarem
+  // valendo caso um build webpack volte a ser usado.
+  webpack: {
+    // Remove os logs internos de debug do SDK do bundle.
+    treeshake: { removeDebugLogging: true },
+    // Cria monitores de cron no Sentry a partir dos crons de vercel.json.
+    automaticVercelMonitors: true,
+  },
 });
 

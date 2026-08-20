@@ -10,8 +10,8 @@ subprocessadores/fornecedores, hoje só documentada no RAT interno.
 Nenhuma das duas existe hoje. Já existem três páginas públicas equivalentes
 que servem de modelo de layout: `src/app/privacy/page.tsx`,
 `src/app/terms/page.tsx` e `src/app/cookies/page.tsx`. Nenhuma rota especial
-precisa ser registrada para torná-las públicas — o middleware
-(`src/middleware.ts`, lista `protectedPaths`) só protege rotas dentro do
+precisa ser registrada para torná-las públicas — o proxy
+(`src/proxy.ts`, lista `protectedPaths`) só protege rotas dentro do
 grupo `(dashboard)`; qualquer página criada fora desse grupo já nasce
 pública.
 

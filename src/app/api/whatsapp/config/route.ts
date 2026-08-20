@@ -220,7 +220,7 @@ export async function POST(request: Request) {
     // Look up any pre-existing row for this account and phone_number_id
     const { data: existing } = await supabase
       .from('whatsapp_config')
-      .select('id, registered_at, phone_number_id, is_default, access_token')
+      .select('id, registered_at, phone_number_id, is_default, access_token, verify_token')
       .eq('account_id', accountId)
       .eq('phone_number_id', phone_number_id)
       .maybeSingle()
@@ -268,7 +268,11 @@ export async function POST(request: Request) {
     let encryptedVerifyToken: string | null
     try {
       encryptedAccessToken = encrypt(activeAccessToken)
-      encryptedVerifyToken = verify_token ? encrypt(verify_token) : null
+      // Sem campo no payload, preserva o que ja esta gravado: salvar a
+      // conexao por outro motivo nao pode apagar um segredo em silencio.
+      encryptedVerifyToken = verify_token
+        ? encrypt(verify_token)
+        : ((existing?.verify_token as string | null) ?? null)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown encryption error'
       console.error('Encryption failed:', message)

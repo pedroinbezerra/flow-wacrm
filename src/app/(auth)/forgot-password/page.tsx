@@ -101,7 +101,7 @@ export default function ForgotPasswordPage() {
       <Card className="w-full max-w-md border-border bg-card">
         <CardHeader className="items-center text-center">
           <div className="mb-4">
-            <FlowLogo height={40} />
+            <FlowLogo height={55} />
           </div>
           <CardTitle className="text-xl text-foreground">{t("auth.forgotPassword.title")}</CardTitle>
           <CardDescription className="text-muted-foreground">

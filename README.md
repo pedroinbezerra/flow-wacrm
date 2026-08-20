@@ -50,11 +50,22 @@ git clone https://github.com/pedroinbezerra/flow-wacrm.git
 cd flow-wacrm
 npm install
 cp .env.local.example .env.local   # fill in Supabase + Meta creds
+
+# `npm run dev` serves on the hostname hCaptcha accepts (it rejects bare
+# "localhost"). Map it to loopback once, in your OS hosts file:
+#   Windows        C:\Windows\System32\drivers\etc\hosts   (as Administrator)
+#   macOS / Linux  /etc/hosts
+#
+#   127.0.0.1 dev.flowhub.local
 npm run dev
 ```
 
-Open <http://localhost:3000>. You'll be redirected to `/login` (or
+Open <http://dev.flowhub.local:3000>. You'll be redirected to `/login` (or
 `/dashboard` if already signed in).
+
+To reach the dev server from another device on your network (phone testing),
+use `npm run dev:lan` instead — it binds every interface, but hCaptcha
+challenges won't load on that hostname.
 
 ## 🚀 Deploy on Hostinger (recommended)
 

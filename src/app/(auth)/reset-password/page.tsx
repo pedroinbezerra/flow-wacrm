@@ -155,7 +155,7 @@ function ResetPasswordPageInner() {
         <Card className="w-full max-w-md border-border bg-card">
           <CardHeader className="items-center text-center">
             <div className="mb-4">
-              <FlowLogo height={40} />
+              <FlowLogo height={55} />
             </div>
             <CardTitle className="text-xl text-foreground">
               {t("auth.resetPassword.title")}
@@ -176,7 +176,7 @@ function ResetPasswordPageInner() {
           <CardHeader className="items-center text-center">
             {/* O alerta vermelho só se justifica quando um link foi
                 de fato tentado e falhou (?expired=true, vindo do
-                /auth/callback ou do middleware). Chegar aqui direto
+                /auth/callback ou do proxy). Chegar aqui direto
                 — ex.: pelo botão "Usar o código do e-mail" — é o
                 caminho esperado, não uma falha; a tela não deve dar
                 a entender que algo já deu errado antes mesmo do

@@ -21,7 +21,7 @@ export default function RootPage() {
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-50 transition-colors">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-ring rounded-lg">
-            <FlowLogo height={32} />
+            <FlowLogo height={44} />
           </Link>
           <PublicHeaderNav />
         </div>

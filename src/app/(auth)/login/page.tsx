@@ -112,7 +112,7 @@ function LoginPageInner() {
                 <UsersRound className="h-6 w-6 text-primary" />
               </div>
             ) : (
-              <FlowLogo height={80} />
+              <FlowLogo height={110} />
             )}
           </div>
           <CardTitle className="text-xl text-foreground">

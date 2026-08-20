@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import { after, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { decrypt, encrypt, isLegacyFormat } from '@/lib/whatsapp/encryption'
@@ -81,6 +82,18 @@ interface WhatsAppWebhookEntry {
   }>
 }
 
+/**
+ * Comparacao de segredo em tempo constante. O handshake e publico e
+ * repetivel, entao um `===` vaza o prefixo correto byte a byte para
+ * quem quiser sondar o endpoint.
+ */
+function timingSafeMatch(received: string, expected: string): boolean {
+  const a = Buffer.from(received)
+  const b = Buffer.from(expected)
+  if (a.length !== b.length) return false
+  return crypto.timingSafeEqual(a, b)
+}
+
 // GET - Webhook verification
 export async function GET(request: Request) {
   try {
@@ -94,6 +107,18 @@ export async function GET(request: Request) {
         { error: 'Missing verification parameters' },
         { status: 400 }
       )
+    }
+
+    // O token do app e o caminho canonico: o webhook e um so para todo
+    // o produto, cadastrado uma unica vez no painel da Meta. O casamento
+    // por linha abaixo permanece apenas para as configuracoes manuais
+    // legadas, que gravavam um token por conta.
+    const appVerifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN
+    if (appVerifyToken && timingSafeMatch(verifyToken, appVerifyToken)) {
+      return new Response(challenge, {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain' },
+      })
     }
 
     // Fetch all whatsapp configs to check verify tokens

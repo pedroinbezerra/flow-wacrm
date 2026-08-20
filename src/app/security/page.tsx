@@ -71,7 +71,7 @@ export default function SecurityPublicPage() {
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <FlowLogo height={32} />
+            <FlowLogo height={44} />
           </Link>
           <PublicHeaderNav />
         </div>
