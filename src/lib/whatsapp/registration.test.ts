@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getSubscribedApps,
+  isRegisteredOnCloudApi,
   registerPhoneNumber,
   subscribeWabaToApp,
 } from './meta-api';
@@ -178,5 +179,45 @@ describe('getSubscribedApps', () => {
     await expect(
       getSubscribedApps({ wabaId: 'WABA_1', accessToken: 'tok' }),
     ).rejects.toThrow(/Invalid OAuth token/);
+  });
+});
+
+describe('isRegisteredOnCloudApi', () => {
+  it('accepts a number Meta reports on the Cloud API platform', () => {
+    expect(
+      isRegisteredOnCloudApi({
+        id: '1',
+        display_phone_number: '+55 11 90000-0000',
+        platform_type: 'CLOUD_API',
+      }),
+    ).toBe(true);
+  });
+
+  it('accepts CONNECTED when Meta omits platform_type', () => {
+    expect(
+      isRegisteredOnCloudApi({
+        id: '1',
+        display_phone_number: '+55 11 90000-0000',
+        status: 'connected',
+      }),
+    ).toBe(true);
+  });
+
+  it('rejects a number that never completed registration', () => {
+    expect(
+      isRegisteredOnCloudApi({
+        id: '1',
+        display_phone_number: '+55 11 90000-0000',
+        platform_type: 'NOT_APPLICABLE',
+        status: 'PENDING',
+      }),
+    ).toBe(false);
+  });
+
+  it('rejects missing metadata rather than assuming success', () => {
+    expect(isRegisteredOnCloudApi(null)).toBe(false);
+    expect(
+      isRegisteredOnCloudApi({ id: '1', display_phone_number: '+55 11 90000-0000' }),
+    ).toBe(false);
   });
 });

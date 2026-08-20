@@ -4,6 +4,7 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import {
   discoverWhatsAppAccounts,
   exchangeCodeForAccessToken,
+  isRegisteredOnCloudApi,
   registerPhoneNumber,
   subscribeWabaToApp,
   verifyPhoneNumber,
@@ -243,6 +244,13 @@ export async function POST(request: Request) {
         registrationError = err instanceof Error ? err.message : 'Registration failed'
         console.error('[embedded-signup POST] Phone registration failed:', registrationError)
       }
+    } else if (isRegisteredOnCloudApi(phoneInfo)) {
+      // One-click onboarding never asks for a PIN: Meta registers the
+      // number itself during Embedded Signup. Trust Meta's own phone
+      // metadata rather than recording "never registered" on a number
+      // that is already live — a stale flag would show the operator a
+      // warning that contradicts a working connection (FH-41.11).
+      registeredAt = new Date().toISOString()
     } else {
       registrationSkipped = true
     }

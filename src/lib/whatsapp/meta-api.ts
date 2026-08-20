@@ -21,6 +21,33 @@ export interface MetaPhoneInfo {
   display_phone_number: string
   verified_name?: string
   quality_rating?: string
+  /**
+   * Operating status of the number on Meta's side. `CONNECTED` means
+   * the number completed /register and is live on Cloud API.
+   */
+  status?: string
+  /**
+   * `CLOUD_API` once the number is registered on Cloud API,
+   * `NOT_APPLICABLE` while it never was.
+   */
+  platform_type?: string
+  code_verification_status?: string
+}
+
+/**
+ * Meta — not our database — is the authority on whether a number is
+ * registered on Cloud API. A number onboarded through Embedded Signup
+ * is registered by Meta during onboarding, so our local
+ * `registered_at` timestamp can be NULL on a perfectly live number.
+ * Read the truth from the phone metadata instead of inferring it.
+ */
+export function isRegisteredOnCloudApi(info: MetaPhoneInfo | null | undefined): boolean {
+  if (!info) return false
+  const platform = info.platform_type?.toUpperCase()
+  const status = info.status?.toUpperCase()
+  if (platform === 'CLOUD_API') return true
+  // Older responses omit platform_type; CONNECTED alone is conclusive.
+  return status === 'CONNECTED'
 }
 
 interface MetaErrorResponse {
@@ -55,14 +82,23 @@ export async function verifyPhoneNumber(
   args: VerifyPhoneNumberArgs
 ): Promise<MetaPhoneInfo> {
   const { phoneNumberId, accessToken } = args
-  const url = `${META_API_BASE}/${phoneNumberId}?fields=id,display_phone_number,verified_name,quality_rating`
-  const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+  const base = `${META_API_BASE}/${phoneNumberId}?fields=id,display_phone_number,verified_name,quality_rating`
+  const headers = { Authorization: `Bearer ${accessToken}` }
+
+  // Ask for the registration fields first. They are what tells us the
+  // number is live on Cloud API, but they are not worth breaking the
+  // whole connection check over: if a future API version drops one,
+  // fall back to the minimal field set instead of failing the call.
+  const response = await fetch(`${base},status,platform_type,code_verification_status`, {
+    headers,
   })
-  if (!response.ok) {
-    await throwMetaError(response, `Meta API error: ${response.status}`)
+  if (response.ok) return response.json()
+
+  const fallback = await fetch(base, { headers })
+  if (!fallback.ok) {
+    await throwMetaError(fallback, `Meta API error: ${fallback.status}`)
   }
-  return response.json()
+  return fallback.json()
 }
 
 // ============================================================

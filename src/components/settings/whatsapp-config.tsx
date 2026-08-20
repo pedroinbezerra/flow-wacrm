@@ -945,6 +945,26 @@ export function WhatsAppConfig() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Preparo antes do popup da Meta. O erro "este numero ja
+                pertence a uma conta do WhatsApp" so aparece dentro do
+                fluxo da Meta, onde nao temos como explicar nada — e a
+                exclusao da conta no aplicativo leva o historico junto.
+                Prevenir aqui e mais barato que a mensagem depois
+                (FH-44.01), e a ultima linha diz em voz alta que o
+                numero continua sendo do cliente (FH-11). */}
+            <div className="rounded-lg border border-border bg-muted/40 px-4 py-3.5 space-y-2">
+              <p className="text-xs font-semibold text-foreground">
+                {t('settings.whatsappConfig.beforeConnectTitle')}
+              </p>
+              <ul className="list-disc pl-4 space-y-1.5 text-xs leading-relaxed text-muted-foreground marker:text-muted-foreground/60">
+                <li>{t('settings.whatsappConfig.beforeConnectNumber')}</li>
+                <li>{t('settings.whatsappConfig.beforeConnectBackup')}</li>
+                <li>{t('settings.whatsappConfig.beforeConnectMove')}</li>
+                <li className="text-foreground/80">
+                  {t('settings.whatsappConfig.beforeConnectFreedom')}
+                </li>
+              </ul>
+            </div>
             <Button
               onClick={handleLaunchEmbeddedSignup}
               disabled={connectingEmbedded}

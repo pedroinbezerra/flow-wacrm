@@ -1,10 +1,24 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { decrypt } from '@/lib/whatsapp/encryption'
 import {
   getSubscribedApps,
+  isRegisteredOnCloudApi,
   verifyPhoneNumber,
 } from '@/lib/whatsapp/meta-api'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _adminClient: any = null
+function supabaseAdmin() {
+  if (!_adminClient) {
+    _adminClient = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+  }
+  return _adminClient
+}
 
 /**
  * GET /api/whatsapp/config/verify-registration
@@ -20,9 +34,13 @@ import {
  *   1. phone_info  — GET /{phone_number_id} succeeds
  *   2. waba_subscription — our app appears in
  *                    GET /{waba_id}/subscribed_apps
- *   3. registered_at — local timestamp set by POST /config when
- *                    /register last succeeded; NULL means the
- *                    number was saved but never actually subscribed
+ *   3. registered_at — whether the number is live on Cloud API.
+ *                    Meta's phone metadata is the authority here;
+ *                    the local timestamp is only a cache and is
+ *                    healed from Meta whenever the two disagree,
+ *                    because one-click onboarding registers the
+ *                    number without ever passing through our
+ *                    /register call.
  *
  * Returns 200 in every case so the UI can render diagnostic detail
  * rather than a generic error toast. The combined `live` flag is
@@ -98,14 +116,43 @@ export async function GET() {
     locally_marked_registered: config.registered_at != null,
   }
   const errors: string[] = []
+  let registeredAt: string | null = config.registered_at ?? null
 
-  // 1. Phone metadata
+  // 1. Phone metadata — also the authoritative answer on whether the
+  // number is registered on Cloud API.
   try {
-    await verifyPhoneNumber({
+    const phoneInfo = await verifyPhoneNumber({
       phoneNumberId: config.phone_number_id,
       accessToken,
     })
     checks.phone_metadata_ok = true
+
+    if (isRegisteredOnCloudApi(phoneInfo)) {
+      checks.locally_marked_registered = true
+      if (!registeredAt) {
+        // Heal the cached flag. Numbers connected in one click are
+        // registered by Meta during onboarding, so the timestamp our
+        // /register path would have written was never set — showing a
+        // "not registered" warning on a live number states something
+        // the system does not know to be true (FH-41.11, FH-43.09).
+        // Service role: the operator running the diagnostic may not be
+        // an account admin, and a read-only repair must not depend on
+        // their role.
+        registeredAt = new Date().toISOString()
+        const { error: healError } = await supabaseAdmin()
+          .from('whatsapp_config')
+          .update({ registered_at: registeredAt, last_registration_error: null })
+          .eq('id', config.id)
+          .eq('account_id', accountId)
+        if (healError) {
+          console.warn('[verify-registration] Failed to backfill registered_at:', healError)
+        }
+      }
+    } else if (!registeredAt) {
+      errors.push(
+        'Meta reports this number is not live on Cloud API yet. Enter the 2-step PIN and save the configuration to register it.',
+      )
+    }
   } catch (err) {
     errors.push(
       `Phone metadata check failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -149,8 +196,8 @@ export async function GET() {
     live,
     checks,
     errors,
-    last_registration_error: config.last_registration_error ?? null,
-    registered_at: config.registered_at ?? null,
+    last_registration_error: registeredAt ? null : (config.last_registration_error ?? null),
+    registered_at: registeredAt,
     subscribed_apps_at: config.subscribed_apps_at ?? null,
   })
 }
