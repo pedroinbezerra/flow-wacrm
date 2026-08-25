@@ -1,15 +1,15 @@
 "use client";
 
 import React from "react";
-import { Sparkles, MessageSquare, TrendingUp, Workflow, Bot } from "lucide-react";
+import { MessageSquare, TrendingUp, Workflow, Bot, LayoutTemplate } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Layer01Opening() {
   const intentPills = [
-    { verb: "atender", icon: MessageSquare, label: "Atendimento Unificado" },
-    { verb: "vender", icon: TrendingUp, label: "Funil Comercial & Kanban" },
-    { verb: "acompanhar", icon: Workflow, label: "Processos em Tempo Real" },
-    { verb: "automatizar", icon: Bot, label: "Inteligência Silenciosa" },
+    { verb: "atender", icon: MessageSquare, label: "Conversas Contínuas" },
+    { verb: "vender", icon: TrendingUp, label: "Funis e Negócios" },
+    { verb: "acompanhar", icon: Workflow, label: "Processos e Etapas" },
+    { verb: "automatizar", icon: Bot, label: "Rotinas Inteligentes" },
   ];
 
   return (
@@ -26,8 +26,8 @@ export function Layer01Opening() {
       {/* Opening Hero (Silent intro) */}
       <div className="opening-hero-silent absolute inset-0 flex flex-col items-center justify-center text-center px-6 z-10">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-soft text-primary text-xs font-semibold border border-primary/20 backdrop-blur-md mb-6 shadow-sm">
-          <Sparkles className="size-3.5" />
-          <span>Princípio Fundador</span>
+          <LayoutTemplate className="size-3.5" />
+          <span>Sistema Operacional Comercial</span>
         </div>
 
         <h1 className="text-5xl sm:text-7xl md:text-8xl font-black tracking-tight text-foreground font-sans uppercase">
@@ -57,7 +57,7 @@ export function Layer01Opening() {
 
             <h2 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground leading-tight">
               Quero{" "}
-              {/* Auto-Sizing Monolithic Grid Slot Window (Zero clipping, perfect centering for short & long words) */}
+              {/* Auto-Sizing Monolithic Grid Slot Window */}
               <span className="intent-slot-window relative inline-grid grid-cols-1 grid-rows-1 items-center justify-center align-middle mx-1.5 px-4 sm:px-6 py-1 rounded-2xl bg-primary-soft text-primary border border-primary/30 shadow-inner leading-none select-none">
                 <span className="intent-word-0 col-start-1 row-start-1 flex items-center justify-center font-extrabold text-primary leading-none text-center whitespace-nowrap">
                   atender

@@ -8,7 +8,7 @@ import {
   MessageSquare,
   Building2,
   Users,
-  Kanban,
+  Workflow,
   Zap
 } from "lucide-react";
 import { 
@@ -22,11 +22,11 @@ import { cn } from "@/lib/utils";
 
 export function Layer02Flow() {
   const steps = [
-    { title: "Uma conversa chega", subtitle: "O cliente inicia o contato pelo WhatsApp oficial." },
-    { title: "O contexto aparece", subtitle: "Ficha unificada, empresa e tags carregam no mesmo plano." },
-    { title: "A equipe entra", subtitle: "Colaboração sem ruído, notas internas privadas e IA." },
-    { title: "O processo avança", subtitle: "Oportunidade e valor vinculados diretamente ao funil comercial." },
-    { title: "O FlowHub executa", subtitle: "Entrega direta de documentos da sua nuvem com rastreabilidade total." },
+    { title: "Uma conversa começa", subtitle: "Um contato envia mensagem no canal da sua empresa." },
+    { title: "O contexto se reúne", subtitle: "Histórico, dados cadastrais e anotações carregam no mesmo espaço." },
+    { title: "A equipe colabora", subtitle: "Membros atuam em conjunto com anotações internas que o contato não vê." },
+    { title: "O negócio avança", subtitle: "A oportunidade e seu valor progridem pelas etapas do funil." },
+    { title: "A rotina executa", subtitle: "Documentos e mensagens são enviados automaticamente com confirmação." },
   ];
 
   return (
@@ -40,16 +40,16 @@ export function Layer02Flow() {
           <div className="space-y-1">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-soft text-primary text-xs font-semibold border border-primary/20">
               <Layers className="size-3.5" />
-              <span>Como o FlowHub Funciona</span>
+              <span>Como o Trabalho Acontece</span>
             </div>
             <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-foreground">
-              Acontecimentos em tempo real, sem troca de contexto.
+              Acontecimentos contínuos, sem troca de contexto.
             </h2>
           </div>
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono bg-card-2 px-3 py-1.5 rounded-xl border border-border/60 shrink-0 self-start sm:self-auto">
             <Sparkles className="size-3.5 text-primary" />
-            <span>Linha do Tempo Contínua</span>
+            <span>Linha do Tempo Integrada</span>
           </div>
         </div>
 
@@ -59,7 +59,7 @@ export function Layer02Flow() {
           {/* Left: Step Checklist */}
           <div className="lg:col-span-4 space-y-2.5">
             <span className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground font-semibold block pb-1">
-              Etapas do Fluxo
+              Etapas da Operação
             </span>
 
             {steps.map((step, idx) => (
@@ -90,7 +90,7 @@ export function Layer02Flow() {
             ))}
           </div>
 
-          {/* Right: Dynamic Single-Scene Canvas (Zero overlapping artifacts) */}
+          {/* Right: Dynamic Single-Scene Canvas */}
           <div className="lg:col-span-8 relative h-[360px] sm:h-[400px] rounded-2xl border border-border/60 bg-background/70 overflow-hidden shadow-inner flex items-center justify-center p-4 sm:p-6">
             
             {/* Scene 0: Conversation message arrives */}
@@ -100,14 +100,14 @@ export function Layer02Flow() {
                 <span>Nova Mensagem Recebida</span>
               </div>
               <MessageBubbleSnippet 
-                sender="Mariana Souza (WhatsApp)" 
+                sender="Mariana Souza" 
                 text="Olá! Gostaria de consultar uma proposta para implantação na Logística Expresso." 
                 time="14:32" 
                 variant="user"
                 className="shadow-xl"
               />
               <p className="text-[11px] text-muted-foreground pt-2">
-                Atendimento iniciado diretamente pelo canal oficial sem intermediários.
+                Conversa conectada diretamente sem intermediários ou perda de histórico.
               </p>
             </div>
 
@@ -115,20 +115,20 @@ export function Layer02Flow() {
             <div className="flow-scene flow-scene-1 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-20 opacity-0 pointer-events-none transition-all">
               <div className="flex items-center gap-2 text-xs font-semibold text-primary border-b border-border/40 pb-2">
                 <Building2 className="size-3.5" />
-                <span>Contexto & Identidade do Cliente</span>
+                <span>Ficha e Contexto do Contato</span>
               </div>
               <ContactCardSnippet className="shadow-xl border-primary/30" />
             </div>
 
-            {/* Scene 2: Collaborative team and AI note */}
+            {/* Scene 2: Collaborative team and internal note */}
             <div className="flow-scene flow-scene-2 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-30 opacity-0 pointer-events-none transition-all">
               <div className="flex items-center gap-2 text-xs font-semibold text-purple-400 border-b border-border/40 pb-2">
                 <Users className="size-3.5" />
-                <span>Colaboração em Tempo Real & IA</span>
+                <span>Colaboração e Anotações Internas</span>
               </div>
               <MessageBubbleSnippet 
-                sender="FlowHub IA (Silenciosa)" 
-                text="Identificado contato corporativo. Conectando com a ficha comercial e o consultor Carlos." 
+                sender="IA da Operação" 
+                text="Identificado contato corporativo. Dados vinculados à ficha comercial do consultor Carlos." 
                 time="14:33" 
                 variant="bot"
                 className="shadow-md"
@@ -136,11 +136,11 @@ export function Layer02Flow() {
               <InternalNoteSnippet className="shadow-md" />
             </div>
 
-            {/* Scene 3: Kanban deal advances */}
+            {/* Scene 3: Deal in pipeline */}
             <div className="flow-scene flow-scene-3 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-40 opacity-0 pointer-events-none transition-all">
               <div className="flex items-center gap-2 text-xs font-semibold text-primary border-b border-border/40 pb-2">
-                <Kanban className="size-3.5" />
-                <span>Oportunidade Comercial Vinculada</span>
+                <Workflow className="size-3.5" />
+                <span>Negócio em Andamento no Funil</span>
               </div>
               <KanbanDealSnippet className="shadow-xl" />
             </div>
@@ -149,12 +149,12 @@ export function Layer02Flow() {
             <div className="flow-scene flow-scene-4 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-50 opacity-0 pointer-events-none transition-all">
               <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 border-b border-border/40 pb-2">
                 <Zap className="size-3.5" />
-                <span>Execução de Automação Concluída</span>
+                <span>Rotina Executada com Sucesso</span>
               </div>
               <AutomationNodeSnippet className="shadow-md" />
               <MessageBubbleSnippet 
-                sender="Agente Carlos (FlowHub)" 
-                text="Proposta técnica e condições corporativas enviadas diretamente via WhatsApp com confirmação de entrega." 
+                sender="Carlos" 
+                text="Proposta técnica e condições comerciais enviadas com confirmação de entrega." 
                 time="14:35" 
                 variant="agent"
                 className="shadow-md"

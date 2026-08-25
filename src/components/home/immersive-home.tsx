@@ -90,19 +90,19 @@ export function ImmersiveHome() {
         .to({}, { duration: 1.8 }) // Generous resting period on "atender"
 
         // Word 0 (atender) -> Word 1 (vender)
-        .to(".intent-word-0", { opacity: 0, y: -20, duration: 0.8, ease: "power2.inOut" })
+        .to(".intent-word-0", { opacity: 0, y: -15, duration: 0.8, ease: "power2.inOut" })
         .to(".intent-word-1", { opacity: 1, y: 0, duration: 0.8, ease: "power2.inOut", onStart: () => setActivePill(1), onReverseComplete: () => setActivePill(0) }, "<")
         .addLabel("intent-vender")
         .to({}, { duration: 1.2 }) // Rest period on "vender"
 
         // Word 1 (vender) -> Word 2 (acompanhar)
-        .to(".intent-word-1", { opacity: 0, y: -20, duration: 0.8, ease: "power2.inOut" })
+        .to(".intent-word-1", { opacity: 0, y: -15, duration: 0.8, ease: "power2.inOut" })
         .to(".intent-word-2", { opacity: 1, y: 0, duration: 0.8, ease: "power2.inOut", onStart: () => setActivePill(2), onReverseComplete: () => setActivePill(1) }, "<")
         .addLabel("intent-acompanhar")
         .to({}, { duration: 1.2 }) // Rest period on "acompanhar"
 
         // Word 2 (acompanhar) -> Word 3 (automatizar)
-        .to(".intent-word-2", { opacity: 0, y: -20, duration: 0.8, ease: "power2.inOut" })
+        .to(".intent-word-2", { opacity: 0, y: -15, duration: 0.8, ease: "power2.inOut" })
         .to(".intent-word-3", { opacity: 1, y: 0, duration: 0.8, ease: "power2.inOut", onStart: () => setActivePill(3), onReverseComplete: () => setActivePill(2) }, "<")
         .addLabel("intent-automatizar")
         .to({}, { duration: 1.2 }) // Rest period on "automatizar"
@@ -178,13 +178,13 @@ export function ImmersiveHome() {
         // =======================================================================
         // 4. MOMENTO 04: HUB CONVERGENCE & SIMPLIFICATION
         // =======================================================================
-        // Transition Layer 03 -> Layer 04 (Reveals Satellites in Open Orbit)
+        // Transition Layer 03 -> Layer 04 (Reveals Satellites in Open Orbit around Pure Sphere)
         .to(".layer-03", { opacity: 0, scale: 0.94, duration: 1.2 })
         .to(".layer-04", { opacity: 1, scale: 1, duration: 1.2 }, "-=0.8")
         .addLabel("hub-orbit")
-        .to({}, { duration: 1.4 }) // Rest on Open Orbit (User sees full orbit)
+        .to({}, { duration: 1.4 }) // Rest on Open Orbit (Empty celestial sphere)
 
-        // Magnetic Convergence: Satellites smoothly gravitate inward & dissolve completely before touching nucleus
+        // Magnetic Convergence: Satellites smoothly gravitate inward & dissolve completely
         .to(".hub-sat-1", { x: 140, y: 100, scale: 0.35, opacity: 0, duration: 1.8, ease: "power2.inOut" })
         .to(".hub-sat-2", { x: -140, y: 100, scale: 0.35, opacity: 0, duration: 1.8, ease: "power2.inOut" }, "<")
         .to(".hub-sat-3", { x: 160, y: 0, scale: 0.35, opacity: 0, duration: 1.8, ease: "power2.inOut" }, "<")
@@ -194,10 +194,26 @@ export function ImmersiveHome() {
         .to(".hub-orbit-ring-outer", { scale: 0.6, opacity: 0.2, duration: 1.8 }, "<")
         .to(".hub-orbit-ring-inner", { scale: 0.5, opacity: 0.3, duration: 1.8 }, "<")
         
-        // Nucleus Core charges & pulses
-        .to(".hub-nucleus", { scale: 1.15, boxShadow: "0 0 50px rgba(124, 58, 237, 0.5)", duration: 1.2 }, "-=0.8")
+        // Sphere smoothly expands to double size (scale: 1.95) and dedicated glow illuminates
+        .to(".hub-nucleus", { 
+          scale: 1.95, 
+          duration: 1.8, 
+          ease: "power2.out" 
+        }, "-=1.2")
+        .to(".hub-nucleus-glow", { 
+          opacity: 0.8, 
+          scale: 2.2, 
+          duration: 1.8, 
+          ease: "power2.out" 
+        }, "<")
+        .to(".hub-nucleus-logo", { 
+          opacity: 1, 
+          scale: 1.15, 
+          duration: 1.4, 
+          ease: "power2.out" 
+        }, "-=1.2")
         .addLabel("hub-converged")
-        .to({}, { duration: 1.2 }) // Rest on Charged Nucleus
+        .to({}, { duration: 1.8 }) // Generous rest on Massive Charged Sphere with revealed pure Logo
 
         // Hub Convergence Dissolves -> Simplification Appears
         .to(".hub-convergence-container", { opacity: 0, scale: 0.92, duration: 1.2 })

@@ -18,8 +18,8 @@ export function Layer04Hub() {
     {
       id: "hub-sat-1",
       icon: Users,
-      title: "Pessoa",
-      subtitle: "Identidade & Contexto",
+      title: "Contato",
+      subtitle: "Histórico e contexto unificados",
       positionClass: "top-2 left-2 sm:left-10",
       className: "border-primary/40 shadow-primary/10",
     },
@@ -27,7 +27,7 @@ export function Layer04Hub() {
       id: "hub-sat-2",
       icon: MessageSquare,
       title: "Conversa",
-      subtitle: "WhatsApp & Multiagente",
+      subtitle: "Mensagens centralizadas em equipe",
       positionClass: "top-2 right-2 sm:right-10",
       className: "border-primary/40 shadow-primary/10",
     },
@@ -35,7 +35,7 @@ export function Layer04Hub() {
       id: "hub-sat-3",
       icon: Sparkles,
       title: "Equipe",
-      subtitle: "Presença & Notas Privadas",
+      subtitle: "Presença e anotações internas",
       positionClass: "top-1/2 -translate-y-1/2 left-0 sm:left-2",
       className: "border-purple-500/40 shadow-purple-500/10",
     },
@@ -43,7 +43,7 @@ export function Layer04Hub() {
       id: "hub-sat-4",
       icon: Workflow,
       title: "Processo",
-      subtitle: "Funil Comercial & Kanban",
+      subtitle: "Funis e etapas organizadas",
       positionClass: "top-1/2 -translate-y-1/2 right-0 sm:right-2",
       className: "border-purple-500/40 shadow-purple-500/10",
     },
@@ -51,7 +51,7 @@ export function Layer04Hub() {
       id: "hub-sat-5",
       icon: Bot,
       title: "Automação",
-      subtitle: "Inteligência Silenciosa",
+      subtitle: "Rotinas que poupam tempo",
       positionClass: "bottom-2 left-4 sm:left-14",
       className: "border-indigo-500/40 shadow-indigo-500/10",
     },
@@ -59,7 +59,7 @@ export function Layer04Hub() {
       id: "hub-sat-6",
       icon: TrendingUp,
       title: "Resultado",
-      subtitle: "Previsão & Auditoria",
+      subtitle: "Métricas e acompanhamento claro",
       positionClass: "bottom-2 right-4 sm:right-14",
       className: "border-indigo-500/40 shadow-indigo-500/10",
     },
@@ -68,7 +68,7 @@ export function Layer04Hub() {
   return (
     <div className="layer-04 absolute inset-0 flex items-center justify-center px-4 sm:px-6 pointer-events-none opacity-0 z-40">
       
-      {/* 1. Convergence Stage (Satellites in Orbit gravitating toward Hub Nucleus) */}
+      {/* 1. Convergence Stage (Satellites in Orbit gravitating toward Pure Circular Hub Sphere) */}
       <div className="hub-convergence-container absolute inset-0 flex flex-col items-center justify-center text-center p-4 sm:p-6">
         
         {/* Header Title */}
@@ -86,7 +86,7 @@ export function Layer04Hub() {
         </div>
 
         {/* Orbital Stage Viewport with Fixed Radial Perimeter */}
-        <div className="relative w-full max-w-3xl h-[400px] sm:h-[460px] flex items-center justify-center">
+        <div className="relative w-full max-w-3xl h-[420px] sm:h-[480px] flex items-center justify-center">
           
           {/* Outer & Inner Concentric Orbit Guide Rings */}
           <div 
@@ -98,21 +98,28 @@ export function Layer04Hub() {
             aria-hidden="true"
           />
 
-          {/* Central Nucleus Core */}
-          <div className="hub-nucleus relative z-20 flex flex-col items-center justify-center p-5 sm:p-6 rounded-3xl bg-card border-2 border-primary/60 shadow-2xl shadow-primary/30 backdrop-blur-xl">
-            <div className="size-12 sm:size-14 rounded-2xl bg-primary/10 border border-primary/30 flex items-center justify-center mb-2 shadow-inner">
-              <FlowLogo height={26} />
+          {/* Pure Celestial Sphere Nucleus Wrapper */}
+          <div className="hub-nucleus-wrapper relative z-20 flex items-center justify-center">
+            
+            {/* Dedicated Pure Circular Ambient Glow */}
+            <div 
+              className="hub-nucleus-glow absolute size-40 rounded-full bg-primary/30 blur-3xl pointer-events-none opacity-0"
+              aria-hidden="true"
+            />
+
+            {/* Pure Celestial Orb with a single ethereal light halo (Zero inner dual lines) */}
+            <div className="hub-nucleus relative flex items-center justify-center size-28 sm:size-34 rounded-full bg-gradient-to-b from-primary/15 via-[#0c0c12] to-[#0c0c12] border border-primary/25 shadow-[0_0_35px_rgba(124,58,237,0.35),inset_0_0_25px_rgba(124,58,237,0.2)] transition-all duration-300">
+              
+              {/* Revealed FlowHub Logo (Pure floating graphic) */}
+              <div className="hub-nucleus-logo relative z-10 flex items-center justify-center opacity-0 scale-75 pointer-events-none select-none">
+                <FlowLogo height={36} className="brightness-125 contrast-125 drop-shadow-[0_0_20px_rgba(168,85,247,0.85)]" />
+              </div>
+
             </div>
-            <span className="text-[10px] font-mono uppercase tracking-widest text-primary font-bold">
-              NÚCLEO FLOWHUB
-            </span>
-            <div className="flex items-center gap-1 mt-1 text-[11px] text-muted-foreground font-medium">
-              <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Convergência Total</span>
-            </div>
+
           </div>
 
-          {/* 6 Satellites (Distributed around the perimeter) */}
+          {/* 6 Satellites (Rectangular Pills distributed around the perimeter) */}
           {satellites.map((sat) => {
             const Icon = sat.icon;
             return (
@@ -143,7 +150,7 @@ export function Layer04Hub() {
         <div className="max-w-2xl mx-auto space-y-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-soft text-primary text-xs font-semibold border border-primary/20 shadow-sm">
             <ShieldCheck className="size-3.5" />
-            <span>A Síntese da Experiência</span>
+            <span>Síntese</span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-foreground leading-tight">
@@ -151,7 +158,7 @@ export function Layer04Hub() {
           </h2>
 
           <p className="text-sm sm:text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto font-light">
-            Toda a complexidade de atendimento, IA, fluxos e governança condensada em uma única camada fluida, silenciosa e sem fricção.
+            Toda a complexidade de conversas, negociações, automações e equipe condensada em uma única camada fluida, silenciosa e sem fricção.
           </p>
         </div>
       </div>

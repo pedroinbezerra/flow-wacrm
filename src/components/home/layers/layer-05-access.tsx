@@ -40,7 +40,7 @@ export function Layer05Access() {
             Sua nova experiência de trabalho começa agora.
           </h2>
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Elimine o caos operacional. Reúna equipe, conversas, funil de vendas e inteligência em um ambiente onde tudo simplesmente flui.
+            Elimine o caos operacional. Reúna contatos, conversas, funis e automações em um ambiente onde tudo simplesmente flui.
           </p>
         </div>
 
@@ -80,15 +80,15 @@ export function Layer05Access() {
           <div className="flex flex-wrap items-center justify-center gap-5 text-[11px] text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="size-3.5 text-emerald-500" />
-              <span>WhatsApp Oficial</span>
+              <span>Conexão Oficial</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Lock className="size-3.5 text-primary" />
-              <span>Isolamento Estrito de Dados</span>
+              <span>Seus dados sob seu controle</span>
             </div>
             <div className="flex items-center gap-1.5">
               <ShieldCheck className="size-3.5 text-primary" />
-              <span>Sem Custos Ocultos</span>
+              <span>Transparência de ponta a ponta</span>
             </div>
           </div>
 
