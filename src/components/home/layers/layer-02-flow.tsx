@@ -30,10 +30,10 @@ export function Layer02Flow() {
   ];
 
   return (
-    <div className="layer-02 absolute inset-0 flex items-center justify-center px-4 sm:px-6 lg:px-8 pointer-events-none opacity-0 z-20">
+    <div className="layer-02 absolute inset-0 flex items-center justify-center px-4 sm:px-6 lg:px-8 pointer-events-none opacity-0 invisible z-20 will-change-[transform,opacity]">
       
       {/* Main Flow Stage Card */}
-      <div className="flow-stage-card relative w-full max-w-5xl mx-auto rounded-3xl border border-border/80 bg-card/90 backdrop-blur-2xl shadow-2xl overflow-hidden p-6 sm:p-8 md:p-10">
+      <div className="flow-stage-card relative w-full max-w-5xl mx-auto rounded-3xl border border-border/80 bg-card shadow-xl overflow-hidden p-6 sm:p-8 md:p-10">
         
         {/* Header Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-5">
@@ -62,18 +62,32 @@ export function Layer02Flow() {
               Etapas da Operação
             </span>
 
+            {/*
+              O realce da etapa ativa mora numa sublayer própria, e a timeline
+              anima apenas a opacidade dela. Antes a borda e o fundo do próprio
+              item eram interpolados quadro a quadro: cor de fundo e de borda
+              obrigam a repintar a lista inteira durante todo o gesto de rolagem.
+            */}
             {steps.map((step, idx) => (
               <div
                 key={idx}
                 id={`flow-step-item-${idx}`}
                 className={cn(
-                  `flow-step-item flow-step-${idx} p-3 rounded-2xl border transition-all duration-300`,
-                  idx === 0 
-                    ? "bg-card-2 border-primary/50 text-foreground shadow-sm ring-1 ring-primary/20" 
-                    : "bg-transparent border-transparent text-muted-foreground opacity-40"
+                  "flow-step-item relative p-3 rounded-2xl",
+                  `flow-step-${idx}`,
+                  idx === 0 ? "opacity-100" : "opacity-40"
                 )}
               >
-                <div className="flex items-start gap-2.5">
+                <div
+                  aria-hidden="true"
+                  className={cn(
+                    "absolute inset-0 rounded-2xl border border-primary/50 bg-card-2 shadow-sm ring-1 ring-primary/20 pointer-events-none",
+                    `flow-step-bg-${idx}`,
+                    idx === 0 ? "opacity-100" : "opacity-0"
+                  )}
+                />
+
+                <div className="relative flex items-start gap-2.5">
                   <div className="flow-step-indicator size-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-primary">
                     <CheckCircle2 className="size-4" />
                   </div>
@@ -94,7 +108,7 @@ export function Layer02Flow() {
           <div className="lg:col-span-8 relative h-[360px] sm:h-[400px] rounded-2xl border border-border/60 bg-background/70 overflow-hidden shadow-inner flex items-center justify-center p-4 sm:p-6">
             
             {/* Scene 0: Conversation message arrives */}
-            <div className="flow-scene flow-scene-0 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-10 transition-all">
+            <div className="flow-scene flow-scene-0 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-10">
               <div className="flex items-center gap-2 text-xs font-semibold text-primary border-b border-border/40 pb-2">
                 <MessageSquare className="size-3.5" />
                 <span>Nova Mensagem Recebida</span>
@@ -112,7 +126,7 @@ export function Layer02Flow() {
             </div>
 
             {/* Scene 1: Contact context appears */}
-            <div className="flow-scene flow-scene-1 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-20 opacity-0 pointer-events-none transition-all">
+            <div className="flow-scene flow-scene-1 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-20 opacity-0 invisible">
               <div className="flex items-center gap-2 text-xs font-semibold text-primary border-b border-border/40 pb-2">
                 <Building2 className="size-3.5" />
                 <span>Ficha e Contexto do Contato</span>
@@ -121,8 +135,8 @@ export function Layer02Flow() {
             </div>
 
             {/* Scene 2: Collaborative team and internal note */}
-            <div className="flow-scene flow-scene-2 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-30 opacity-0 pointer-events-none transition-all">
-              <div className="flex items-center gap-2 text-xs font-semibold text-purple-400 border-b border-border/40 pb-2">
+            <div className="flow-scene flow-scene-2 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-30 opacity-0 invisible">
+              <div className="flex items-center gap-2 text-xs font-semibold text-primary border-b border-border/40 pb-2">
                 <Users className="size-3.5" />
                 <span>Colaboração e Anotações Internas</span>
               </div>
@@ -137,7 +151,7 @@ export function Layer02Flow() {
             </div>
 
             {/* Scene 3: Deal in pipeline */}
-            <div className="flow-scene flow-scene-3 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-40 opacity-0 pointer-events-none transition-all">
+            <div className="flow-scene flow-scene-3 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-40 opacity-0 invisible">
               <div className="flex items-center gap-2 text-xs font-semibold text-primary border-b border-border/40 pb-2">
                 <Workflow className="size-3.5" />
                 <span>Negócio em Andamento no Funil</span>
@@ -146,8 +160,8 @@ export function Layer02Flow() {
             </div>
 
             {/* Scene 4: Automation execution */}
-            <div className="flow-scene flow-scene-4 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-50 opacity-0 pointer-events-none transition-all">
-              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 border-b border-border/40 pb-2">
+            <div className="flow-scene flow-scene-4 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-50 opacity-0 invisible">
+              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 border-b border-border/40 pb-2">
                 <Zap className="size-3.5" />
                 <span>Rotina Executada com Sucesso</span>
               </div>

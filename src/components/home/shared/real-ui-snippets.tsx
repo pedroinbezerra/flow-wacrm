@@ -19,12 +19,12 @@ import { cn } from "@/lib/utils";
 export function ContactCardSnippet({ className }: { className?: string }) {
   return (
     <div className={cn(
-      "rounded-2xl border border-border/80 bg-card/90 backdrop-blur-md p-4 sm:p-5 shadow-2xl space-y-3.5",
+      "rounded-2xl border border-border/80 bg-card p-4 sm:p-5 shadow-xl space-y-3.5",
       className
     )}>
       <div className="flex items-center justify-between border-b border-border/50 pb-3">
         <div className="flex items-center gap-3">
-          <div className="size-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm ring-1 ring-primary/30">
+          <div className="size-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm ring-1 ring-primary/30">
             MS
           </div>
           <div>
@@ -34,7 +34,7 @@ export function ContactCardSnippet({ className }: { className?: string }) {
             </p>
           </div>
         </div>
-        <span className="text-[10px] font-mono text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
+        <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
           Online
         </span>
       </div>
@@ -84,16 +84,16 @@ export function MessageBubbleSnippet({
   return (
     <div
       className={cn(
-        "rounded-2xl p-3.5 space-y-1 shadow-lg border transition-all max-w-[90%]",
+        "rounded-2xl p-3.5 space-y-1 shadow-lg border max-w-[90%]",
         variant === "user" && "bg-card-2 text-foreground border-border/80 self-start",
-        variant === "bot" && "bg-purple-500/10 text-purple-200 border-purple-500/30 ml-auto",
+        variant === "bot" && "bg-primary-soft text-foreground border-primary/30 ml-auto",
         variant === "agent" && "bg-primary-soft text-foreground border-primary/30 ml-auto",
         className
       )}
     >
-      <div className="flex items-center justify-between text-[10px] text-muted-foreground gap-3">
+      <div className="flex items-center justify-between text-[10px] text-foreground/70 gap-3">
         <span className="font-semibold text-foreground flex items-center gap-1">
-          {variant === "bot" && <Bot className="size-3 text-purple-400" />}
+          {variant === "bot" && <Bot className="size-3 text-primary" />}
           {sender}
         </span>
         <span className="font-mono">{time}</span>
@@ -109,18 +109,18 @@ export function MessageBubbleSnippet({
 export function InternalNoteSnippet({ className }: { className?: string }) {
   return (
     <div className={cn(
-      "rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-3 shadow-md space-y-1.5",
+      "rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 shadow-md space-y-1.5",
       className
     )}>
-      <div className="flex items-center justify-between text-[10px] text-yellow-300/90 font-semibold">
+      <div className="flex items-center justify-between text-[10px] text-amber-700 dark:text-amber-300 font-semibold">
         <span className="flex items-center gap-1.5">
           <Lock className="size-3" />
           Nota Interna Privada · Apenas Equipe
         </span>
         <span className="font-mono text-muted-foreground">14:34</span>
       </div>
-      <p className="text-xs text-yellow-100/90 leading-relaxed">
-        <strong className="text-yellow-300">@Ana</strong> cliente solicitou faturamento direto. O negócio já foi aberto no Funil com R$ 48.000.
+      <p className="text-xs text-foreground leading-relaxed">
+        <strong className="text-amber-700 dark:text-amber-300">@Ana</strong> cliente solicitou faturamento direto. O negócio já foi aberto no Funil com R$ 48.000.
       </p>
     </div>
   );
@@ -132,7 +132,7 @@ export function InternalNoteSnippet({ className }: { className?: string }) {
 export function KanbanDealSnippet({ className }: { className?: string }) {
   return (
     <div className={cn(
-      "rounded-2xl border border-primary/40 bg-card/95 backdrop-blur-md p-4 shadow-xl space-y-3 ring-1 ring-primary/20",
+      "rounded-2xl border border-primary/40 bg-card p-4 shadow-xl space-y-3 ring-1 ring-primary/20",
       className
     )}>
       <div className="flex items-center justify-between border-b border-border/50 pb-2">
@@ -150,7 +150,7 @@ export function KanbanDealSnippet({ className }: { className?: string }) {
       </div>
 
       <div className="flex items-center justify-between pt-1 text-[11px]">
-        <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 font-medium">
+        <span className="px-2 py-0.5 rounded bg-primary-soft text-primary border border-primary/25 font-medium">
           Em Negociação (75%)
         </span>
         <span className="text-muted-foreground flex items-center gap-1 text-[10px]">
@@ -167,21 +167,21 @@ export function KanbanDealSnippet({ className }: { className?: string }) {
 export function AutomationNodeSnippet({ className }: { className?: string }) {
   return (
     <div className={cn(
-      "rounded-2xl border border-emerald-500/30 bg-emerald-500/10 backdrop-blur-md p-4 shadow-lg space-y-2.5",
+      "rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 shadow-lg space-y-2.5",
       className
     )}>
-      <div className="flex items-center justify-between text-xs font-semibold text-emerald-400">
+      <div className="flex items-center justify-between text-xs font-semibold text-emerald-700 dark:text-emerald-400">
         <span className="flex items-center gap-2">
-          <Zap className="size-4 text-emerald-400" />
+          <Zap className="size-4 text-emerald-600 dark:text-emerald-400" />
           Disparo Automático em Execução
         </span>
-        <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
+        <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
       </div>
       <p className="text-[11px] text-muted-foreground leading-relaxed">
         Monitor de Nuvem: PDF identificado via OCR (CNPJ 62.479...) e despachado sem retenção intermediária.
       </p>
-      <div className="flex items-center gap-2 pt-1 text-[10px] font-mono text-emerald-300 font-medium">
-        <CheckCircle2 className="size-3 text-emerald-400" />
+      <div className="flex items-center gap-2 pt-1 text-[10px] font-mono text-emerald-700 dark:text-emerald-300 font-medium">
+        <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
         <span>Status: Entregue diretamente no WhatsApp</span>
       </div>
     </div>
@@ -212,7 +212,7 @@ export function MetricSnippet({
       </span>
       <p className="text-xl font-bold font-mono text-foreground tracking-tight">{value}</p>
       {badge && (
-        <span className="text-[10px] font-semibold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded inline-block">
+        <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded inline-block">
           {badge}
         </span>
       )}

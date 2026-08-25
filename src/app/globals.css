@@ -342,6 +342,16 @@ html[data-theme="rose"] {
     scroll-behavior: smooth;
   }
 
+  /*
+   * A experiência imersiva da home escreve a posição de scroll por código
+   * (âncoras da navegação e ajustes da GSAP). O scroll suave nativo re-anima
+   * cada uma dessas escritas, e os dois passam a disputar a mesma propriedade:
+   * o palco treme em vez de deslizar. Desligado apenas onde o palco existe.
+   */
+  html:has(.master-experience-wrapper) {
+    scroll-behavior: auto;
+  }
+
   /* Force pointer (hand cursor) on buttons and interactive elements */
   button,
   [role="button"],

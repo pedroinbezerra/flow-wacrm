@@ -23,13 +23,13 @@ export function Layer05Access() {
   }, []);
 
   return (
-    <div className="layer-05 absolute inset-0 flex items-center justify-center px-4 sm:px-6 lg:px-8 pointer-events-none opacity-0 z-50">
+    <div className="layer-05 absolute inset-0 flex items-center justify-center px-4 sm:px-6 lg:px-8 pointer-events-none opacity-0 invisible z-50 will-change-[transform,opacity]">
       
       {/* Portal Card */}
-      <div className="access-portal-card relative w-full max-w-4xl mx-auto rounded-3xl border border-border/80 bg-card/90 backdrop-blur-2xl shadow-2xl p-6 sm:p-10 md:p-14 text-center flex flex-col items-center justify-center space-y-6">
+      <div className="access-portal-card relative w-full max-w-4xl mx-auto rounded-3xl border border-border/80 bg-card shadow-xl p-6 sm:p-10 md:p-14 text-center flex flex-col items-center justify-center space-y-6">
         
         {/* Motto Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-soft text-primary text-xs font-semibold border border-primary/20 backdrop-blur-md shadow-sm">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-soft text-primary text-xs font-semibold border border-primary/20 shadow-sm">
           <Sparkles className="size-3.5" />
           <span>Acesso ao Sistema</span>
         </div>
@@ -79,7 +79,7 @@ export function Layer05Access() {
         <div className="pt-5 border-t border-border/50 w-full max-w-xl mx-auto space-y-3">
           <div className="flex flex-wrap items-center justify-center gap-5 text-[11px] text-muted-foreground">
             <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="size-3.5 text-emerald-500" />
+              <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>Conexão Oficial</span>
             </div>
             <div className="flex items-center gap-1.5">

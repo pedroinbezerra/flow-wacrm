@@ -125,6 +125,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         if (isMode(e.newValue) && e.newValue !== mode) {
           setModeState(e.newValue);
           document.documentElement.dataset.mode = e.newValue;
+          // A classe `dark` precisa acompanhar o atributo. `data-mode` governa
+          // os tokens de cor; a classe governa a variante `dark:` do Tailwind.
+          // Atualizar só um dos dois deixa a aba num estado misto — superfícies
+          // claras com o texto calculado para fundo escuro, e vice-versa.
+          document.documentElement.classList.toggle("dark", e.newValue === "dark");
         }
       }
     }

@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import gsap from "gsap";
+import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import { ArrowRight, LayoutDashboard } from "lucide-react";
 import { FlowLogo } from "@/components/layout/flow-logo";
 import { createClient } from "@/lib/supabase/client";
@@ -12,15 +14,23 @@ export function FloatingExperienceNav() {
   const [activeSection, setActiveSection] = useState<string>("opening");
 
   useEffect(() => {
+    gsap.registerPlugin(ScrollToPlugin);
+
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       setIsAuthenticated(!!user);
     });
 
-    const handleScroll = () => {
+    // O evento de scroll dispara muitas vezes por quadro. Ler `scrollHeight`
+    // direto no ouvinte forçava o navegador a recalcular layout no meio do
+    // gesto — a cada leitura, com o palco inteiro na árvore. Agrupar a leitura
+    // num único quadro tira esse custo do caminho da rolagem.
+    let frame = 0;
+
+    const measure = () => {
+      frame = 0;
       const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
-      const currentScroll = window.scrollY;
-      const progress = totalScroll > 0 ? currentScroll / totalScroll : 0;
+      const progress = totalScroll > 0 ? window.scrollY / totalScroll : 0;
 
       if (progress < 0.35) {
         setActiveSection("opening");
@@ -35,24 +45,39 @@ export function FloatingExperienceNav() {
       }
     };
 
+    const handleScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(measure);
+    };
+
+    handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
   }, []);
 
-  const scrollToPercent = (percent: number) => {
+  // A rolagem por âncora usa a GSAP em vez de `behavior: "smooth"`: o palco é
+  // conduzido pelo mesmo relógio, então o salto entre momentos chega junto com
+  // a cena em vez de disputar a mesma propriedade com o navegador.
+  const scrollToPercent = useCallback((percent: number) => {
     const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
-    window.scrollTo({
-      top: totalScroll * percent,
-      behavior: "smooth",
+    gsap.to(window, {
+      scrollTo: { y: totalScroll * percent, autoKill: true },
+      duration: 1.1,
+      ease: "power2.inOut",
+      overwrite: true,
     });
-  };
+  }, []);
 
   return (
     <nav 
       aria-label="Navegação da Experiência"
       className="fixed bottom-6 inset-x-0 z-50 flex justify-center px-4 pointer-events-none"
     >
-      <div className="pointer-events-auto flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-full border border-border/80 bg-card/85 backdrop-blur-xl shadow-2xl transition-all">
+      <div className="pointer-events-auto flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-full border border-border/80 bg-card/95 shadow-xl">
         
         {/* Logo / Brand Pill */}
         <button

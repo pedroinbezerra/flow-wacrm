@@ -17,7 +17,7 @@ import {
 
 export function Layer03Editorial() {
   return (
-    <div className="layer-03 absolute inset-0 flex items-center justify-center px-4 sm:px-6 lg:px-8 pointer-events-none opacity-0 z-30">
+    <div className="layer-03 absolute inset-0 flex items-center justify-center px-4 sm:px-6 lg:px-8 pointer-events-none opacity-0 invisible z-30 will-change-[transform,opacity]">
       
       {/* Active Stage Container */}
       <div className="relative w-full max-w-5xl mx-auto h-[540px] sm:h-[480px] flex items-center justify-center">
@@ -40,14 +40,14 @@ export function Layer03Editorial() {
           </div>
 
           <div className="editorial-obj-1 w-full max-w-md">
-            <ContactCardSnippet className="border-primary/40 ring-1 ring-primary/20 shadow-2xl" />
+            <ContactCardSnippet className="border-primary/40 ring-1 ring-primary/20 shadow-xl" />
           </div>
         </div>
 
         {/* =========================================================================
             SCENE 2: CONVERSA ("Toda a equipe no mesmo canal")
            ========================================================================= */}
-        <div className="editorial-scene editorial-scene-2 absolute inset-0 flex flex-col lg:flex-row-reverse items-center justify-between gap-6 sm:gap-8 z-20 opacity-0 translate-y-8">
+        <div className="editorial-scene editorial-scene-2 absolute inset-0 flex flex-col lg:flex-row-reverse items-center justify-between gap-6 sm:gap-8 z-20 opacity-0 invisible translate-y-8">
           <div className="space-y-3.5 max-w-lg text-center lg:text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-soft text-primary text-xs font-semibold border border-primary/20">
               <MessageSquare className="size-3.5" />
@@ -75,7 +75,7 @@ export function Layer03Editorial() {
         {/* =========================================================================
             SCENE 3: PROCESSO ("A conversa move o trabalho")
            ========================================================================= */}
-        <div className="editorial-scene editorial-scene-3 absolute inset-0 flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-8 z-30 opacity-0 translate-y-8">
+        <div className="editorial-scene editorial-scene-3 absolute inset-0 flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-8 z-30 opacity-0 invisible translate-y-8">
           <div className="space-y-3.5 max-w-lg text-center lg:text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-soft text-primary text-xs font-semibold border border-primary/20">
               <Workflow className="size-3.5" />
@@ -90,16 +90,16 @@ export function Layer03Editorial() {
           </div>
 
           <div className="editorial-obj-3 w-full max-w-md">
-            <KanbanDealSnippet className="shadow-2xl ring-2 ring-primary/30" />
+            <KanbanDealSnippet className="shadow-xl ring-2 ring-primary/30" />
           </div>
         </div>
 
         {/* =========================================================================
             SCENE 4: RESULTADO ("Tudo visível. Nada disperso.")
            ========================================================================= */}
-        <div className="editorial-scene editorial-scene-4 absolute inset-0 flex flex-col lg:flex-row-reverse items-center justify-between gap-6 sm:gap-8 z-40 opacity-0 translate-y-8">
+        <div className="editorial-scene editorial-scene-4 absolute inset-0 flex flex-col lg:flex-row-reverse items-center justify-between gap-6 sm:gap-8 z-40 opacity-0 invisible translate-y-8">
           <div className="space-y-3.5 max-w-lg text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-semibold border border-emerald-500/20">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-semibold border border-emerald-500/20">
               <ShieldCheck className="size-3.5" />
               <span>04 · Resultado</span>
             </div>
@@ -124,10 +124,10 @@ export function Layer03Editorial() {
             />
             <div className="col-span-2 p-3 rounded-2xl bg-card border border-border/80 flex items-center justify-between text-xs">
               <span className="flex items-center gap-2 text-foreground font-semibold">
-                <ShieldCheck className="size-4 text-emerald-500" />
+                <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
                 Espaço exclusivo e protegido da sua conta
               </span>
-              <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">
+              <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">
                 Ativo & Seguro
               </span>
             </div>
