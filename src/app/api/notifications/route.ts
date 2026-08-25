@@ -12,7 +12,7 @@ export async function GET() {
 
     const { data: notifications, error } = await supabase
       .from("notifications")
-      .select("*, actor_profile:profiles!actor_id(*)")
+      .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -21,7 +21,34 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json(notifications || []);
+    if (!notifications || notifications.length === 0) {
+      return NextResponse.json([]);
+    }
+
+    // Attach actor profiles if present
+    const actorUserIds = [
+      ...new Set(notifications.map((n) => n.actor_id).filter(Boolean)),
+    ];
+
+    if (actorUserIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, user_id, full_name, email, avatar_url")
+        .in("user_id", actorUserIds);
+
+      const profileMap = new Map(
+        (profiles || []).map((p) => [p.user_id, p]),
+      );
+
+      const enriched = notifications.map((n) => ({
+        ...n,
+        actor_profile: n.actor_id ? profileMap.get(n.actor_id) || null : null,
+      }));
+
+      return NextResponse.json(enriched);
+    }
+
+    return NextResponse.json(notifications);
   } catch (error: any) {
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }

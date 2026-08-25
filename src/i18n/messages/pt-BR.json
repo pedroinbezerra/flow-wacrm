@@ -332,8 +332,13 @@
     "toggleDarkMode": "Alterar para modo escuro"
   },
   "dashboard": {
-    "title": "Dashboard",
-    "description": "Análise em tempo real entre conversas, contatos, negócios, transmissões e automações.",
+    "headline": {
+      "checking": "Verificando o que precisa de você…",
+      "unavailable": "Não foi possível verificar o que precisa de você agora",
+      "clear": "Nada pedindo atenção agora",
+      "one": "{count} item pede sua atenção",
+      "many": "{count} itens pedem sua atenção"
+    },
     "activeConversations": "Conversas Ativas",
     "newContactsToday": "Novos Contatos Hoje",
     "openDealsValue": "Valor de Negócios Abertos",

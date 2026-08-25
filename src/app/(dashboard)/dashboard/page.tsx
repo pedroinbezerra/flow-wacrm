@@ -145,15 +145,37 @@ export default function DashboardPage() {
     [series],
   )
 
+  // Estado da tela em uma frase. Soma os itens de todos os domínios porque a
+  // pergunta do usuário é uma só — "o que preciso fazer" — e não "quantas
+  // tabelas têm pendência" (`FH-05.09`).
+  const attentionHeadline = attentionLoading
+    ? t("dashboard.headline.checking")
+    : attention === null
+      ? t("dashboard.headline.unavailable")
+      : (() => {
+          const total = attention.reduce((sum, g) => sum + g.count, 0)
+          if (total === 0) return t("dashboard.headline.clear")
+          return t(
+            total === 1 ? "dashboard.headline.one" : "dashboard.headline.many",
+            { count: total },
+          )
+        })()
+
   return (
     <div className="space-y-5">
-      {/* Header */}
+      {/* Header — o mapa de evolução (docs/evolucao-experiencia/01-home-dashboard.md,
+          "Qual experiência deve existir no lugar", item 1) prescreve trocar o
+          título genérico "Dashboard" por uma frase de estado. O rótulo já é
+          impresso pelo cabeçalho do shell; repeti-lo aqui gastava o lugar que
+          `FH-24.01` reserva ao estado mais urgente com um número neutro e uma
+          lista de funcionalidades.
+
+          A frase informa, nunca cobra (`FH-17.02`, `FH-17.07`): sem contador de
+          sequência, sem linguagem de dívida. Fila vazia é conclusão, não
+          ausência de dado (`FH-42.02`). */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">{t("dashboard.title")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t("dashboard.description")}
-          </p>
+          <p className="text-2xl font-semibold text-foreground">{attentionHeadline}</p>
         </div>
 
         {!checklistOpen && (

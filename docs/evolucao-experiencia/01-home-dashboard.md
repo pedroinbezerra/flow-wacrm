@@ -533,3 +533,53 @@ que não há mais etapa a ensinar.
 **Estado final da Home:** Cabeçalho → (Onboarding, só se houver o que fazer)
 → **Precisa de você** → Ações rápidas → Conversas ao longo do tempo → Tempo
 médio de primeira resposta.
+
+---
+
+## Quinta rodada — o cabeçalho prescrito, enfim implementado
+
+O item 1 de "Qual experiência deve existir no lugar" — *"um cabeçalho curto
+que substitui o título genérico 'Dashboard' por uma frase de estado"* — tinha
+sido especificado e **não implementado**. A tela continuava abrindo com
+`<h1>Dashboard</h1>` e a descrição *"Análise em tempo real entre conversas,
+contatos, negócios, transmissões e automações."*
+
+Encontrado por outro caminho: o produto imprime o título da página **duas
+vezes** — uma no cabeçalho do shell, outra como `<h1>` dentro de `main`. Na
+Home isso custava caro duas vezes. Primeiro porque o lugar que `FH-24.01`
+reserva ao estado mais urgente estava ocupado por um rótulo de seção.
+Segundo porque a descrição enumerava funcionalidades em vez de dizer o que
+muda para quem usa (`FH-57.11`) e reinstalava, em texto, a moldura de
+"dashboard de métricas" que a primeira rodada tinha descartado — a própria
+tela se apresentando como aquilo que ela deixou de ser.
+
+Agora a Home abre com a frase de estado, derivada da mesma consulta que
+alimenta a Fila de Atenção — somando os itens de todos os domínios, porque a
+pergunta do usuário é uma só (`FH-05.09`):
+
+| Estado | Frase |
+| --- | --- |
+| Carregando | "Verificando o que precisa de você…" |
+| Consulta falhou | "Não foi possível verificar o que precisa de você agora" |
+| Fila vazia | "Nada pedindo atenção agora" |
+| Com itens | "{n} item(ns) pede(m) sua atenção" |
+
+A frase informa e não cobra (`FH-17.02`, `FH-17.07`): sem contador de
+sequência, sem cor de alarme, sem linguagem de dívida. Fila vazia é
+**conclusão**, não ausência de dado (`FH-42.02`) — e por isso não diz "0
+itens". Falha de consulta não vira "tudo em dia": afirmar calmaria sem ter
+verificado é o mesmo erro que `FH-10.04` proíbe em qualquer outro estado.
+
+Peso visual: a frase entra com o mesmo tamanho que o `<h1>` tinha
+(`text-2xl`). Não é detalhe estético — ao remover o título de uma outra tela
+sem repor peso equivalente, a linha de ações à direita ficou sem âncora e o
+cabeçalho desandou. Substituir conteúdo não dispensa sustentar a estrutura.
+
+As chaves `dashboard.title` e `dashboard.description` ficaram sem chamador e
+foram removidas.
+
+**Pendente:** as outras sete telas com título duplicado (`/contacts`,
+`/broadcasts`, `/flows`, `/automations`, `/ai-assistant`, `/settings`,
+`/admin/analytics`). Cada uma precisa de decisão própria sobre o que ocupa o
+lugar — apagar o `<h1>` sem repor é o que produz o cabeçalho órfão descrito
+acima.

@@ -749,9 +749,11 @@ export default function InboxPage() {
         <div
           id="tour-inbox-list"
           className={cn(
-            "h-full shrink-0 border-r border-border bg-card transition-all duration-300 ease-in-out overflow-hidden w-full lg:w-80",
+            "h-full shrink-0 border-r border-border bg-card transition-all duration-300 ease-in-out overflow-hidden w-full lg:w-80 xl:w-96",
             hasActiveConv ? "hidden lg:block" : "block",
-            listPanelOpen ? "lg:w-80 lg:opacity-100" : "lg:w-0 lg:opacity-0 lg:border-r-0 lg:pointer-events-none"
+            hasActiveConv && !listPanelOpen
+              ? "lg:w-0 lg:opacity-0 lg:border-r-0 lg:pointer-events-none"
+              : "lg:w-80 xl:w-96 lg:opacity-100"
           )}
         >
           <ConversationList
@@ -793,10 +795,12 @@ export default function InboxPage() {
           id="tour-inbox-sidebar"
           className={cn(
             "hidden lg:block h-full shrink-0 border-l border-border bg-card transition-all duration-300 ease-in-out overflow-hidden",
-            contactPanelOpen ? "w-80 opacity-100" : "w-0 opacity-0 border-l-0 pointer-events-none"
+            hasActiveConv && contactPanelOpen ? "w-80 opacity-100" : "w-0 opacity-0 border-l-0 pointer-events-none"
           )}
         >
-          <ContactSidebar contact={activeContact} conversationId={activeConversation?.id} />
+          {hasActiveConv && (
+            <ContactSidebar contact={activeContact} conversationId={activeConversation?.id} />
+          )}
         </div>
       </div>
 
