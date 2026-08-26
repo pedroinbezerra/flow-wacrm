@@ -131,7 +131,7 @@ export function Layer04Hub() {
               comunica causa).
             */}
             <div
-              className="hub-nucleus-glow absolute size-48 rounded-full bg-[radial-gradient(circle,var(--primary)_0%,transparent_70%)] pointer-events-none opacity-0 invisible"
+              className="hub-nucleus-glow absolute size-48 rounded-full bg-[radial-gradient(circle,var(--primary)_0%,transparent_70%)] pointer-events-none opacity-0"
               aria-hidden="true"
             />
 
@@ -154,7 +154,7 @@ export function Layer04Hub() {
                 aria-hidden="true"
               />
 
-              <div className="hub-nucleus-logo relative z-10 flex items-center justify-center opacity-0 invisible scale-75 pointer-events-none select-none">
+              <div className="hub-nucleus-logo relative z-10 flex items-center justify-center opacity-0 scale-75 pointer-events-none select-none">
                 <FlowLogo height={36} />
               </div>
 
@@ -189,7 +189,7 @@ export function Layer04Hub() {
       </div>
 
       {/* 2. Síntese */}
-      <div className="hub-simplification-container absolute inset-0 flex flex-col items-center justify-center text-center p-6 opacity-0 invisible">
+      <div className="hub-simplification-container absolute inset-0 flex flex-col items-center justify-center text-center p-6 opacity-0">
         <div className="max-w-2xl mx-auto space-y-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-soft text-primary text-xs font-semibold border border-primary/20 shadow-sm">
             <ShieldCheck className="size-3.5" />

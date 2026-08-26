@@ -343,13 +343,29 @@ html[data-theme="rose"] {
   }
 
   /*
-   * A experiência imersiva da home escreve a posição de scroll por código
-   * (âncoras da navegação e ajustes da GSAP). O scroll suave nativo re-anima
-   * cada uma dessas escritas, e os dois passam a disputar a mesma propriedade:
-   * o palco treme em vez de deslizar. Desligado apenas onde o palco existe.
+   * Tudo que faz dissolvência dentro do palco fica promovido a uma camada
+   * própria de composição, de forma permanente.
+   *
+   * O motivo não é acelerar a animação em si: é remover uma descontinuidade.
+   * Quando a opacidade de um elemento sai de 1, o navegador troca a suavização
+   * do texto de subpixel para escala de cinza — e troca de volta quando ela
+   * retorna a 1. Cada troca rasteriza a subárvore inteira de novo, num único
+   * quadro, exatamente no início e no fim de cada transição. Em cartões cheios
+   * de texto isso custa um quadro perdido bem na emenda entre um elemento e o
+   * próximo. Promovidos desde sempre, ficam em escala de cinza o tempo todo e
+   * não há troca a fazer.
    */
-  html:has(.master-experience-wrapper) {
-    scroll-behavior: auto;
+  .master-stage-canvas .flow-scene,
+  .master-stage-canvas .editorial-scene,
+  .master-stage-canvas .hub-satellite,
+  .master-stage-canvas .intent-pill,
+  .master-stage-canvas .intent-slot-window,
+  .master-stage-canvas .opening-hero-silent,
+  .master-stage-canvas .opening-intent-container,
+  .master-stage-canvas .hub-convergence-container,
+  .master-stage-canvas .hub-simplification-container,
+  .master-stage-canvas .access-portal-card {
+    will-change: transform, opacity;
   }
 
   /* Force pointer (hand cursor) on buttons and interactive elements */

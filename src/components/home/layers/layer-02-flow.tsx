@@ -126,7 +126,7 @@ export function Layer02Flow() {
             </div>
 
             {/* Scene 1: Contact context appears */}
-            <div className="flow-scene flow-scene-1 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-20 opacity-0 invisible">
+            <div className="flow-scene flow-scene-1 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-20 opacity-0">
               <div className="flex items-center gap-2 text-xs font-semibold text-primary border-b border-border/40 pb-2">
                 <Building2 className="size-3.5" />
                 <span>Ficha e Contexto do Contato</span>
@@ -135,7 +135,7 @@ export function Layer02Flow() {
             </div>
 
             {/* Scene 2: Collaborative team and internal note */}
-            <div className="flow-scene flow-scene-2 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-30 opacity-0 invisible">
+            <div className="flow-scene flow-scene-2 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-30 opacity-0">
               <div className="flex items-center gap-2 text-xs font-semibold text-primary border-b border-border/40 pb-2">
                 <Users className="size-3.5" />
                 <span>Colaboração e Anotações Internas</span>
@@ -151,7 +151,7 @@ export function Layer02Flow() {
             </div>
 
             {/* Scene 3: Deal in pipeline */}
-            <div className="flow-scene flow-scene-3 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-40 opacity-0 invisible">
+            <div className="flow-scene flow-scene-3 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-40 opacity-0">
               <div className="flex items-center gap-2 text-xs font-semibold text-primary border-b border-border/40 pb-2">
                 <Workflow className="size-3.5" />
                 <span>Negócio em Andamento no Funil</span>
@@ -160,7 +160,7 @@ export function Layer02Flow() {
             </div>
 
             {/* Scene 4: Automation execution */}
-            <div className="flow-scene flow-scene-4 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-50 opacity-0 invisible">
+            <div className="flow-scene flow-scene-4 absolute inset-0 flex flex-col justify-center p-4 sm:p-8 space-y-3 z-50 opacity-0">
               <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 border-b border-border/40 pb-2">
                 <Zap className="size-3.5" />
                 <span>Rotina Executada com Sucesso</span>

@@ -53,7 +53,7 @@ export function Layer01Opening() {
       </div>
 
       {/* Morphing Intent Card */}
-      <div className="opening-intent-container absolute inset-0 flex items-center justify-center px-4 sm:px-6 z-20 opacity-0 invisible">
+      <div className="opening-intent-container absolute inset-0 flex items-center justify-center px-4 sm:px-6 z-20 opacity-0">
         <div className="opening-intent-card relative max-w-4xl w-full mx-auto p-8 sm:p-12 md:p-16 rounded-3xl border border-border/80 bg-card shadow-xl text-center flex flex-col items-center justify-center">
           
           <div className="space-y-4 w-full">
@@ -68,13 +68,13 @@ export function Layer01Opening() {
                 <span className="intent-word-0 col-start-1 row-start-1 flex items-center justify-center font-extrabold text-primary leading-none text-center whitespace-nowrap">
                   atender
                 </span>
-                <span className="intent-word-1 col-start-1 row-start-1 flex items-center justify-center font-extrabold text-primary leading-none text-center whitespace-nowrap opacity-0 invisible pointer-events-none translate-y-4">
+                <span className="intent-word-1 col-start-1 row-start-1 flex items-center justify-center font-extrabold text-primary leading-none text-center whitespace-nowrap opacity-0 pointer-events-none translate-y-4">
                   vender
                 </span>
-                <span className="intent-word-2 col-start-1 row-start-1 flex items-center justify-center font-extrabold text-primary leading-none text-center whitespace-nowrap opacity-0 invisible pointer-events-none translate-y-4">
+                <span className="intent-word-2 col-start-1 row-start-1 flex items-center justify-center font-extrabold text-primary leading-none text-center whitespace-nowrap opacity-0 pointer-events-none translate-y-4">
                   acompanhar
                 </span>
-                <span className="intent-word-3 col-start-1 row-start-1 flex items-center justify-center font-extrabold text-primary leading-none text-center whitespace-nowrap opacity-0 invisible pointer-events-none translate-y-4">
+                <span className="intent-word-3 col-start-1 row-start-1 flex items-center justify-center font-extrabold text-primary leading-none text-center whitespace-nowrap opacity-0 pointer-events-none translate-y-4">
                   automatizar
                 </span>
               </span>{" "}

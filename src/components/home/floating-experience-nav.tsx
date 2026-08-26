@@ -1,142 +1,75 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import gsap from "gsap";
-import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import { ArrowRight, LayoutDashboard } from "lucide-react";
 import { FlowLogo } from "@/components/layout/flow-logo";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import {
+  STAGE_MOMENTS,
+  goToStageStep,
+  momentIdForStep,
+  subscribeStageIndex,
+} from "./experience-stage";
 
 export function FloatingExperienceNav() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [activeSection, setActiveSection] = useState<string>("opening");
+  const [stepIndex, setStepIndex] = useState(0);
 
   useEffect(() => {
-    gsap.registerPlugin(ScrollToPlugin);
-
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       setIsAuthenticated(!!user);
     });
-
-    // O evento de scroll dispara muitas vezes por quadro. Ler `scrollHeight`
-    // direto no ouvinte forçava o navegador a recalcular layout no meio do
-    // gesto — a cada leitura, com o palco inteiro na árvore. Agrupar a leitura
-    // num único quadro tira esse custo do caminho da rolagem.
-    let frame = 0;
-
-    const measure = () => {
-      frame = 0;
-      const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = totalScroll > 0 ? window.scrollY / totalScroll : 0;
-
-      if (progress < 0.35) {
-        setActiveSection("opening");
-      } else if (progress < 0.60) {
-        setActiveSection("flow");
-      } else if (progress < 0.80) {
-        setActiveSection("editorial");
-      } else if (progress < 0.92) {
-        setActiveSection("hub");
-      } else {
-        setActiveSection("access");
-      }
-    };
-
-    const handleScroll = () => {
-      if (frame) return;
-      frame = window.requestAnimationFrame(measure);
-    };
-
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (frame) window.cancelAnimationFrame(frame);
-    };
   }, []);
 
-  // A rolagem por âncora usa a GSAP em vez de `behavior: "smooth"`: o palco é
-  // conduzido pelo mesmo relógio, então o salto entre momentos chega junto com
-  // a cena em vez de disputar a mesma propriedade com o navegador.
-  const scrollToPercent = useCallback((percent: number) => {
-    const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
-    gsap.to(window, {
-      scrollTo: { y: totalScroll * percent, autoKill: true },
-      duration: 1.1,
-      ease: "power2.inOut",
-      overwrite: true,
-    });
-  }, []);
+  // O palco não é mais atravessado por rolagem, então não há porcentagem para
+  // ler. Ele anuncia o passo em que está e a barra apenas acompanha — sem
+  // ouvinte de scroll e sem medir a altura do documento a cada evento.
+  useEffect(() => subscribeStageIndex(setStepIndex), []);
+
+  const activeMoment = momentIdForStep(stepIndex);
 
   return (
-    <nav 
+    <nav
       aria-label="Navegação da Experiência"
       className="fixed bottom-6 inset-x-0 z-50 flex justify-center px-4 pointer-events-none"
     >
       <div className="pointer-events-auto flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-full border border-border/80 bg-card/95 shadow-xl">
-        
+
         {/* Logo / Brand Pill */}
         <button
-          onClick={() => scrollToPercent(0)}
+          onClick={() => goToStageStep(0)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-card-2 transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
         >
           <FlowLogo height={22} />
+          <span className="sr-only">Voltar ao início da experiência</span>
         </button>
 
-        {/* Section Jump Anchors (Visible on desktop & tablet) */}
+        {/* Âncoras dos momentos */}
         <div className="hidden md:flex items-center gap-1 border-x border-border/60 px-2 text-xs font-medium text-muted-foreground">
-          <button
-            onClick={() => scrollToPercent(0.18)}
-            className={cn(
-              "px-2.5 py-1 rounded-full transition-colors",
-              activeSection === "opening" ? "text-foreground bg-card-2 font-semibold" : "hover:text-foreground"
-            )}
-          >
-            Intenção
-          </button>
-          <button
-            onClick={() => scrollToPercent(0.48)}
-            className={cn(
-              "px-2.5 py-1 rounded-full transition-colors",
-              activeSection === "flow" ? "text-foreground bg-card-2 font-semibold" : "hover:text-foreground"
-            )}
-          >
-            Fluxo
-          </button>
-          <button
-            onClick={() => scrollToPercent(0.68)}
-            className={cn(
-              "px-2.5 py-1 rounded-full transition-colors",
-              activeSection === "editorial" ? "text-foreground bg-card-2 font-semibold" : "hover:text-foreground"
-            )}
-          >
-            Visão
-          </button>
-          <button
-            onClick={() => scrollToPercent(0.86)}
-            className={cn(
-              "px-2.5 py-1 rounded-full transition-colors",
-              activeSection === "hub" ? "text-foreground bg-card-2 font-semibold" : "hover:text-foreground"
-            )}
-          >
-            Hub
-          </button>
-          <button
-            onClick={() => scrollToPercent(0.96)}
-            className={cn(
-              "px-2.5 py-1 rounded-full transition-colors",
-              activeSection === "access" ? "text-foreground bg-card-2 font-semibold" : "hover:text-foreground"
-            )}
-          >
-            Acesso
-          </button>
+          {STAGE_MOMENTS.map((moment) => {
+            const isActive = activeMoment === moment.id;
+            return (
+              <button
+                key={moment.id}
+                onClick={() => goToStageStep(moment.entry)}
+                aria-current={isActive ? "step" : undefined}
+                className={cn(
+                  "px-2.5 py-1 rounded-full transition-colors",
+                  isActive
+                    ? "text-foreground bg-card-2 font-semibold"
+                    : "hover:text-foreground"
+                )}
+              >
+                {moment.title}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Action Button */}
+        {/* Ação */}
         {isAuthenticated ? (
           <Link
             href="/dashboard"

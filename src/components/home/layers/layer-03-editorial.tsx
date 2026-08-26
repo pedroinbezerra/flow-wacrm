@@ -47,7 +47,7 @@ export function Layer03Editorial() {
         {/* =========================================================================
             SCENE 2: CONVERSA ("Toda a equipe no mesmo canal")
            ========================================================================= */}
-        <div className="editorial-scene editorial-scene-2 absolute inset-0 flex flex-col lg:flex-row-reverse items-center justify-between gap-6 sm:gap-8 z-20 opacity-0 invisible translate-y-8">
+        <div className="editorial-scene editorial-scene-2 absolute inset-0 flex flex-col lg:flex-row-reverse items-center justify-between gap-6 sm:gap-8 z-20 opacity-0 translate-y-8">
           <div className="space-y-3.5 max-w-lg text-center lg:text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-soft text-primary text-xs font-semibold border border-primary/20">
               <MessageSquare className="size-3.5" />
@@ -75,7 +75,7 @@ export function Layer03Editorial() {
         {/* =========================================================================
             SCENE 3: PROCESSO ("A conversa move o trabalho")
            ========================================================================= */}
-        <div className="editorial-scene editorial-scene-3 absolute inset-0 flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-8 z-30 opacity-0 invisible translate-y-8">
+        <div className="editorial-scene editorial-scene-3 absolute inset-0 flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-8 z-30 opacity-0 translate-y-8">
           <div className="space-y-3.5 max-w-lg text-center lg:text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-soft text-primary text-xs font-semibold border border-primary/20">
               <Workflow className="size-3.5" />
@@ -97,7 +97,7 @@ export function Layer03Editorial() {
         {/* =========================================================================
             SCENE 4: RESULTADO ("Tudo visível. Nada disperso.")
            ========================================================================= */}
-        <div className="editorial-scene editorial-scene-4 absolute inset-0 flex flex-col lg:flex-row-reverse items-center justify-between gap-6 sm:gap-8 z-40 opacity-0 invisible translate-y-8">
+        <div className="editorial-scene editorial-scene-4 absolute inset-0 flex flex-col lg:flex-row-reverse items-center justify-between gap-6 sm:gap-8 z-40 opacity-0 translate-y-8">
           <div className="space-y-3.5 max-w-lg text-center lg:text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-semibold border border-emerald-500/20">
               <ShieldCheck className="size-3.5" />
