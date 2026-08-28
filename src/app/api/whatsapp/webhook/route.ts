@@ -2,19 +2,38 @@ import crypto from 'crypto'
 import { after, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { decrypt, encrypt, isLegacyFormat } from '@/lib/whatsapp/encryption'
-import { getMediaUrl, downloadMedia } from '@/lib/whatsapp/meta-api'
+import { getMediaUrl } from '@/lib/whatsapp/meta-api'
 import { normalizePhone } from '@/lib/whatsapp/phone-utils'
 import { findExistingContact, isUniqueViolation } from '@/lib/contacts/dedupe'
 import { verifyMetaWebhookSignature } from '@/lib/whatsapp/webhook-signature'
 import { runAutomationsForTrigger } from '@/lib/automations/engine'
 import { dispatchInboundToFlows } from '@/lib/flows/engine'
 import { processInboundWithAIService } from '@/lib/ai-service/engine'
+import { awaitAndRunTurn } from '@/lib/ai-service/turn-waiter'
+import {
+  getRedisClient,
+  isRedisTurnShadowEnabled,
+  updateTurnShadow,
+} from '@/lib/ai-service/turn-shadow'
 import { formatConversationPreview } from '@/lib/conversation-preview'
 import { processMediaForMessage } from '@/lib/media/media-processor'
 import {
   handleTemplateWebhookChange,
   isTemplateWebhookField,
 } from '@/lib/whatsapp/template-webhook'
+
+/**
+ * Teto de duracao da invocacao.
+ *
+ * O trabalho pos-resposta desta rota agora inclui o despertador do turno:
+ * ate ~20s de espera ate a janela ociosa fechar, mais a execucao da IA
+ * (planejamento + resposta). Declarado explicitamente em vez de herdar o
+ * default da plataforma, que nao comporta esse caminho.
+ *
+ * E um teto, nao uma reserva: o webhook comum continua terminando em
+ * menos de um segundo. 60s cabe tanto no plano Hobby quanto no Pro.
+ */
+export const maxDuration = 60
 
 // Lazy-initialized to avoid build-time crash when env vars are missing
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -190,6 +209,7 @@ export async function GET(request: Request) {
 
 // POST - Receive messages
 export async function POST(request: Request) {
+  const invocationStartedAt = Date.now()
   // Read raw body first so we can HMAC-verify the exact bytes Meta
   // signed. request.json() would re-encode and break the signature.
   const rawBody = await request.text()
@@ -230,19 +250,20 @@ export async function POST(request: Request) {
   // Schedule processing with Next's post-response lifecycle hook.
   after(async () => {
     try {
-      await processWebhook(body)
+      await processWebhook(body, invocationStartedAt)
       if (outboxId) {
         await supabaseAdmin()
           .from('inbound_webhooks')
           .update({ status: 'completed', processed_at: new Date().toISOString() })
           .eq('id', outboxId)
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error processing webhook:', error)
       if (outboxId) {
+        const errorMsg = error instanceof Error ? error.message : 'Processing failed'
         await supabaseAdmin()
           .from('inbound_webhooks')
-          .update({ status: 'failed', error_message: error?.message || 'Processing failed' })
+          .update({ status: 'failed', error_message: errorMsg })
           .eq('id', outboxId)
       }
     }
@@ -251,7 +272,10 @@ export async function POST(request: Request) {
   return NextResponse.json({ status: 'received' }, { status: 200 })
 }
 
-async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
+async function processWebhook(
+  body: { entry?: WhatsAppWebhookEntry[] },
+  invocationStartedAt: number = Date.now(),
+) {
   if (!body.entry) return
 
   for (const entry of body.entry) {
@@ -336,7 +360,8 @@ async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
           // inserts that need it for NOT NULL FK compliance. Always
           // the admin who saved the WhatsApp config.
           config.user_id,
-          decryptedAccessToken
+          decryptedAccessToken,
+          invocationStartedAt
         )
       }
     }
@@ -570,7 +595,8 @@ async function processMessage(
   // (contacts, conversations). Always the admin who saved the
   // WhatsApp config; the choice is arbitrary post-017 but stable.
   configOwnerUserId: string,
-  accessToken: string
+  accessToken: string,
+  invocationStartedAt: number = Date.now(),
 ) {
   const senderPhone = normalizePhone(message.from)
   const contactName = contact.profile.name
@@ -649,6 +675,10 @@ async function processMessage(
     .eq('sender_type', 'customer')
   const isFirstInboundMessage = (priorCustomerMsgCount ?? 0) === 0
 
+  // Hoisted: o motor de turnos precisa do mesmo `created_at` que foi
+  // gravado, para reconstruir a ordem real do que a pessoa escreveu.
+  const messageCreatedAt = new Date(parseInt(message.timestamp) * 1000).toISOString()
+
   const { data: insertedMsg, error: msgError } = await supabaseAdmin()
     .from('messages')
     .insert({
@@ -659,7 +689,7 @@ async function processMessage(
       media_url: mediaUrl,
       message_id: message.id,
       status: 'delivered',
-      created_at: new Date(parseInt(message.timestamp) * 1000).toISOString(),
+      created_at: messageCreatedAt,
       reply_to_message_id: replyToInternalId,
       interactive_reply_id: interactiveReplyId,
       media_status: metaMediaId ? 'pending' : null,
@@ -778,9 +808,16 @@ async function processMessage(
   // ============================================================
   // Smart AI Service Dispatch
   //
-  // If the flow runner did NOT consume the message, check if Smart AI
-  // Service is enabled and active for this conversation. If AI handles
-  // the message, `aiResult.handled` will be true.
+  // Se o runner de flows NAO consumiu a mensagem, ela e oferecida ao
+  // Atendimento Inteligente. O que acontece aqui e apenas o
+  // ENFILEIRAMENTO: a mensagem entra no turno aberto da conversa e a
+  // resposta sai depois, quando o turno fechar por silencio ou por teto.
+  //
+  // `handled` passou a significar "a IA assumiu esta mensagem", nao mais
+  // "a IA ja respondeu". A distincao importa: enquanto a pessoa continua
+  // escrevendo, ainda nao existe resposta — e mesmo assim as automacoes
+  // de conteudo precisam ficar fora, ou reagiriam a um texto que ja tem
+  // dono.
   // ============================================================
   let aiConsumed = false
   if (!flowConsumed && inboundText) {
@@ -792,8 +829,41 @@ async function processMessage(
         senderPhone,
         inboundMessageText: inboundText,
         metaMessageId: message.id,
+        internalMessageId: insertedMsg.id,
+        messageCreatedAt,
       })
-      aiConsumed = aiResult.handled && (aiResult.responseSent || aiResult.handoffTriggered || false)
+      aiConsumed = aiResult.handled
+
+      // Agendamento oportunista: o append devolveu o instante EXATO em
+      // que este turno fecha, e o ciclo pos-resposta espera exatamente
+      // ate la. Sem isto, quem descobre o turno vencido e a varredura de
+      // 5s do banco, e uma janela ociosa de 2,5s vira 2,5s a 7,5s na
+      // pratica — variacao maior que a propria janela.
+      //
+      // Descartavel por construcao: numa rajada, os despertadores das
+      // mensagens anteriores acordam obsoletos e encerram sem chamar
+      // nada. Se o `after` nao rodar (funcao morta, deploy no meio), o
+      // cron de recuperacao drena o turno depois. Nada se perde; so a
+      // latencia volta a ser a do cron.
+      if (aiResult.waiter) {
+        const ticket = aiResult.waiter
+        after(async () => {
+          if (isRedisTurnShadowEnabled() && ticket.accountId && ticket.conversationId) {
+            const redis = getRedisClient()
+            if (redis) {
+              await updateTurnShadow(redis, {
+                accountId: ticket.accountId,
+                conversationId: ticket.conversationId,
+                turnId: ticket.turnId,
+                generation: ticket.expectedGeneration,
+              }).catch((err) => {
+                console.warn('[webhook] falha ao atualizar shadow no Redis:', err)
+              })
+            }
+          }
+          await awaitAndRunTurn(supabaseAdmin(), ticket, { invocationStartedAt })
+        })
+      }
     } catch (aiErr) {
       console.error('[ai-service] Error processing inbound message:', aiErr)
     }

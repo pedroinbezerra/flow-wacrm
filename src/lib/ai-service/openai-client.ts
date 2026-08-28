@@ -18,6 +18,8 @@ export interface OpenAICompletionArgs {
   messages: ChatMessage[]
   temperature?: number
   maxTokens?: number
+  timeoutMs?: number
+  signal?: AbortSignal
 }
 
 export interface OpenAICompletionResult {
@@ -27,6 +29,56 @@ export interface OpenAICompletionResult {
     completion_tokens: number
     total_tokens: number
   }
+}
+
+export function composeAbortSignal(signal?: AbortSignal, timeoutMs?: number): AbortSignal | undefined {
+  const hasTimeout = typeof timeoutMs === 'number'
+
+  // Se timeout foi explicitamente informado e é <= 0 (ex: orçamento esgotado), aborta imediatamente
+  if (hasTimeout && timeoutMs <= 0) {
+    return AbortSignal.abort(
+      new Error(`Timeout de ${timeoutMs}ms excedido (orçamento de execução esgotado)`),
+    )
+  }
+
+  // Se não há timeout nem signal externo
+  if (!hasTimeout && !signal) {
+    return undefined
+  }
+
+  // Se há apenas timeout positivo (sem signal externo)
+  if (hasTimeout && !signal) {
+    return AbortSignal.timeout(timeoutMs)
+  }
+
+  // Se há apenas signal externo (sem timeout)
+  if (!hasTimeout && signal) {
+    return signal
+  }
+
+  // Se há ambos: se o signal externo já estiver abortado, prevalece imediatamente
+  if (signal!.aborted) {
+    return signal
+  }
+
+  if (typeof AbortSignal.any === 'function') {
+    return AbortSignal.any([signal!, AbortSignal.timeout(timeoutMs!)])
+  }
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(
+    () => controller.abort(new Error(`Timeout de ${timeoutMs}ms excedido`)),
+    timeoutMs,
+  )
+  signal!.addEventListener(
+    'abort',
+    () => {
+      clearTimeout(timeoutId)
+      controller.abort(signal!.reason)
+    },
+    { once: true },
+  )
+  return controller.signal
 }
 
 /**
@@ -42,6 +94,8 @@ export async function createChatCompletion(
     messages,
     temperature = 0.3,
     maxTokens = 500,
+    timeoutMs,
+    signal,
   } = args
 
   if (!apiKey) {
@@ -51,6 +105,8 @@ export async function createChatCompletion(
   // Normalize base URL
   const sanitizedBaseUrl = baseUrl.replace(/\/+$/, '')
   const endpoint = `${sanitizedBaseUrl}/chat/completions`
+
+  const effectiveSignal = composeAbortSignal(signal, timeoutMs)
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -64,6 +120,7 @@ export async function createChatCompletion(
       temperature,
       max_tokens: maxTokens,
     }),
+    signal: effectiveSignal,
   })
 
   if (!response.ok) {

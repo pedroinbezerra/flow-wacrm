@@ -54,6 +54,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { TURN_TIMING_DEFAULTS } from '@/lib/ai-service/turn-config'
 import {
   Select,
   SelectContent,
@@ -61,6 +62,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+
+// A tela fala em segundos porque e assim que a pessoa pensa no tempo de
+// uma conversa; a API guarda milissegundos.
+//
+// Uma casa decimal, e nao inteiro: a janela ociosa padrao e 2,5s, e
+// arredondar para 3 aqui mudaria o valor gravado sem ninguem pedir.
+function secondsOf(ms: number | undefined, fallbackMs: number): number {
+  return Math.round((ms ?? fallbackMs) / 100) / 10
+}
+
+function msFromSeconds(raw: string): number {
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) ? Math.round(parsed * 1000) : 0
+}
 
 interface AIConfig {
   account_id: string
@@ -78,6 +93,13 @@ interface AIConfig {
   openai_model: string
   temperature: number
   max_tokens: number
+  // Ritmo da conversa. Milissegundos na API; a tela fala em segundos.
+  turn_aggregation_enabled?: boolean
+  turn_inactivity_ms?: number
+  turn_max_wait_ms?: number
+  presence_enabled?: boolean
+  presence_threshold_ms?: number
+  progress_updates_enabled?: boolean
 }
 
 interface CustomPreset {
@@ -491,24 +513,29 @@ export default function AIAssistantPage() {
         openai_model: config.openai_model,
         temperature: config.temperature,
         max_tokens: config.max_tokens,
+        turn_aggregation_enabled: config.turn_aggregation_enabled,
+        turn_inactivity_ms: config.turn_inactivity_ms,
+        turn_max_wait_ms: config.turn_max_wait_ms,
+        presence_enabled: config.presence_enabled,
+        presence_threshold_ms: config.presence_threshold_ms,
       }
 
       if (newApiKey.trim()) {
         payload.openai_api_key = newApiKey.trim()
       }
 
+      // PUT, e nao POST: e o unico metodo de escrita que a rota expoe.
+      // Com POST, salvar respondia 405 e a configuracao nao chegava a ser
+      // gravada.
       const res = await fetch('/api/ai-assistant/config', {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
 
       if (res.ok) {
-        const data = await res.json()
-        if (data.config) {
-          setConfig(data.config)
-        }
         setNewApiKey('')
+        await fetchConfig()
         showToast('success', t('aiAssistant.notifications.configSaved'))
       } else {
         const errData = await res.json()
@@ -526,7 +553,19 @@ export default function AIAssistantPage() {
   const fetchModels = async () => {
     try {
       setLoadingModels(true)
-      const res = await fetch('/api/ai-assistant/models')
+      // A rota vive em `config/models` e aceita POST com o provedor atual.
+      // O GET para `/api/ai-assistant/models` que estava aqui respondia
+      // 404, e a lista de modelos nunca chegava a carregar.
+      const res = await fetch('/api/ai-assistant/config/models', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          openai_api_url: config?.openai_api_url || 'https://api.openai.com/v1',
+          // Chave recem-digitada ainda nao gravada; sem ela a rota usa a
+          // que ja esta salva na conta.
+          ...(newApiKey.trim() ? { openai_api_key: newApiKey.trim() } : {}),
+        }),
+      })
       if (res.ok) {
         const data = await res.json()
         if (Array.isArray(data.models) && data.models.length > 0) {
@@ -1243,6 +1282,133 @@ export default function AIAssistantPage() {
                   value={config?.handoff_instructions || ''}
                   onChange={(e) => config && setConfig({ ...config, handoff_instructions: e.target.value })}
                 />
+              </div>
+
+              <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-semibold">{t('aiAssistant.pacing.title')}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {t('aiAssistant.pacing.description')}
+                  </p>
+                </div>
+
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="turn_aggregation_enabled">
+                      {t('aiAssistant.pacing.waitForPerson')}
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {t('aiAssistant.pacing.waitForPersonHelp')}
+                    </p>
+                  </div>
+                  <Switch
+                    id="turn_aggregation_enabled"
+                    checked={config?.turn_aggregation_enabled ?? TURN_TIMING_DEFAULTS.aggregationEnabled}
+                    onCheckedChange={(checked) =>
+                      config && setConfig({ ...config, turn_aggregation_enabled: checked })
+                    }
+                  />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="turn_inactivity_ms">{t('aiAssistant.pacing.silence')}</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="turn_inactivity_ms"
+                        type="number"
+                        min={0.5}
+                        max={120}
+                        step={0.5}
+                        value={secondsOf(config?.turn_inactivity_ms, TURN_TIMING_DEFAULTS.inactivityMs)}
+                        onChange={(e) =>
+                          config &&
+                          setConfig({ ...config, turn_inactivity_ms: msFromSeconds(e.target.value) })
+                        }
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {t('aiAssistant.pacing.seconds')}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {t('aiAssistant.pacing.silenceHelp')}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="turn_max_wait_ms">{t('aiAssistant.pacing.maxWait')}</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="turn_max_wait_ms"
+                        type="number"
+                        min={5}
+                        max={600}
+                        step={1}
+                        value={secondsOf(config?.turn_max_wait_ms, TURN_TIMING_DEFAULTS.maxWaitMs)}
+                        onChange={(e) =>
+                          config &&
+                          setConfig({ ...config, turn_max_wait_ms: msFromSeconds(e.target.value) })
+                        }
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {t('aiAssistant.pacing.seconds')}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {t('aiAssistant.pacing.maxWaitHelp')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start justify-between gap-4 border-t pt-4">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="presence_enabled">{t('aiAssistant.pacing.acknowledge')}</Label>
+                    <p className="text-xs text-muted-foreground">
+                      {t('aiAssistant.pacing.acknowledgeHelp')}
+                    </p>
+                  </div>
+                  <Switch
+                    id="presence_enabled"
+                    checked={config?.presence_enabled ?? TURN_TIMING_DEFAULTS.presenceEnabled}
+                    onCheckedChange={(checked) =>
+                      config && setConfig({ ...config, presence_enabled: checked })
+                    }
+                  />
+                </div>
+
+                {(config?.presence_enabled ?? TURN_TIMING_DEFAULTS.presenceEnabled) && (
+                  <div className="space-y-2 sm:max-w-[50%]">
+                    <Label htmlFor="presence_threshold_ms">
+                      {t('aiAssistant.pacing.acknowledgeAfter')}
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="presence_threshold_ms"
+                        type="number"
+                        min={1}
+                        max={120}
+                        step={0.5}
+                        value={secondsOf(
+                          config?.presence_threshold_ms,
+                          TURN_TIMING_DEFAULTS.presenceThresholdMs
+                        )}
+                        onChange={(e) =>
+                          config &&
+                          setConfig({
+                            ...config,
+                            presence_threshold_ms: msFromSeconds(e.target.value),
+                          })
+                        }
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {t('aiAssistant.pacing.seconds')}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {t('aiAssistant.pacing.acknowledgeAfterHelp')}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end pt-4 border-t">

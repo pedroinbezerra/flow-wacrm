@@ -2560,6 +2560,21 @@
       "pricingPolicy": "Tabela de Preços e Formas de Pagamento",
       "returnPolicy": "Política de Garantia, Trocas e Devoluções",
       "locationInfo": "Endereço, Localização e Estacionamento"
+    },
+    "pacing": {
+      "title": "Ritmo da conversa",
+      "description": "No WhatsApp as pessoas escrevem em várias mensagens seguidas para dizer uma coisa só. O atendimento espera a pessoa terminar e responde uma vez, ao conjunto.",
+      "waitForPerson": "Esperar a pessoa terminar de escrever",
+      "waitForPersonHelp": "Desligado, cada mensagem recebida vira uma resposta separada.",
+      "silence": "Pausa que indica fim da fala",
+      "silenceHelp": "Depois de uma mensagem única. Quando a pessoa continua escrevendo, o atendimento espera mais antes de responder.",
+      "maxWait": "Tempo máximo de espera",
+      "maxWaitHelp": "Quem escreve sem parar recebe resposta do que já disse até aqui.",
+      "seconds": "segundos",
+      "acknowledge": "Demonstrar que entendeu quando a resposta demorar",
+      "acknowledgeHelp": "Só aparece se a resposta realmente demorar, e diz respeito ao que a pessoa pediu. Nunca é uma frase pronta de espera, e nunca afirma que algo está sendo consultado quando não está.",
+      "acknowledgeAfter": "Avisar depois de",
+      "acknowledgeAfterHelp": "Tempo de espera a partir do qual o silêncio começa a incomodar."
     }
   },
   "documentDelivery": {

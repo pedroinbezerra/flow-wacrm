@@ -469,6 +469,56 @@ export async function getSubscribedApps(
 // Sending
 // ============================================================
 
+export function composeAbortSignal(signal?: AbortSignal, timeoutMs?: number): AbortSignal | undefined {
+  const hasTimeout = typeof timeoutMs === 'number'
+
+  // Se timeout foi explicitamente informado e é <= 0 (ex: orçamento esgotado), aborta imediatamente
+  if (hasTimeout && timeoutMs <= 0) {
+    return AbortSignal.abort(
+      new Error(`Timeout de ${timeoutMs}ms excedido (orçamento de execução esgotado)`),
+    )
+  }
+
+  // Se não há timeout nem signal externo
+  if (!hasTimeout && !signal) {
+    return undefined
+  }
+
+  // Se há apenas timeout positivo (sem signal externo)
+  if (hasTimeout && !signal) {
+    return AbortSignal.timeout(timeoutMs)
+  }
+
+  // Se há apenas signal externo (sem timeout)
+  if (!hasTimeout && signal) {
+    return signal
+  }
+
+  // Se há ambos: se o signal externo já estiver abortado, prevalece imediatamente
+  if (signal!.aborted) {
+    return signal
+  }
+
+  if (typeof AbortSignal.any === 'function') {
+    return AbortSignal.any([signal!, AbortSignal.timeout(timeoutMs!)])
+  }
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(
+    () => controller.abort(new Error(`Timeout de ${timeoutMs}ms excedido`)),
+    timeoutMs,
+  )
+  signal!.addEventListener(
+    'abort',
+    () => {
+      clearTimeout(timeoutId)
+      controller.abort(signal!.reason)
+    },
+    { once: true },
+  )
+  return controller.signal
+}
+
 export interface SendTextMessageArgs {
   phoneNumberId: string
   accessToken: string
@@ -477,6 +527,8 @@ export interface SendTextMessageArgs {
   /** Meta's message_id of the message being replied to. Adds a `context` field
    *  so WhatsApp renders the new message as a reply with a quote preview. */
   contextMessageId?: string
+  timeoutMs?: number
+  signal?: AbortSignal
 }
 
 /**
@@ -486,7 +538,7 @@ export interface SendTextMessageArgs {
 export async function sendTextMessage(
   args: SendTextMessageArgs
 ): Promise<MetaSendResult> {
-  const { phoneNumberId, accessToken, to, text, contextMessageId } = args
+  const { phoneNumberId, accessToken, to, text, contextMessageId, timeoutMs, signal } = args
   const url = `${META_API_BASE}/${phoneNumberId}/messages`
   const body: Record<string, unknown> = {
     messaging_product: 'whatsapp',
@@ -498,6 +550,7 @@ export async function sendTextMessage(
   if (contextMessageId) {
     body.context = { message_id: contextMessageId }
   }
+  const effectiveSignal = composeAbortSignal(signal, timeoutMs)
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -505,6 +558,7 @@ export async function sendTextMessage(
       Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify(body),
+    signal: effectiveSignal,
   })
   void recordMetaUsage(response.headers, 'sendTextMessage')
   if (!response.ok) {
@@ -528,6 +582,8 @@ export interface SendMediaMessageArgs {
   /** Document-only. Shown in the recipient's chat as the file name. Ignored for image/video/audio. */
   filename?: string
   contextMessageId?: string
+  timeoutMs?: number
+  signal?: AbortSignal
 }
 
 /**
@@ -545,7 +601,7 @@ export interface SendMediaMessageArgs {
 export async function sendMediaMessage(
   args: SendMediaMessageArgs,
 ): Promise<MetaSendResult> {
-  const { phoneNumberId, accessToken, to, kind, link, caption, filename, contextMessageId } = args
+  const { phoneNumberId, accessToken, to, kind, link, caption, filename, contextMessageId, timeoutMs, signal } = args
   if (!link) throw new Error('sendMediaMessage requires a link.')
   const url = `${META_API_BASE}/${phoneNumberId}/messages`
 
@@ -565,6 +621,7 @@ export async function sendMediaMessage(
   }
   if (contextMessageId) body.context = { message_id: contextMessageId }
 
+  const effectiveSignal = composeAbortSignal(signal, timeoutMs)
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -572,6 +629,7 @@ export async function sendMediaMessage(
       Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify(body),
+    signal: effectiveSignal,
   })
   if (!response.ok) {
     await throwMetaError(response, `Meta API error: ${response.status}`)

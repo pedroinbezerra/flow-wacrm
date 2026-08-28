@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { encrypt, decrypt } from '@/lib/whatsapp/encryption'
+import { TURN_TIMING_BOUNDS, TURN_TIMING_DEFAULTS } from '@/lib/ai-service/turn-config'
 
 async function requireAccountUser() {
   const supabase = await createClient()
@@ -57,6 +58,12 @@ export async function GET() {
         openai_model: 'gpt-4o-mini',
         temperature: 0.3,
         max_tokens: 500,
+        turn_aggregation_enabled: TURN_TIMING_DEFAULTS.aggregationEnabled,
+        turn_inactivity_ms: TURN_TIMING_DEFAULTS.inactivityMs,
+        turn_max_wait_ms: TURN_TIMING_DEFAULTS.maxWaitMs,
+        presence_enabled: TURN_TIMING_DEFAULTS.presenceEnabled,
+        presence_threshold_ms: TURN_TIMING_DEFAULTS.presenceThresholdMs,
+        progress_updates_enabled: TURN_TIMING_DEFAULTS.progressUpdatesEnabled,
       },
     })
   }
@@ -111,6 +118,12 @@ export async function PUT(request: Request) {
       openai_model,
       temperature,
       max_tokens,
+      turn_aggregation_enabled,
+      turn_inactivity_ms,
+      turn_max_wait_ms,
+      presence_enabled,
+      presence_threshold_ms,
+      progress_updates_enabled,
     } = body
 
     const updatePayload: Record<string, unknown> = {
@@ -130,6 +143,43 @@ export async function PUT(request: Request) {
     if (typeof temperature === 'number') updatePayload.temperature = temperature
     if (typeof max_tokens === 'number') updatePayload.max_tokens = max_tokens
 
+    // Janelas do turno conversacional. Validadas aqui e no CHECK da
+    // migration 069: um valor fora de faixa vira 400 explicito em vez de
+    // um comportamento temporal estranho que ninguem consegue explicar.
+    if (typeof turn_aggregation_enabled === 'boolean') {
+      updatePayload.turn_aggregation_enabled = turn_aggregation_enabled
+    }
+    if (typeof presence_enabled === 'boolean') {
+      updatePayload.presence_enabled = presence_enabled
+    }
+    if (typeof progress_updates_enabled === 'boolean') {
+      updatePayload.progress_updates_enabled = progress_updates_enabled
+    }
+
+    const rangedFields: [string, unknown, { min: number; max: number }][] = [
+      ['turn_inactivity_ms', turn_inactivity_ms, TURN_TIMING_BOUNDS.inactivityMs],
+      ['turn_max_wait_ms', turn_max_wait_ms, TURN_TIMING_BOUNDS.maxWaitMs],
+      ['presence_threshold_ms', presence_threshold_ms, TURN_TIMING_BOUNDS.presenceThresholdMs],
+    ]
+    for (const [field, value, bounds] of rangedFields) {
+      if (value === undefined) continue
+      if (typeof value !== 'number' || !Number.isFinite(value)) {
+        return NextResponse.json(
+          { error: `${field} deve ser um numero em milissegundos.` },
+          { status: 400 }
+        )
+      }
+      if (value < bounds.min || value > bounds.max) {
+        return NextResponse.json(
+          { error: `${field} deve estar entre ${bounds.min} e ${bounds.max} ms.` },
+          { status: 400 }
+        )
+      }
+      updatePayload[field] = Math.round(value)
+    }
+
+
+
     // Criptografa a API Key caso um novo valor não vazio seja enviado
     if (typeof openai_api_key === 'string' && openai_api_key.trim().length > 0) {
       updatePayload.openai_api_key = encrypt(openai_api_key.trim())
@@ -137,9 +187,26 @@ export async function PUT(request: Request) {
 
     const { data: existing } = await supabase
       .from('ai_service_config')
-      .select('id')
+      .select('id, turn_inactivity_ms')
       .eq('account_id', accountId)
       .maybeSingle()
+
+    // Um teto menor que a janela de inatividade fecharia todo turno na
+    // primeira mensagem — a agregacao existiria no papel e nao no uso.
+    // Comparado contra o valor que VAI valer: o enviado agora, ou o que
+    // ja estava gravado quando so um dos dois campos veio no payload.
+    const effectiveInactivity = Number(
+      updatePayload.turn_inactivity_ms ??
+        existing?.turn_inactivity_ms ??
+        TURN_TIMING_DEFAULTS.inactivityMs
+    )
+    const effectiveMaxWait = updatePayload.turn_max_wait_ms
+    if (typeof effectiveMaxWait === 'number' && effectiveMaxWait < effectiveInactivity) {
+      return NextResponse.json(
+        { error: 'turn_max_wait_ms nao pode ser menor que turn_inactivity_ms.' },
+        { status: 400 }
+      )
+    }
 
     let upsertErr: unknown = null
     if (existing) {

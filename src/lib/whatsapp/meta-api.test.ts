@@ -267,3 +267,109 @@ describe("sendInteractiveList — validation", () => {
     });
   });
 });
+
+describe("sendTextMessage e sendMediaMessage — timeouts e AbortSignal", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("sendTextMessage repassa AbortSignal com timeout para a requisição HTTP", async () => {
+    let receivedSignal: AbortSignal | undefined
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        receivedSignal = init.signal as AbortSignal
+        return new Response(
+          JSON.stringify({ messages: [{ id: "wamid.TEXT1" }] }),
+          { status: 200 },
+        );
+      }),
+    );
+
+    const { sendTextMessage } = await import("./meta-api");
+    const result = await sendTextMessage({
+      phoneNumberId: "phone-1",
+      accessToken: "token-1",
+      to: "5511999999999",
+      text: "Olá",
+      timeoutMs: 5_000,
+    });
+
+    expect(result).toEqual({ messageId: "wamid.TEXT1" });
+    expect(receivedSignal).toBeDefined();
+  });
+
+  it("compõe signal externo e timeoutMs abortando pelo que ocorrer primeiro", async () => {
+    const controller = new AbortController();
+    let receivedSignal: AbortSignal | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        receivedSignal = init.signal as AbortSignal;
+        return new Promise((_resolve, reject) => {
+          if (init.signal?.aborted) {
+            reject(new Error("Aborted"));
+            return;
+          }
+          init.signal?.addEventListener("abort", () => reject(new Error("Aborted")));
+        });
+      }),
+    );
+
+    const { sendTextMessage } = await import("./meta-api");
+    const callPromise = sendTextMessage({
+      phoneNumberId: "phone-1",
+      accessToken: "token-1",
+      to: "5511999999999",
+      text: "Olá",
+      signal: controller.signal,
+      timeoutMs: 10_000,
+    });
+
+    // Dispara cancelamento externo
+    controller.abort(new Error("Cancelamento pelo usuário"));
+
+    await expect(callPromise).rejects.toThrow();
+    expect(receivedSignal?.aborted).toBe(true);
+  });
+
+  describe("composeAbortSignal — Casos Unitários Rigorosos", () => {
+    it("A. timeoutMs = undefined retorna undefined quando não há signal externo", async () => {
+      const { composeAbortSignal } = await import("./meta-api");
+      expect(composeAbortSignal(undefined, undefined)).toBeUndefined();
+    });
+
+    it("B. timeoutMs > 0 cria um AbortSignal com timeout operacional", async () => {
+      const { composeAbortSignal } = await import("./meta-api");
+      const signal = composeAbortSignal(undefined, 5_000);
+      expect(signal).toBeDefined();
+      expect(signal?.aborted).toBe(false);
+    });
+
+    it("C. timeoutMs = 0 gera abort imediato, nunca ausência de timeout", async () => {
+      const { composeAbortSignal } = await import("./meta-api");
+      const signal = composeAbortSignal(undefined, 0);
+      expect(signal).toBeDefined();
+      expect(signal?.aborted).toBe(true);
+      expect(signal?.reason?.message).toContain("esgotado");
+    });
+
+    it("D. signal externo + timeoutMs = 0 gera abort imediato", async () => {
+      const { composeAbortSignal } = await import("./meta-api");
+      const controller = new AbortController();
+      const signal = composeAbortSignal(controller.signal, 0);
+      expect(signal).toBeDefined();
+      expect(signal?.aborted).toBe(true);
+    });
+
+    it("E. signal externo já abortado + timeout positivo mantém abort imediato", async () => {
+      const { composeAbortSignal } = await import("./meta-api");
+      const controller = new AbortController();
+      controller.abort(new Error("Abort prévio"));
+      const signal = composeAbortSignal(controller.signal, 5_000);
+      expect(signal).toBeDefined();
+      expect(signal?.aborted).toBe(true);
+      expect(signal?.reason?.message).toBe("Abort prévio");
+    });
+  });
+});
