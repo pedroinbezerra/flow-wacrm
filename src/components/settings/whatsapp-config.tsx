@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { META_API_VERSION } from '@/lib/whatsapp/api-version';
 import Script from 'next/script';
 import { toast } from 'sonner';
@@ -83,6 +83,17 @@ export function WhatsAppConfig() {
   const [generatedPin, setGeneratedPin] = useState<string | null>(null);
   const [tokenEdited, setTokenEdited] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  // Âncora do formulário de conexão. Quando ele abre a partir do botão
+  // "+ Conectar Novo Número" — com números já na lista — o formulário
+  // nasce abaixo da dobra; sem trazer a atenção até ele, o clique parece
+  // não surtir efeito. O scroll suave faz a próxima etapa se apresentar.
+  const formRef = useRef<HTMLDivElement>(null);
+  // Pedido de scroll disparado a cada clique no botão. Não basta observar
+  // a abertura do formulário: se ele já estiver aberto e o usuário rolar
+  // de volta e clicar de novo, `isFormOpen` não muda e o scroll não
+  // aconteceria — parecia rolar "só na primeira vez". Um contador
+  // dedicado garante que todo clique traga o formulário à vista.
+  const [scrollRequest, setScrollRequest] = useState(0);
 
   // Auto-Discovery state
   const [discovering, setDiscovering] = useState(false);
@@ -197,6 +208,20 @@ export function WhatsAppConfig() {
     }
     fetchConfig(accountId);
   }, [authLoading, profileLoading, user, accountId, fetchConfig]);
+
+  // Cada clique no botão bump `scrollRequest`; aqui trazemos o formulário
+  // à vista. Fica de fora a abertura automática (nenhuma conexão ainda):
+  // ali o formulário já é o conteúdo principal, no topo, e um scroll seria
+  // movimento sem motivo — por isso o mount, com scrollRequest === 0, não
+  // rola. rAF garante que o bloco condicional já montou antes de medir a
+  // posição, cobrindo o primeiro clique (formulário ainda desmontado).
+  useEffect(() => {
+    if (scrollRequest === 0) return;
+    const raf = requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [scrollRequest]);
 
   /** Salvar normal: nunca mexe no PIN de duas etapas do número. */
   async function handleSave() {
@@ -765,6 +790,9 @@ export function WhatsAppConfig() {
                       setAccessToken('');
                       setPin('');
                       setIsFormOpen(true);
+                      // Todo clique pede o scroll — inclusive quando o
+                      // formulário já está aberto (isFormOpen não muda).
+                      setScrollRequest((n) => n + 1);
                     }
                   }}
                   className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
@@ -1150,6 +1178,30 @@ export function WhatsAppConfig() {
           </Alert>
         )}
 
+        {/* Formulário de conexão. Fica recolhido quando já existe pelo
+            menos um número conectado — a lista acima é a visão padrão — e
+            só se abre em "+ Conectar Novo Número" (setIsFormOpen(true)) ou
+            automaticamente quando ainda não há nenhuma conexão. Sem este
+            gate o botão não produzia efeito perceptível: os cards já
+            estavam sempre na tela. */}
+        {isFormOpen && (
+          <div ref={formRef} className="space-y-6 scroll-mt-6">
+            {allConfigs.length > 0 && (
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Smartphone className="size-4 text-primary" />
+                  Conectar novo número
+                </h3>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => setIsFormOpen(false)}
+                >
+                  {t('common.cancel')}
+                </Button>
+              </div>
+            )}
         {/* Mode 1: 1-Click Embedded Signup */}
         <Card id="tour-whatsapp-connect" className="border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/20">
           <CardHeader>
@@ -1381,6 +1433,8 @@ export function WhatsAppConfig() {
             </Button>
           )}
         </div>
+          </div>
+        )}
       </div>
 
       {/* Setup Instructions Sidebar */}
