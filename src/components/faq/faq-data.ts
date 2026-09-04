@@ -387,6 +387,73 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
     ]
   },
   {
+    id: "workspaces",
+    title: "Espaços de Trabalho",
+    description: "Participe de várias equipes com o mesmo login e troque de contexto quando quiser",
+    iconName: "Building2",
+    items: [
+      {
+        id: "workspace-concept",
+        question: "O que é um espaço de trabalho?",
+        answer: "É o ambiente completo de uma operação: seus contatos, conversas, funis, transmissões, automações, configurações e equipe. Cada espaço é independente dos demais — nada atravessa de um para o outro.",
+        steps: [
+          "Ao se cadastrar, você recebe um espaço próprio, do qual é proprietário.",
+          "Ao aceitar o convite de uma empresa, você passa a participar do espaço dela também.",
+          "Você trabalha em um espaço de cada vez: o que a tela mostra é sempre o espaço ativo."
+        ],
+        tags: ["espaço de trabalho", "workspace", "ambiente", "empresa", "equipe", "conceito"]
+      },
+      {
+        id: "workspace-multiple",
+        question: "Posso participar de mais de uma equipe com o mesmo e-mail?",
+        answer: "Sim. Um único login participa de quantos espaços forem necessários, e você não precisa de um segundo e-mail para isso. Seu papel é definido em cada espaço separadamente: você pode ser proprietário do seu, administrador na Empresa A e atendente na Empresa B ao mesmo tempo.",
+        routeLink: {
+          label: "Ver membros da equipe",
+          href: "/settings?tab=members"
+        },
+        tags: ["múltiplos", "vários", "duas empresas", "mesmo e-mail", "mesmo login", "participar", "papel"]
+      },
+      {
+        id: "workspace-switch",
+        question: "Como troco de espaço de trabalho?",
+        answer: "Pelo seletor no rodapé do menu lateral, logo acima do seu nome. Ele aparece assim que você participa de mais de um espaço.",
+        steps: [
+          "Clique no nome do espaço atual, no rodapé do menu lateral.",
+          "A lista mostra todos os espaços de que você participa e o seu papel em cada um.",
+          "Escolha o destino: o sistema recarrega já no novo contexto."
+        ],
+        tags: ["trocar", "alternar", "mudar", "seletor", "menu lateral", "contexto"]
+      },
+      {
+        id: "workspace-isolation",
+        question: "Por que os contatos e conversas mudam quando troco de espaço?",
+        answer: "Porque cada espaço tem os próprios dados, e você enxerga apenas os do espaço ativo. Isso vale para tudo: contatos, conversas, funis, quadros, modelos, automações, relatórios e configurações. Nada de uma empresa aparece — nem indiretamente — para quem está trabalhando em outra.",
+        tags: ["dados", "isolamento", "privacidade", "separado", "sumiram", "contatos", "conversas"]
+      },
+      {
+        id: "workspace-invite-safety",
+        question: "Aceitar um convite apaga o meu espaço atual?",
+        answer: "Não. Aceitar um convite acrescenta um espaço à sua lista; não substitui e não remove nenhum. Seus contatos, conversas e configurações continuam exatamente onde estavam, e você volta para lá pelo seletor quando quiser. Logo após aceitar, o espaço de quem convidou fica ativo — afinal, foi por ele que você acabou de entrar.",
+        tags: ["convite", "aceitar", "perder dados", "apagar", "conta antiga", "segurança"]
+      },
+      {
+        id: "workspace-leave",
+        question: "O que acontece se eu sair de uma equipe ou for removido dela?",
+        answer: "Encerra-se apenas o seu acesso àquele espaço. Os seus outros espaços continuam intactos, e o espaço do qual você saiu continua existindo com todos os dados para o restante da equipe.",
+        steps: [
+          "Para sair por conta própria: Configurações > Membros da equipe, ao final da página.",
+          "Se aquele espaço estava ativo, o sistema leva você para outro do qual participa.",
+          "Proprietários precisam transferir a titularidade antes de sair — nenhum espaço fica sem dono."
+        ],
+        routeLink: {
+          label: "Ir para Membros da equipe",
+          href: "/settings?tab=members"
+        },
+        tags: ["sair", "remover", "removido", "deixar equipe", "acesso", "proprietário", "transferir"]
+      }
+    ]
+  },
+  {
     id: "team",
     title: "Equipe & Permissões",
     description: "Controle de papéis, convites de membros e níveis de acesso",
@@ -395,9 +462,9 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
       {
         id: "team-roles",
         question: "Quais os níveis de permissão disponíveis para os membros da equipe?",
-        answer: "O sistema disponibiliza 4 papéis com atribuições bem definidas:",
+        answer: "São 4 papéis com atribuições bem definidas. O papel vale dentro deste espaço de trabalho: a mesma pessoa pode ter um papel aqui e outro em outra equipe.",
         steps: [
-          "Proprietário (Owner): Gestão total do workspace, permissões administrativas e assinatura.",
+          "Proprietário (Owner): Gestão total do espaço de trabalho, permissões administrativas e assinatura.",
           "Administrador (Admin): Configuração de equipe, integrações, regras de automação e modelos.",
           "Atendente (Agent): Operação da Caixa de Entrada, atendimento a clientes e gestão de contatos atribuídos.",
           "Visualizador (Viewer): Acesso para leitura de estatísticas e acompanhamento de relatórios sem poder de edição."
@@ -413,7 +480,7 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
   {
     id: "plans",
     title: "Planos & Faturamento",
-    description: "Gestão de limites de uso, faturamento e assinatura do workspace",
+    description: "Gestão de limites de uso, faturamento e assinatura do espaço de trabalho",
     iconName: "CreditCard",
     items: [
       {

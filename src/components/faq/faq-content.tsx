@@ -15,6 +15,7 @@ import {
   ChevronRight,
   ExternalLink,
   BookOpen,
+  Building2,
   HelpCircle,
   Sparkles,
   Zap,
@@ -52,6 +53,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   CreditCard,
   FileText,
   UserCheck,
+  Building2,
 };
 
 export function FaqContent() {
