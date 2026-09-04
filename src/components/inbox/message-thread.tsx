@@ -1364,6 +1364,10 @@ export function MessageThread({
   const assignLabel = assignedAgentId
     ? (currentAssignee?.full_name ?? t("inbox.assigned"))
     : t("inbox.assign");
+  const aiHandoffLabel =
+    conversation.ai_handler_status === "human"
+      ? t("inbox.collaboration.returnToAi")
+      : t("inbox.collaboration.takeOver");
 
   return (
     // `min-w-0` is load-bearing: the page already puts min-w-0 on the
@@ -1373,11 +1377,11 @@ export function MessageThread({
     // paints on top of the contact sidebar at lg+ — outgoing bubbles get
     // clipped and the hover toolbar overlaps the Tags panel. Letting the
     // root shrink lets the bubbles' break-words / max-w caps apply.
-    <div className={cn("flex min-w-0 flex-1 flex-col", DOODLE_BG_CLASSES)}>
+    <div className={cn("@container/thread flex min-w-0 flex-1 flex-col", DOODLE_BG_CLASSES)}>
       {/* Single-Row Smart Header (52px height) */}
-      <div className="flex h-13 min-h-[52px] items-center justify-between gap-3 border-b border-border bg-card/95 px-4 backdrop-blur-xs shrink-0">
+      <div className="flex h-13 min-h-[52px] items-center justify-between gap-2 overflow-hidden border-b border-border bg-card/95 px-3 backdrop-blur-xs shrink-0 @2xl/thread:gap-3 @2xl/thread:px-4">
           {/* Left Side: Contact Info & Status Pills */}
-          <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden @2xl/thread:gap-2.5">
             {onBack && (
               <button
                 type="button"
@@ -1402,16 +1406,16 @@ export function MessageThread({
               />
               <div className="min-w-0 flex items-center gap-2">
                 <h2 className="truncate text-xs font-semibold text-foreground">{displayName}</h2>
-                <span className="hidden sm:inline text-[11px] text-muted-foreground truncate">{contact.phone}</span>
+                <span className="hidden @3xl/thread:inline text-[11px] text-muted-foreground truncate">{contact.phone}</span>
               </div>
             </button>
 
             {/* Subtle Pills for Session & AI */}
-            <div className="hidden md:flex items-center gap-1.5 ml-1">
+            <div className="hidden @md/thread:flex items-center gap-1.5 ml-1 shrink-0">
               {!sessionInfo.expired && sessionInfo.remaining && (
                 <Badge
                   variant="outline"
-                  className="gap-1 border-border/60 text-[10px] font-normal px-1.5 py-0 shrink-0 text-muted-foreground"
+                  className="hidden @2xl/thread:inline-flex gap-1 border-border/60 text-[10px] font-normal px-1.5 py-0 shrink-0 text-muted-foreground"
                 >
                   <Clock className="h-3 w-3" />
                   {sessionInfo.remaining}
@@ -1439,8 +1443,13 @@ export function MessageThread({
               size="sm"
               onClick={handleToggleAIHandler}
               disabled={updatingHandlerStatus}
+              // O rótulo some quando a coluna da conversa fica estreita (painel
+              // de contexto aberto em telas de 1366px). Sem title/aria-label o
+              // botão viraria só um ícone sem nome acessível.
+              title={aiHandoffLabel}
+              aria-label={aiHandoffLabel}
               className={cn(
-                "h-7 text-[11px] font-medium gap-1 px-2.5 rounded-md transition-all shadow-2xs whitespace-nowrap",
+                "h-7 text-[11px] font-medium gap-1 px-2 rounded-md transition-all shadow-2xs whitespace-nowrap @xl/thread:px-2.5",
                 conversation.ai_handler_status === "human"
                   ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20"
                   : "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:bg-amber-500/20"
@@ -1449,12 +1458,12 @@ export function MessageThread({
               {conversation.ai_handler_status === "human" ? (
                 <>
                   <Sparkles className="h-3.5 w-3.5 shrink-0" />
-                  <span className="hidden sm:inline whitespace-nowrap">{t("inbox.collaboration.returnToAi")}</span>
+                  <span className="hidden @xl/thread:inline whitespace-nowrap">{t("inbox.collaboration.returnToAi")}</span>
                 </>
               ) : (
                 <>
                   <UserCheck className="h-3.5 w-3.5 shrink-0" />
-                  <span className="hidden sm:inline whitespace-nowrap">{t("inbox.collaboration.takeOver")}</span>
+                  <span className="hidden @xl/thread:inline whitespace-nowrap">{t("inbox.collaboration.takeOver")}</span>
                 </>
               )}
             </Button>
@@ -1488,13 +1497,15 @@ export function MessageThread({
 
               <DropdownMenu>
                 <DropdownMenuTrigger
+                  title={assignLabel}
+                  aria-label={assignLabel}
                   className={cn(
                     "inline-flex items-center justify-center h-7 gap-1 px-2 text-[11px] font-medium rounded-md transition-colors whitespace-nowrap hover:bg-muted",
                     assignedAgentId ? "text-primary font-semibold" : "text-muted-foreground"
                   )}
                 >
                   <UserPlus className="h-3.5 w-3.5 shrink-0" />
-                  <span className="whitespace-nowrap">{assignLabel}</span>
+                  <span className="hidden max-w-[7rem] truncate whitespace-nowrap @lg/thread:inline">{assignLabel}</span>
                   <ChevronDown className="h-3 w-3 opacity-70 shrink-0" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="border-border bg-popover">

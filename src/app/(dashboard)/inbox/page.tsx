@@ -746,14 +746,17 @@ export default function InboxPage() {
       )}
 
       <div className="flex flex-1 overflow-hidden">
+        {/* A lista só chega a w-96 em 2xl: entre 1280px e 1535px os 384px
+            saíam da conversa e o cabeçalho do atendimento não cabia mais
+            (com lista + contexto abertos em 1366px sobrava ~420px). */}
         <div
           id="tour-inbox-list"
           className={cn(
-            "h-full shrink-0 border-r border-border bg-card transition-all duration-300 ease-in-out overflow-hidden w-full lg:w-80 xl:w-96",
+            "h-full shrink-0 border-r border-border bg-card transition-all duration-300 ease-in-out overflow-hidden w-full lg:w-80 2xl:w-96",
             hasActiveConv ? "hidden lg:block" : "block",
             hasActiveConv && !listPanelOpen
               ? "lg:w-0 lg:opacity-0 lg:border-r-0 lg:pointer-events-none"
-              : "lg:w-80 xl:w-96 lg:opacity-100"
+              : "lg:w-80 2xl:w-96 lg:opacity-100"
           )}
         >
           <ConversationList
