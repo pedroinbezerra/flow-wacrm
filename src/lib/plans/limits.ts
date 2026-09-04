@@ -188,10 +188,14 @@ async function getFeatureCurrentCount(
 ): Promise<number> {
   switch (feature) {
     case "max_users": {
+      // Assento é participação, não perfil: a mesma identidade pode participar
+      // de vários workspaces, e contar `profiles.account_id` passaria a contar
+      // quem está com este workspace ativo — não quem pertence a ele.
       const { count } = await supabase
-        .from("profiles")
+        .from("account_memberships")
         .select("id", { count: "exact", head: true })
-        .eq("account_id", accountId);
+        .eq("account_id", accountId)
+        .eq("status", "active");
       return count || 0;
     }
     case "max_contacts": {

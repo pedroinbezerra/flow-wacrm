@@ -330,8 +330,10 @@ GRANT EXECUTE ON FUNCTION public.shares_active_account_with(UUID) TO authenticat
 -- Escolhe um workspace ativo válido para p_user_id.
 --
 -- Mantém o atual se ele ainda corresponder a uma participação ativa; senão
--- prefere um workspace que a pessoa possui (o pessoal, tipicamente) e cai para
--- a participação mais recente. Devolve NULL quando não sobrou nenhuma — estado
+-- prefere um workspace que a pessoa possui (o pessoal, tipicamente) e desempata
+-- pela participação mais antiga — o ambiente mais estabelecido, não o último
+-- convite aceito. Espelhado por `pickFallbackWorkspace` em
+-- src/lib/auth/workspaces.ts. Devolve NULL quando não sobrou nenhuma — estado
 -- válido, tratado pela aplicação.
 CREATE OR REPLACE FUNCTION public.repoint_active_workspace(p_user_id UUID)
 RETURNS UUID
@@ -451,12 +453,15 @@ CREATE POLICY profiles_select ON public.profiles
 -- participação. O escopo de tenant continua sendo aplicado pela política que
 -- as acompanha (`is_account_member(account_id) AND can_access_*`).
 -- ============================================================
+-- Assinatura idêntica à de 050, `DEFAULT auth.uid()` incluído: CREATE OR
+-- REPLACE não remove default de parâmetro existente (42P13), e a volatilidade
+-- também fica como estava. Só o corpo muda.
 CREATE OR REPLACE FUNCTION public.can_access_conversation_board(
   p_board_id UUID,
-  p_user_id UUID
-) RETURNS BOOLEAN
+  p_user_id UUID DEFAULT auth.uid()
+)
+RETURNS BOOLEAN
 LANGUAGE plpgsql
-STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
@@ -493,10 +498,10 @@ $$;
 
 CREATE OR REPLACE FUNCTION public.can_access_pipeline(
   p_pipeline_id UUID,
-  p_user_id UUID
-) RETURNS BOOLEAN
+  p_user_id UUID DEFAULT auth.uid()
+)
+RETURNS BOOLEAN
 LANGUAGE plpgsql
-STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
@@ -533,6 +538,71 @@ $$;
 
 ALTER FUNCTION public.can_access_conversation_board(UUID, UUID) OWNER TO postgres;
 ALTER FUNCTION public.can_access_pipeline(UUID, UUID) OWNER TO postgres;
+
+-- ============================================================
+-- sync_conversation_board_mention_account (de 027)
+--
+-- A trava "o mencionado pertence à mesma conta do item" comparava
+-- `profiles.account_id` do mencionado com a conta do quadro. Com a coluna
+-- significando workspace ATIVO, mencionar um colega que estivesse trabalhando
+-- em outro ambiente passaria a falhar com 23514 — ele pertence à equipe, só
+-- não estava com ela aberta. A trava continua existindo; passa a perguntar à
+-- participação, que é o que ela sempre quis saber.
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.sync_conversation_board_mention_account()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_account_id UUID;
+  v_conversation_id UUID;
+BEGIN
+  SELECT account_id, conversation_id
+  INTO v_account_id, v_conversation_id
+  FROM conversation_board_items
+  WHERE id = NEW.board_item_id;
+
+  IF v_account_id IS NULL THEN
+    RAISE EXCEPTION 'Unknown board item %', NEW.board_item_id
+      USING ERRCODE = '23503';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM profiles WHERE user_id = NEW.mentioned_user_id
+  ) THEN
+    RAISE EXCEPTION 'Unknown mentioned user %', NEW.mentioned_user_id
+      USING ERRCODE = '23503';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM account_memberships m
+    WHERE m.user_id = NEW.mentioned_user_id
+      AND m.account_id = v_account_id
+      AND m.status = 'active'
+  ) THEN
+    RAISE EXCEPTION 'Mentioned user must belong to the same account as the board item'
+      USING ERRCODE = '23514';
+  END IF;
+
+  NEW.account_id := v_account_id;
+  NEW.conversation_id := v_conversation_id;
+
+  UPDATE conversation_board_items
+  SET mention_active = TRUE,
+      mention_set_at = NEW.created_at,
+      mention_set_by_user_id = NEW.mentioned_user_id,
+      mention_cleared_at = NULL,
+      mention_cleared_by_user_id = NULL,
+      updated_at = NOW()
+  WHERE id = NEW.board_item_id;
+
+  RETURN NEW;
+END;
+$$;
+
+ALTER FUNCTION public.sync_conversation_board_mention_account() OWNER TO postgres;
 
 -- ============================================================
 -- SIGNUP — o workspace pessoal continua existindo
@@ -974,10 +1044,10 @@ GRANT EXECUTE ON FUNCTION public.ensure_active_workspace() TO authenticated;
 -- ============================================================
 -- list_my_workspaces — o que alimenta o seletor
 -- ============================================================
-CREATE OR REPLACE FUNCTION public.list_my_workspaces()
 -- Nomes de saída deliberadamente distintos das colunas das tabelas do corpo
 -- (workspace_id/workspace_name/member_role): em função LANGUAGE sql, parâmetro
 -- de saída homônimo de coluna é fonte clássica de ambiguidade.
+CREATE OR REPLACE FUNCTION public.list_my_workspaces()
 RETURNS TABLE (
   workspace_id UUID,
   workspace_name TEXT,

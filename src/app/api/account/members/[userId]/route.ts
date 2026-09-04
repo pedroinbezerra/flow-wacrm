@@ -4,7 +4,8 @@
 //   PATCH  — change a member's role.   Admin+.
 //   DELETE — remove a member.          Admin+.
 //
-// Both delegate to SECURITY DEFINER RPCs from migration 018:
+// Both delegate to SECURITY DEFINER RPCs (migração 018, reescritas em
+// 070_multi_workspace_memberships.sql):
 //   - set_member_role(p_user_id, p_new_role)
 //   - remove_account_member(p_user_id)
 //
@@ -12,6 +13,10 @@
 // admin+, target must be in caller's account, target can't be the
 // owner, can't be self. The TS layer here only forwards the call
 // and maps Postgres SQLSTATEs back to HTTP statuses.
+//
+// Ambas operam sobre a PARTICIPAÇÃO no workspace ativo de quem chama.
+// Remover encerra uma participação; não move perfil, não cria conta e não
+// apaga workspace nenhum.
 // ============================================================
 
 import { NextResponse } from "next/server";
@@ -91,11 +96,34 @@ export async function PATCH(
 
     if (sector !== undefined) {
       const sectorVal = typeof sector === "string" && sector.trim() ? sector.trim() : null;
+
+      // O alvo precisa participar do workspace ativo de quem chama. O filtro
+      // anterior (`profiles.account_id = ctx.accountId`) deixou de significar
+      // isso: aquela coluna passou a apontar para o workspace ativo do alvo,
+      // que pode ser outro sem que ele tenha deixado esta equipe.
+      const { data: membership, error: membershipErr } = await ctx.supabase
+        .from("account_memberships")
+        .select("user_id")
+        .eq("account_id", ctx.accountId)
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (membershipErr) {
+        console.error("[members route] membership lookup failed:", membershipErr);
+        return NextResponse.json({ error: "Failed to update sector" }, { status: 500 });
+      }
+      if (!membership) {
+        return NextResponse.json(
+          { error: "Target user is not a member of your account" },
+          { status: 400 },
+        );
+      }
+
       const { error } = await ctx.supabase
         .from("profiles")
         .update({ sector: sectorVal })
-        .eq("user_id", userId)
-        .eq("account_id", ctx.accountId);
+        .eq("user_id", userId);
 
       if (error) {
         console.error("[members route] error updating sector:", error);
@@ -130,7 +158,11 @@ export async function DELETE(
 
     if (error) return rpcErrorToResponse(error);
 
-    return NextResponse.json({ ok: true, newPersonalAccountId: data });
+    // Remover encerra a participação e nada mais: os workspaces do removido
+    // seguem intactos. `data` é o workspace ativo dele depois do
+    // repontamento (null se ele não participava de nenhum outro) — nunca uma
+    // conta pessoal recém-fabricada, como acontecia no modelo antigo.
+    return NextResponse.json({ ok: true, activeWorkspaceId: data ?? null });
   } catch (err) {
     return toErrorResponse(err);
   }

@@ -249,15 +249,15 @@
       "failedAccept": "Falha ao aceitar convite",
       "failedReachServer": "Não foi possível alcançar o servidor",
       "failedSignOut": "Falha ao desconectar. Tente atualizar a página.",
-      "alreadyAnotherAccount": "Você já está em outra conta. Desconecte para entrar nesta.",
+      "alreadyAnotherAccount": "Você já participa deste espaço de trabalho.",
       "tryAgain": "Tentar novamente",
       "createAccountInstead": "Criar uma nova conta",
       "createAccountAndJoin": "Criar conta e entrar",
       "invitedTo": "Você foi convidado para",
       "joinAs": "Você entrará como",
       "validUntil": "Link válido até",
-      "acceptingNote": "Ao aceitar, seu login será movido para",
-      "acceptingNoteCleanup": "Sua conta pessoal vazia criada no cadastro será removida.",
+      "acceptingNote": "Ao aceitar, você passa a participar de",
+      "acceptingNoteCleanup": "Seus outros espaços de trabalho continuam como estão, e você troca entre eles quando quiser.",
       "roles": {
         "admin": "Administrador",
         "agent": "Agente",
@@ -286,12 +286,12 @@
       },
       "conflict": {
         "title": "Não foi possível entrar em",
-        "message": "Você já está em outra conta. Entre com um e-mail diferente para participar desta.",
-        "instructions": "Para entrar em",
-        "note": "desconecte e cadastre-se novamente com outro endereço de e-mail. O convite continua válido enquanto não expirar.",
-        "staySignedIn": "Continuar conectado",
+        "message": "Você já participa deste espaço de trabalho.",
+        "instructions": "Você já tem acesso a",
+        "note": "e pode trocar para lá pelo seletor de espaços de trabalho, no rodapé do menu lateral.",
+        "staySignedIn": "Fechar",
         "signingOut": "Desconectando...",
-        "signOutAndUse": "Desconectar e usar outro e-mail"
+        "goToDashboard": "Ir para o painel"
       }
     }
   },
@@ -329,7 +329,14 @@
     "openMenu": "Abrir menu",
     "closeMenu": "Fechar menu",
     "toggleLightMode": "Alterar para modo claro",
-    "toggleDarkMode": "Alterar para modo escuro"
+    "toggleDarkMode": "Alterar para modo escuro",
+    "workspace": {
+      "label": "Seus espaços de trabalho",
+      "none": "Você não faz parte de nenhum espaço de trabalho",
+      "noneBody": "Seu acesso a este espaço de trabalho foi encerrado e não há outro para abrir. Peça um novo convite a quem administra a equipe, ou entre com outro login.",
+      "switchError": "Não foi possível trocar de espaço de trabalho",
+      "switching": "Trocando de espaço de trabalho..."
+    }
   },
   "dashboard": {
     "headline": {
@@ -1809,8 +1816,13 @@
       "created": "Criado em",
       "revoke": "Revogar",
       "removeMember": "Remover membro",
+      "leaveTeam": "Sair desta equipe",
+      "leaveTeamHint": "Você continua com seus outros espaços de trabalho, e este segue existindo para o restante da equipe.",
+      "leaveTeamPrompt": "Sair de {name}? Você perde o acesso a este espaço de trabalho e volta para os seus outros. Nada aqui é apagado.",
+      "leaving": "Saindo...",
+      "failedLeave": "Não foi possível sair da equipe",
       "removeMemberPromptPrefix": "Remover",
-      "removeMemberPromptSuffix": "da conta? Essa pessoa será desconectada desta conta e receberá uma conta pessoal nova no próximo login. O login dela não é apagado.",
+      "removeMemberPromptSuffix": "desta equipe? Ela perde o acesso a este espaço de trabalho e continua com os outros de que participa, incluindo o próprio. O login dela não é apagado.",
       "thisTeammate": "este colega",
       "removing": "Removendo...",
       "expired": "expirado",

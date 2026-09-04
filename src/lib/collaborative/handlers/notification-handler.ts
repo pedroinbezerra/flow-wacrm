@@ -19,11 +19,24 @@ export async function handleNotifications(
       const mentions = p.mentions || parseMentions(p.content);
 
       if (mentions.length > 0) {
-        // Resolve user IDs from full_name or email
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, full_name")
-          .eq("account_id", context.account_id);
+        // Resolve user IDs from full_name or email — dentro de quem participa
+        // deste workspace. A participação é a fonte; o nome vem do perfil.
+        const { data: membershipRows } = await supabase
+          .from("account_memberships")
+          .select("user_id")
+          .eq("account_id", context.account_id)
+          .eq("status", "active");
+
+        const mentionableIds = (membershipRows ?? []).map(
+          (row) => row.user_id as string,
+        );
+
+        const { data: profiles } = mentionableIds.length
+          ? await supabase
+              .from("profiles")
+              .select("user_id, full_name")
+              .in("user_id", mentionableIds)
+          : { data: [] as { user_id: string; full_name: string }[] };
 
         if (profiles && profiles.length > 0) {
           for (const targetName of mentions) {
@@ -125,51 +138,51 @@ export async function handleNotifications(
 
         if (data) notificationIds.push(data.id);
       } else {
+        // Quem pertence a este workspace são as participações ativas; o setor
+        // continua morando no perfil, então o filtro por setor é aplicado
+        // sobre esse conjunto — nunca por `profiles.account_id`, que agora
+        // diz onde a pessoa está trabalhando, não a que equipe pertence.
+        const { data: membershipRows } = await supabase
+          .from("account_memberships")
+          .select("user_id")
+          .eq("account_id", context.account_id)
+          .eq("status", "active");
+
+        const memberIds = (membershipRows ?? []).map((row) => row.user_id as string);
+        let targetIds = memberIds;
+
         // If a target sector is provided, notify members belonging to that sector.
         // Fallback to all account members if no members are tagged with that sector yet.
-        let memberQuery = supabase
-          .from("profiles")
-          .select("user_id")
-          .eq("account_id", context.account_id);
-
-        if (p.target_sector) {
+        if (p.target_sector && memberIds.length > 0) {
           const { data: sectorMembers } = await supabase
             .from("profiles")
             .select("user_id")
-            .eq("account_id", context.account_id)
+            .in("user_id", memberIds)
             .eq("sector", p.target_sector);
 
           if (sectorMembers && sectorMembers.length > 0) {
-            memberQuery = supabase
-              .from("profiles")
-              .select("user_id")
-              .eq("account_id", context.account_id)
-              .eq("sector", p.target_sector);
+            targetIds = sectorMembers.map((row) => row.user_id as string);
           }
         }
 
-        const { data: members } = await memberQuery;
+        for (const targetUserId of targetIds) {
+          if (targetUserId !== context.actor_id) {
+            const { data } = await supabase
+              .from("notifications")
+              .insert({
+                account_id: context.account_id,
+                user_id: targetUserId,
+                actor_id: context.actor_id,
+                conversation_id: context.conversation_id,
+                type: "help_request",
+                title: `Solicitação de Ajuda (${p.target_sector || "Geral"})`,
+                body: bodyText,
+                metadata: { conversation_id: context.conversation_id, sector: p.target_sector },
+              })
+              .select("id")
+              .single();
 
-        if (members) {
-          for (const m of members) {
-            if (m.user_id !== context.actor_id) {
-              const { data } = await supabase
-                .from("notifications")
-                .insert({
-                  account_id: context.account_id,
-                  user_id: m.user_id,
-                  actor_id: context.actor_id,
-                  conversation_id: context.conversation_id,
-                  type: "help_request",
-                  title: `Solicitação de Ajuda (${p.target_sector || "Geral"})`,
-                  body: bodyText,
-                  metadata: { conversation_id: context.conversation_id, sector: p.target_sector },
-                })
-                .select("id")
-                .single();
-
-              if (data) notificationIds.push(data.id);
-            }
+            if (data) notificationIds.push(data.id);
           }
         }
       }

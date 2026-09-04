@@ -19,6 +19,7 @@ import {
   isAccountRole,
   type AccountRole,
 } from "@/lib/auth/roles";
+import type { Workspace } from "@/types";
 
 interface Profile {
   id: string;
@@ -120,6 +121,32 @@ interface AuthContextValue {
   isSuspended: boolean;
   /** True se a conta estiver agendada para exclusão definitiva (carência de 90 dias). */
   isPendingDeletion: boolean;
+
+  // ----------------------------------------------------------
+  // Múltiplos workspaces
+  //
+  // A identidade participa de vários workspaces e trabalha em um de
+  // cada vez. Nada aqui autoriza acesso: a lista vem de
+  // `list_my_workspaces()` (filtrada por participação no banco) e a
+  // troca é validada por `switch_active_workspace()`. O estado do
+  // cliente é reflexo do contexto, nunca a origem dele.
+  // ----------------------------------------------------------
+
+  /** Workspaces dos quais esta identidade participa. Vazio enquanto carrega. */
+  workspaces: Workspace[];
+  /** True enquanto a lista de workspaces ainda não chegou. */
+  workspacesLoading: boolean;
+  /** True quando a identidade participa de mais de um workspace. */
+  hasMultipleWorkspaces: boolean;
+  /**
+   * True quando não há workspace ativo utilizável — a última participação foi
+   * encerrada, ou o workspace em uso foi excluído. Estado real e previsto.
+   */
+  hasNoWorkspace: boolean;
+  /** Troca o contexto operacional e recarrega a aplicação no novo tenant. */
+  switchWorkspace: (accountId: string) => Promise<void>;
+  /** Recarrega a lista de workspaces (após aceitar convite, sair de um time…). */
+  refreshWorkspaces: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -133,6 +160,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [account, setAccount] = useState<AccountSummary | null>(null);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [workspacesLoading, setWorkspacesLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   // Tracked separately from `loading`. The session settles fast (one
   // local cookie read); the profile fetch crosses the network and
@@ -168,6 +197,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!fallback1.error) {
             data = fallback1.data as any;
             error = null;
+          }
+        }
+
+        // Sem linha: o `!inner` sobre accounts não casa quando o perfil está
+        // sem workspace ativo — participação encerrada com o app aberto, ou
+        // workspace excluído (a FK zera o ponteiro em vez de apagar o perfil).
+        // `ensure_active_workspace` escolhe outra participação da própria
+        // pessoa; só uma tentativa, para não virar laço em quem realmente não
+        // participa de nada.
+        if (!error && !data) {
+          const { error: repairErr } = await supabase.rpc("ensure_active_workspace");
+          if (!repairErr) {
+            const retry = await supabase
+              .from("profiles")
+              .select(
+                "id, full_name, email, avatar_url, role, beta_features, account_id, account_role, is_super_admin, account:accounts!inner(id, name, default_currency, response_time_target_minutes, subscription_status, scheduled_deletion_at)",
+              )
+              .eq("user_id", userId)
+              .maybeSingle();
+            if (!retry.error) data = retry.data as any;
           }
         }
 
@@ -237,6 +286,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Lista de workspaces da identidade. Vai pela rota HTTP em vez de chamar a
+  // RPC direto do browser para manter um único ponto de entrada auditável
+  // dessa leitura — e porque a rota responde mesmo quando não há workspace
+  // ativo, que é justamente o momento em que a interface mais precisa dela.
+  const fetchWorkspaces = useCallback(async () => {
+    setWorkspacesLoading(true);
+    try {
+      const res = await fetch("/api/account/workspaces", { cache: "no-store" });
+      if (!res.ok) {
+        if (res.status !== 401) {
+          console.error("[AuthProvider] fetchWorkspaces failed:", res.status);
+        }
+        setWorkspaces([]);
+        return;
+      }
+      const body = (await res.json()) as { workspaces?: Workspace[] };
+      setWorkspaces(body.workspaces ?? []);
+    } catch (err) {
+      console.error("[AuthProvider] fetchWorkspaces threw:", err);
+      setWorkspaces([]);
+    } finally {
+      setWorkspacesLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     const supabase = createClient();
     let mounted = true;
@@ -293,11 +367,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // profile enriches async. Callers that need to branch on
           // profile data gate on `profileLoading` instead.
           fetchProfile(currentUser.id);
+          fetchWorkspaces();
         } else {
           // No user → no profile to load. Flip profileLoading off so
           // pages that gate on it don't wait forever on the logged-out
           // path (the route guard or redirect should fire instead).
           setProfileLoading(false);
+          setWorkspaces([]);
+          setWorkspacesLoading(false);
         }
       } catch (err) {
         console.error("[AuthProvider] init threw:", err);
@@ -318,10 +395,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (currentUser) {
         fetchProfile(currentUser.id);
+        fetchWorkspaces();
       } else {
         setProfile(null);
         setAccount(null);
         setProfileLoading(false);
+        setWorkspaces([]);
+        setWorkspacesLoading(false);
       }
 
       setLoading(false);
@@ -332,7 +412,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, [fetchProfile, fetchWorkspaces]);
 
   const signOut = useCallback(async () => {
     const supabase = createClient();
@@ -340,6 +420,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setProfile(null);
     setAccount(null);
+    setWorkspaces([]);
     window.location.href = "/login";
   }, []);
 
@@ -347,6 +428,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user?.id) return;
     await fetchProfile(user.id);
   }, [user, fetchProfile]);
+
+  /**
+   * Troca de workspace ativo.
+   *
+   * Depois que o servidor confirma a troca, a aplicação recarrega em
+   * `/dashboard` em vez de re-renderizar no lugar. É deliberado: a rota atual
+   * pode apontar para um recurso do workspace anterior (uma conversa, um
+   * negócio), e listas já carregadas pertencem ao tenant antigo. Recarregar em
+   * um ponto neutro é o modo previsível de falhar — nada do contexto anterior
+   * sobrevive à troca.
+   */
+  const switchWorkspace = useCallback(async (accountId: string) => {
+    const res = await fetch("/api/account/workspaces/switch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accountId }),
+    });
+
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      throw new Error(body.error || "Não foi possível trocar de workspace");
+    }
+
+    window.location.href = "/dashboard";
+  }, []);
+
+  const refreshWorkspaces = useCallback(async () => {
+    await fetchWorkspaces();
+  }, [fetchWorkspaces]);
 
   // Derive the role booleans once per profile change rather than on
   // every consumer render. Cheap regardless, but the memo also gives
@@ -388,6 +498,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         account,
         defaultCurrency: account?.default_currency ?? DEFAULT_CURRENCY,
         responseTimeTargetMinutes: account?.response_time_target_minutes ?? 5,
+        workspaces,
+        workspacesLoading,
+        hasMultipleWorkspaces: workspaces.length > 1,
+        // Só afirma "sem workspace" depois que perfil e lista chegaram — antes
+        // disso a ausência é ignorância, não estado.
+        hasNoWorkspace:
+          !profileLoading &&
+          !workspacesLoading &&
+          !profile?.account_id &&
+          workspaces.length === 0,
+        switchWorkspace,
+        refreshWorkspaces,
         ...derived,
       }}
     >
@@ -434,6 +556,12 @@ export function useAuth(): AuthContextValue {
       isReadOnly: false,
       isSuspended: false,
       isPendingDeletion: false,
+      workspaces: [],
+      workspacesLoading: false,
+      hasMultipleWorkspaces: false,
+      hasNoWorkspace: false,
+      switchWorkspace: async () => {},
+      refreshWorkspaces: async () => {},
     };
   }
   return ctx;

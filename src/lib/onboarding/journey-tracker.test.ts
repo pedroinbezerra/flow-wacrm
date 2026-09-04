@@ -39,16 +39,17 @@ describe("journey-tracker", () => {
             }),
           };
         }
-        // Domain tables for auto-check returning 0 counts
-        return {
-          select: () => ({
-            eq: () => ({
-              in: async () => ({ count: 0 }),
-              async THEN() { return { count: 0 }; },
-              count: 0,
-            }),
-          }),
-        };
+        // Domain tables for auto-check returning 0 counts.
+        // Encadeável em qualquer profundidade: a contagem de membros passou a
+        // filtrar por `account_id` E `status`, e o mock não deve precisar de
+        // conserto a cada filtro novo.
+        const chain: Record<string, unknown> = {};
+        chain.select = () => chain;
+        chain.eq = () => chain;
+        chain.in = () => chain;
+        chain.then = (resolve: (value: { count: number }) => unknown) =>
+          resolve({ count: 0 });
+        return chain;
       }),
     } as any;
 

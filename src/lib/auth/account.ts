@@ -85,25 +85,39 @@ export interface AccountContext {
   supabase: SupabaseClient;
   /** `auth.uid()` for the caller. Always defined when this resolves. */
   userId: string;
-  /** Caller's account_id from their profile row. */
+  /**
+   * Workspace ativo do chamador — o tenant em que ele está trabalhando
+   * agora, não "a conta dele". Uma mesma identidade participa de vários
+   * workspaces; este é o que a sessão selecionou (`profiles.account_id`,
+   * gravado apenas por `switch_active_workspace`).
+   */
   accountId: string;
-  /** Caller's role within their account. */
+  /**
+   * Papel do chamador **neste** workspace. Lido de `account_memberships`,
+   * que é a autoridade — `profiles.account_role` é só espelho.
+   */
   role: AccountRole;
   /** Account row. */
   account: Account;
 }
 
 /**
- * Resolve the caller's user + account + role in one round trip.
+ * Resolve o chamador + seu workspace ativo + o papel dele nesse workspace.
  *
- * Throws `UnauthorizedError` if there's no Supabase session.
- * Throws `ForbiddenError` if the profile is missing account
- * fields (shouldn't happen post-017 migration; defensive guard
- * against profile rows that pre-date the backfill or were
- * inserted by hand).
+ * Lança `UnauthorizedError` sem sessão Supabase.
+ * Lança `ForbiddenError` quando não há workspace ativo utilizável — o que
+ * hoje é um estado real e previsto (a última participação da pessoa foi
+ * encerrada), não mais uma anomalia de migração.
  *
- * Use `requireRole(min)` instead when the route also needs a
- * minimum-role check — it's a thin wrapper over this.
+ * Duas idas ao banco, deliberadamente:
+ *   1. perfil + conta ativa;
+ *   2. a participação naquela conta, que é a **autoridade** sobre o papel.
+ *
+ * Ler o papel da participação, e não de `profiles.account_role`, é o que
+ * impede que um espelho desatualizado vire autorização — o espelho existe
+ * para conveniência de leitura, nunca para decidir acesso.
+ *
+ * Use `requireRole(min)` quando a rota também precisar de papel mínimo.
  */
 export async function getCurrentAccount(): Promise<AccountContext> {
   const supabase = await createClient();
@@ -116,24 +130,42 @@ export async function getCurrentAccount(): Promise<AccountContext> {
     throw new UnauthorizedError();
   }
 
-  // Selecting through the FK gives us the account in one query — `account:accounts!inner(*)`
-  let { data, error } = await supabase
-    .from("profiles")
-    .select("account_id, account_role, account:accounts!inner(*)")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  // Fallback defensivo para esquemas legados
-  if (error) {
-    const fallback = await supabase
+  const loadProfile = async () => {
+    // Selecting through the FK gives us the account in one query — `account:accounts!inner(*)`
+    let { data, error } = await supabase
       .from("profiles")
-      .select("account_id, account_role, account:accounts!inner(id, name, subscription_status)")
+      .select("account_id, account_role, account:accounts!inner(*)")
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (!fallback.error) {
-      data = fallback.data as any;
-      error = null;
+    // Fallback defensivo para esquemas legados
+    if (error) {
+      const fallback = await supabase
+        .from("profiles")
+        .select("account_id, account_role, account:accounts!inner(id, name, subscription_status)")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!fallback.error) {
+        data = fallback.data as any;
+        error = null;
+      }
+    }
+    return { data, error };
+  };
+
+  let { data, error } = await loadProfile();
+
+  // Contexto ausente: a participação que estava em uso foi encerrada, ou o
+  // workspace foi excluído (a FK agora aponta o perfil para NULL em vez de
+  // apagá-lo). `ensure_active_workspace` escolhe outra participação da
+  // própria pessoa; só depois disso desistimos.
+  if (!error && !data?.account_id) {
+    const { error: repairErr } = await supabase.rpc("ensure_active_workspace");
+    if (repairErr) {
+      console.error("[getCurrentAccount] ensure_active_workspace failed:", repairErr);
+    } else {
+      ({ data, error } = await loadProfile());
     }
   }
 
@@ -141,11 +173,32 @@ export async function getCurrentAccount(): Promise<AccountContext> {
     console.error("[getCurrentAccount] profile fetch error:", error);
     throw new ForbiddenError("Could not load account context");
   }
-  if (!data || !data.account_id || !data.account_role || !data.account) {
-    throw new ForbiddenError("Profile is not linked to an account");
+  if (!data || !data.account_id || !data.account) {
+    throw new ForbiddenError("Nenhum workspace disponível para esta conta");
   }
-  if (!isAccountRole(data.account_role)) {
-    throw new ForbiddenError(`Unknown account role: ${data.account_role}`);
+
+  const accountId = data.account_id as string;
+
+  const { data: membership, error: membershipErr } = await supabase
+    .from("account_memberships")
+    .select("role")
+    .eq("account_id", accountId)
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (membershipErr) {
+    console.error("[getCurrentAccount] membership fetch error:", membershipErr);
+    throw new ForbiddenError("Could not load account context");
+  }
+  if (!membership) {
+    // Ponteiro obsoleto apontando para workspace do qual não se participa
+    // mais. Negar é o comportamento correto: `is_account_member` no banco já
+    // teria negado toda leitura de dado desse tenant.
+    throw new ForbiddenError("Você não participa mais deste workspace");
+  }
+  if (!isAccountRole(membership.role)) {
+    throw new ForbiddenError(`Unknown account role: ${membership.role}`);
   }
 
   const accountRaw = Array.isArray(data.account)
@@ -155,8 +208,8 @@ export async function getCurrentAccount(): Promise<AccountContext> {
   return {
     supabase,
     userId: user.id,
-    accountId: data.account_id,
-    role: data.account_role,
+    accountId,
+    role: membership.role,
     account: {
       id: accountRaw.id,
       name: accountRaw.name,

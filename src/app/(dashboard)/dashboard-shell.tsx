@@ -21,7 +21,7 @@ import { SupportFloatingWidget } from "@/components/support/support-floating-wid
 // client components can't export Next's metadata object.
 
 function DashboardShellInner({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, hasNoWorkspace, signOut } = useAuth();
   const { t } = useTranslation();
   const router = useRouter();
 
@@ -64,6 +64,32 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) return null;
+
+  // A identidade está autenticada, mas não participa de ambiente algum — a
+  // última participação foi encerrada com o app aberto, ou o ambiente em uso
+  // foi excluído. Em vez de renderizar um painel que não consegue carregar
+  // nada, a tela diz o que houve. Falha explícita, não tela vazia.
+  if (hasNoWorkspace) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background p-6">
+        <div className="max-w-sm space-y-4 text-center">
+          <h1 className="text-lg font-semibold text-foreground">
+            {t("navigation.workspace.none")}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {t("navigation.workspace.noneBody")}
+          </p>
+          <button
+            type="button"
+            onClick={signOut}
+            className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            {t("navigation.signOut")}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div id="tour-welcome" className="flex h-screen overflow-hidden bg-background">

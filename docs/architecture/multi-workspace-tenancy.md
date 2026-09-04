@@ -204,7 +204,28 @@ ativo é outro.
 
 ---
 
-## 8. Migração de dados
+## 8. Nome canônico (`FH-21.02`, `FH-21.09`)
+
+| Camada | Termo |
+| --- | --- |
+| Interface (pt-BR) | **espaço de trabalho** |
+| Código / banco | **workspace** (`account_memberships`, `switch_active_workspace`, `list_my_workspaces`) |
+| Entidade persistida | `accounts` — o nome da tabela permanece; renomeá-la seria uma migração destrutiva sem ganho para quem usa |
+
+"Ambiente" foi descartado como termo de interface: a copy do produto já o usa em
+sentido genérico ("um único ambiente", "seu ambiente está 100% configurado"), e
+reaproveitá-lo criaria ambiguidade justamente onde a distinção precisa ser
+nítida. "Conta" também foi descartado porque a mesma palavra já nomeia o login
+nas telas de autenticação ("já tenho uma conta") — era essa colisão que tornava
+o modelo antigo confuso de explicar.
+
+**Dívida declarada.** As telas anteriores a esta mudança ainda dizem "conta"
+onde hoje se lê "espaço de trabalho" (roster de membros, convites,
+configurações). Um terceiro termo não foi criado — o que existe é copy legada
+pendente de migração. A troca dessas strings é um ciclo próprio de revisão de
+texto, não um efeito colateral desta mudança de arquitetura.
+
+## 9. Migração de dados
 
 Não destrutiva, idempotente e em uma única transação:
 

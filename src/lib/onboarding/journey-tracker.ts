@@ -83,10 +83,13 @@ export async function getJourneySummary(
       .select("*", { count: "exact", head: true })
       .eq("account_id", accountId)
       .in("status", ["scheduled", "sending", "sent"]),
+    // "Convidou o time?" é uma pergunta sobre participações neste workspace —
+    // não sobre quantas pessoas estão com ele ativo agora.
     supabase
-      .from("profiles")
+      .from("account_memberships")
       .select("*", { count: "exact", head: true })
-      .eq("account_id", accountId),
+      .eq("account_id", accountId)
+      .eq("status", "active"),
   ]);
 
   const autoDetectedMap: Record<OnboardingStepKey, boolean> = {

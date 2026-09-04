@@ -15,6 +15,7 @@ Este documento registra as **decisões de arquitetura fundamentais** do FlowHub,
 | **ADR-005** | Consolidação de migrações históricas em um Schema Baseline Único | Aceito | 2026-08-07 |
 | **ADR-006** | Remoção de Foreign Keys declarativas para a tabela particionada `messages` | Aceito | 2026-08-07 |
 | **ADR-007** | Fortalecimento de Segurança de Senhas (Complexidade + HIBP) e Proteção hCaptcha | Aceito | 2026-08-11 |
+| **ADR-008** | Participação N:N (`account_memberships`) e workspace ativo no perfil | Aceito | 2026-09-04 |
 
 ---
 
@@ -179,6 +180,58 @@ A aplicação frontend do FlowHub necessitava ser sincronizada para apresentar o
   - Experiência do usuário aprimorada com feedback em tempo real sobre os critérios exigidos de senha.
 - **Negativas / Trade-offs**:
   - Requer que o operador configure a chave `NEXT_PUBLIC_HCAPTCHA_SITE_KEY` no ambiente de produção e habilite a integração correspondente no painel do Supabase Auth.
+
+---
+
+## ADR-008: Participação N:N (`account_memberships`) e workspace ativo no perfil
+
+### Status
+**Aceito** — migração `070_multi_workspace_memberships.sql`. Detalhamento em
+[`multi-workspace-tenancy.md`](multi-workspace-tenancy.md).
+
+### Contexto
+O vínculo usuário↔conta morava em `profiles.account_id` / `profiles.account_role`,
+com `UNIQUE(accounts.owner_user_id)` reforçando "uma conta por pessoa". Como o
+e-mail identifica uma única identidade em `auth.users`, a mesma pessoa não podia
+ter a própria conta e participar da conta de uma empresa. O aceite de convite
+contornava isso movendo o perfil e **apagando** a conta anterior, guardado por uma
+heurística de "conta vazia" que (a) não verificava outros membros — e a cascata
+apagava os perfis deles — e (b) checava uma lista fixa de 11 tabelas de 2017,
+ignorando assinaturas, faturas, quadros, IA e integrações.
+
+### Decisão
+1. A participação vira entidade própria: `account_memberships (account_id,
+   user_id, role, status, …)`, com `UNIQUE(account_id, user_id)` e índice parcial
+   garantindo **um dono ativo por workspace**.
+2. `profiles.account_id` **muda de significado**: deixa de ser "a conta do
+   usuário" e passa a ser o **workspace ativo**; `profiles.account_role` vira
+   espelho do papel na participação ativa, mantido por gatilho.
+3. `is_account_member(account_id, min_role)` **mantém nome e assinatura** e passa
+   a significar "participo E este é meu workspace ativo". As ~120 políticas RLS de
+   017…064 seguem válidas sem reescrita e continuam entregando um tenant por vez.
+4. A FK `profiles.account_id` passa de `ON DELETE CASCADE` para
+   `ON DELETE SET NULL`; nenhum fluxo de participação apaga `accounts`.
+
+### Alternativas consideradas
+- **Refinar a heurística de conta vazia** (contar membros, ampliar a lista de
+  tabelas): resolveria os dois bugs sem resolver o problema — continuaria exigindo
+  abandonar uma conta para entrar em outra.
+- **Workspace ativo em cookie/JWT**: tornaria o contexto palavra do cliente e
+  exigiria hook de token para o RLS enxergá-lo. O ponteiro no banco é validado por
+  RPC antes de gravar e é legível por qualquer política sem infraestrutura extra.
+- **RLS por união de participações** (sem workspace ativo): consultas hoje
+  escritas sem filtro de conta passariam a devolver dados de vários tenants. Era o
+  caminho mais curto para uma regressão de isolamento.
+
+### Consequências
+- **Positivas**: aceitar convite deixa de destruir dados; papel passa a ser
+  contextual; expurgo de conta não apaga mais identidades compartilhadas; a
+  unicidade de titularidade passa a ser garantida por índice.
+- **Negativas / Trade-offs**: o contexto ativo é por identidade, não por aba —
+  trocar de workspace em uma aba muda o contexto das demais na próxima leitura;
+  toda enumeração de membros precisou sair de `profiles` para
+  `account_memberships`; as duas colunas antigas seguem existindo durante o
+  rollout, o que exige disciplina para não reintroduzi-las como vínculo.
 
 ---
 

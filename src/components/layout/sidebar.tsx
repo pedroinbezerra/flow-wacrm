@@ -9,10 +9,10 @@ import { useTranslation } from "@/hooks/use-translation";
 import { useTotalUnread } from "@/hooks/use-total-unread";
 import { FlowLogo } from "@/components/layout/flow-logo";
 import { ContactAvatar } from "@/components/ui/contact-avatar";
+import { WorkspaceSwitcher } from "@/components/layout/workspace-switcher";
 import {
   Activity,
   CreditCard,
-  Crown,
   GitBranch,
   Headphones,
   HelpCircle,
@@ -22,12 +22,10 @@ import {
   LayoutGrid,
   Radio,
   Settings,
-  Shield,
   TrendingUp,
   User,
   UserCog,
   Users,
-  UsersRound,
   Workflow,
   ChevronLeft,
   ChevronRight,
@@ -38,47 +36,9 @@ import {
 } from "lucide-react";
 
 
-import type { AccountRole } from "@/lib/auth/roles";
 import { useState } from "react";
 
 
-// Per-role chip metadata used in the sidebar's account strip + the
-// Members tab roster. Keeping this near both consumers in a single
-// place avoids drift between the two surfaces — when a designer
-// wants to recolour "agent" rows, this is the one diff.
-const ROLE_CHIP: Record<
-  AccountRole,
-  { icon: typeof Crown; labelKey: string; className: string }
-> = {
-  owner: {
-    icon: Crown,
-    labelKey: "roles.owner",
-    // Amber: scarce, immutable, "the boss" — gets visual emphasis.
-    className:
-      "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5",
-  },
-  admin: {
-    icon: Shield,
-    labelKey: "roles.admin",
-    // Primary-tinted: significant but not as scarce as owner.
-    className:
-      "border-primary/30 bg-primary/10 text-primary text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5",
-  },
-  agent: {
-    icon: UserCog,
-    labelKey: "roles.agent",
-    // Neutral slate: the operational default.
-    className:
-      "border-border bg-muted/60 text-muted-foreground text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5",
-  },
-  viewer: {
-    icon: User,
-    labelKey: "roles.viewer",
-    // Muted slate: read-only role; visually quieter than agent.
-    className:
-      "border-border/60 bg-card text-muted-foreground/80 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5",
-  },
-};
 import {
   Avatar,
   AvatarFallback,
@@ -125,7 +85,7 @@ interface SidebarProps {
 export function Sidebar({ open = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { t } = useTranslation();
-  const { profile, profileLoading, account, accountRole, isSuperAdmin, signOut } = useAuth();
+  const { profile, isSuperAdmin, signOut } = useAuth();
   const totalUnread = useTotalUnread();
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -144,11 +104,6 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
       return next;
     });
   };
-
-  const showAccountStrip =
-    !profileLoading &&
-    !!account?.name &&
-    account.name !== profile?.full_name;
 
   useEffect(() => {
     onClose?.();
@@ -430,28 +385,11 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
 
         {/* User section */}
         <div className="shrink-0 border-t border-border p-2">
-          {!isCollapsed && showAccountStrip && account?.name ? (
-            <div className="mb-2 flex items-center gap-2 px-3 text-xs text-muted-foreground">
-              <UsersRound className="size-3.5 shrink-0" />
-              <span className="truncate" title={account.name}>
-                {account.name}
-              </span>
-              {accountRole ? (
-                (() => {
-                  const meta = ROLE_CHIP[accountRole];
-                  const Icon = meta.icon;
-                  return (
-                    <span
-                      className={`ml-auto inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider ${meta.className}`}
-                    >
-                      <Icon className="size-3" />
-                      {t(meta.labelKey)}
-                    </span>
-                  );
-                })()
-              ) : null}
-            </div>
-          ) : null}
+          {/* Onde estou trabalhando — e, quando há mais de um ambiente, por
+              onde trocar. O componente decide sozinho entre faixa estática,
+              seletor e aviso de "sem workspace"; a sidebar não precisa saber
+              em quantos workspaces esta identidade participa. */}
+          <WorkspaceSwitcher isCollapsed={isCollapsed} onNavigate={onClose} />
           <DropdownMenu>
             <DropdownMenuTrigger
               className={cn(

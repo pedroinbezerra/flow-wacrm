@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import {
   AlertTriangle,
   Loader2,
+  LogOut,
   Mail,
   MailX,
   Plus,
@@ -126,7 +127,7 @@ function fmtExpiresIn(iso: string, t: (key: string, params?: Record<string, stri
 }
 
 export function MembersTab() {
-  const { user, canManageMembers } = useAuth();
+  const { user, canManageMembers, accountId, accountRole, account } = useAuth();
   const { getPresence, getRow, now } = usePresence();
   const { t } = useTranslation();
   const editableRoles: { value: AccountRole; label: string; hint: string }[] = [
@@ -140,6 +141,8 @@ export function MembersTab() {
   const [loading, setLoading] = useState(true);
 
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [removingMember, setRemovingMember] = useState<Member | null>(null);
   const [pendingMemberAction, setPendingMemberAction] = useState<string | null>(
     null,
@@ -256,6 +259,36 @@ export function MembersTab() {
       toast.error(t('settings.members.couldNotReachServer'));
     } finally {
       setPendingMemberAction(null);
+    }
+  }
+
+  /**
+   * Saída voluntária. Encerra apenas a participação de quem clica: este
+   * ambiente segue existindo para o resto da equipe, e os outros ambientes
+   * desta identidade não são tocados. Ao final o servidor já repontou o
+   * contexto, então recarregamos em `/dashboard` — a página atual pertence ao
+   * ambiente do qual acabamos de sair.
+   */
+  async function handleLeave() {
+    if (!accountId) return;
+    setLeaving(true);
+    try {
+      const res = await fetch('/api/account/workspaces/leave', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountId }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || t('settings.members.failedLeave'));
+        setLeaving(false);
+        return;
+      }
+      window.location.href = '/dashboard';
+    } catch (err) {
+      console.error('[MembersTab] leave error:', err);
+      toast.error(t('settings.members.couldNotReachServer'));
+      setLeaving(false);
     }
   }
 
@@ -617,11 +650,76 @@ export function MembersTab() {
         </div>
       </RequireRole>
 
+      {/* Saída voluntária. Fica no fim da seção e longe de qualquer ação
+          frequente do roster (FH-19.03), e só aparece para quem não é dono —
+          sair deixaria o ambiente sem titular, então a transferência vem
+          antes. Sair ≠ excluir: o ambiente continua existindo. */}
+      {accountRole && accountRole !== 'owner' ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border px-4 py-3">
+          <p className="text-xs text-muted-foreground">
+            {t('settings.members.leaveTeamHint')}
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => setLeaveOpen(true)}
+            className="border-border text-muted-foreground hover:bg-muted"
+          >
+            <LogOut className="size-4" />
+            {t('settings.members.leaveTeam')}
+          </Button>
+        </div>
+      ) : null}
+
       <InviteMemberDialog
         open={inviteOpen}
         onOpenChange={setInviteOpen}
         onCreated={loadEverything}
       />
+
+      <Dialog
+        open={leaveOpen}
+        onOpenChange={(open) => {
+          if (!open && !leaving) setLeaveOpen(false);
+        }}
+      >
+        <DialogContent className="bg-popover border-border sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-popover-foreground">
+              <AlertTriangle className="size-4 text-amber-400" />
+              {t('settings.members.leaveTeam')}
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              {t('settings.members.leaveTeamPrompt', {
+                name: account?.name ?? '',
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="bg-popover border-border">
+            <Button
+              variant="outline"
+              onClick={() => setLeaveOpen(false)}
+              disabled={leaving}
+              className="border-border text-muted-foreground hover:bg-muted"
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleLeave}
+              disabled={leaving}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {leaving ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  {t('settings.members.leaving')}
+                </>
+              ) : (
+                t('settings.members.leaveTeam')
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={removingMember !== null}

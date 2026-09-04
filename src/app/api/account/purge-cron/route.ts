@@ -86,15 +86,30 @@ async function handlePurgeCron(request: Request) {
 
   for (const account of expiredAccounts || []) {
     try {
-      // a) Get owner email & member profiles before deletion
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, email, account_role")
-        .eq("account_id", account.id);
+      // a) Quem participa deste workspace, e o e-mail do dono para o log.
+      //
+      // A lista vem das participações: `profiles.account_id` passou a ser o
+      // workspace ATIVO de cada pessoa, e usá-la aqui deixaria de fora quem
+      // pertence a este workspace mas está trabalhando em outro no momento.
+      const { data: memberships } = await supabase
+        .from("account_memberships")
+        .select("user_id")
+        .eq("account_id", account.id)
+        .eq("status", "active");
 
-      const ownerProfile = profiles?.find((p) => p.user_id === account.owner_user_id);
+      const memberUserIds = (memberships ?? []).map((m) => m.user_id as string);
+
+      const { data: memberProfiles } = memberUserIds.length
+        ? await supabase
+            .from("profiles")
+            .select("user_id, email")
+            .in("user_id", memberUserIds)
+        : { data: [] as { user_id: string; email: string | null }[] };
+
+      const ownerProfile = memberProfiles?.find(
+        (p) => p.user_id === account.owner_user_id,
+      );
       const ownerEmail = ownerProfile?.email ?? "desconhecido@flow.app";
-      const userIdsToDelete = (profiles ?? []).map((p) => p.user_id);
 
       // b) Count invoices that will be preserved via ON DELETE SET NULL
       const { count: invoiceCount } = await supabase
@@ -119,19 +134,6 @@ async function handlePurgeCron(request: Request) {
         }
       }
 
-      // c.2) Clean user profile avatars in `avatars` bucket under `{user_id}/` prefix
-      for (const uid of userIdsToDelete) {
-        try {
-          const { data: avatarFiles } = await supabase.storage.from("avatars").list(uid);
-          if (avatarFiles && avatarFiles.length > 0) {
-            const filesToRemove = avatarFiles.map((f) => `${uid}/${f.name}`);
-            await supabase.storage.from("avatars").remove(filesToRemove);
-          }
-        } catch (avErr) {
-          console.warn(`[purge-cron] avatar storage cleanup warning for user ${uid}:`, avErr);
-        }
-      }
-
       // d) Insert audit log record BEFORE deleting account
       await supabase.from("account_deletion_audit_logs").insert({
         account_id: account.id,
@@ -141,7 +143,7 @@ async function handlePurgeCron(request: Request) {
         purged_at: now.toISOString(),
         invoices_preserved_count: preservedInvoices,
         details: {
-          members_count: userIdsToDelete.length,
+          members_count: memberUserIds.length,
           storage_prefix: prefix,
         },
       });
@@ -158,7 +160,40 @@ async function handlePurgeCron(request: Request) {
         continue;
       }
 
-      // f) Delete auth.users records for the owner & account members
+      // f) Apagar a identidade SOMENTE de quem não participa de mais nada.
+      //
+      // Excluir este workspace não pode destruir os outros workspaces das
+      // pessoas que participavam dele. Quem ainda tem participação ativa em
+      // qualquer lugar mantém login, perfil e avatar; a exclusão do workspace
+      // já encerrou a participação nele por cascata, e só isso.
+      const { data: survivingMemberships } = memberUserIds.length
+        ? await supabase
+            .from("account_memberships")
+            .select("user_id")
+            .in("user_id", memberUserIds)
+            .eq("status", "active")
+        : { data: [] as { user_id: string }[] };
+
+      const stillMemberSomewhere = new Set(
+        (survivingMemberships ?? []).map((m) => m.user_id as string),
+      );
+      const userIdsToDelete = memberUserIds.filter(
+        (uid) => !stillMemberSomewhere.has(uid),
+      );
+
+      // f.1) Avatares só de quem realmente sai do sistema.
+      for (const uid of userIdsToDelete) {
+        try {
+          const { data: avatarFiles } = await supabase.storage.from("avatars").list(uid);
+          if (avatarFiles && avatarFiles.length > 0) {
+            const filesToRemove = avatarFiles.map((f) => `${uid}/${f.name}`);
+            await supabase.storage.from("avatars").remove(filesToRemove);
+          }
+        } catch (avErr) {
+          console.warn(`[purge-cron] avatar storage cleanup warning for user ${uid}:`, avErr);
+        }
+      }
+
       for (const uid of userIdsToDelete) {
         try {
           await supabase.auth.admin.deleteUser(uid);

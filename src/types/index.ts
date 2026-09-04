@@ -178,6 +178,33 @@ export interface AccountMember {
 }
 
 /**
+ * Estado de uma participação (`account_memberships.status`).
+ * `revoked` preserva o histórico de quem saiu ou foi removido —
+ * a linha não é apagada, e uma rejunção reativa a mesma linha.
+ */
+export type MembershipStatus = "active" | "revoked";
+
+/**
+ * Um workspace do qual a identidade autenticada participa, do jeito
+ * que o seletor precisa dele. Vem de `list_my_workspaces()` — a
+ * identidade nunca recebe workspace do qual não participe, porque a
+ * RPC filtra por participação ativa no banco, não no cliente.
+ *
+ * `role` é o papel **naquele** workspace: a mesma pessoa pode ser
+ * owner em um e viewer em outro.
+ */
+export interface Workspace {
+  id: string;
+  name: string;
+  role: AccountRole;
+  /** Se este é o contexto operacional em uso agora. */
+  is_active: boolean;
+  subscription_status: SubscriptionStatus;
+  member_count: number;
+  joined_at: string;
+}
+
+/**
  * Outstanding invite link row. `token_hash` is intentionally
  * absent — it lives only in the DB and on the server. The
  * plaintext token is returned once at creation time and surfaced

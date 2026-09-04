@@ -67,10 +67,24 @@ describe("Collaborative Event Engine (event-engine.ts)", () => {
             }),
           };
         }
+        // Participações: quem pertence a este workspace. O roster deixou de
+        // sair de `profiles.account_id`, que hoje aponta para o workspace
+        // ativo de cada pessoa.
+        if (table === "account_memberships") {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: async () => ({
+                  data: [{ user_id: "user-dani" }],
+                }),
+              }),
+            }),
+          };
+        }
         if (table === "profiles") {
           return {
             select: () => ({
-              eq: async () => ({
+              in: async () => ({
                 data: [{ user_id: "user-dani", full_name: "Dani Silva" }],
               }),
             }),
@@ -142,10 +156,24 @@ describe("Collaborative Event Engine (event-engine.ts)", () => {
             }),
           };
         }
-        if (table === "profiles") {
+        // Participações: quem pertence a este workspace. O roster deixou de
+        // sair de `profiles.account_id`, que hoje aponta para o workspace
+        // ativo de cada pessoa.
+        if (table === "account_memberships") {
           return {
             select: () => ({
               eq: () => ({
+                eq: async () => ({
+                  data: [{ user_id: "user-finance-1" }],
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === "profiles") {
+          return {
+            select: () => ({
+              in: () => ({
                 eq: async () => ({
                   data: [{ user_id: "user-finance-1" }],
                 }),

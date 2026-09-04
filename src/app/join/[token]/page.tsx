@@ -31,7 +31,6 @@ export default function JoinPage() {
   const [authedUserId, setAuthedUserId] = useState<string | null | undefined>(undefined);
   const [accepting, setAccepting] = useState(false);
   const [conflictMessage, setConflictMessage] = useState<string | null>(null);
-  const [signingOut, setSigningOut] = useState(false);
 
   const getRoleLabel = (role: PeekOk['role']): string => {
     const map: Record<PeekOk['role'], string> = {
@@ -96,17 +95,6 @@ export default function JoinPage() {
       setAccepting(false);
     }
   }, [token, t]);
-
-  const handleSignOutAndRetry = useCallback(async () => {
-    setSigningOut(true);
-    try {
-      await createClient().auth.signOut();
-      window.location.reload();
-    } catch (err) {
-      toast.error(t('auth.join.errors.couldNotSignOut'));
-      setSigningOut(false);
-    }
-  }, [t]);
 
   if (peek === null || authedUserId === undefined) {
     return (
@@ -222,15 +210,11 @@ export default function JoinPage() {
               <Button variant="outline" onClick={() => setConflictMessage(null)} className="border-border text-popover-foreground hover:bg-muted">
                 {t('auth.join.conflict.staySignedIn')}
               </Button>
-              <Button onClick={handleSignOutAndRetry} disabled={signingOut} className="bg-primary text-primary-foreground hover:bg-primary/90">
-                {signingOut ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    {t('auth.join.conflict.signingOut')}
-                  </>
-                ) : (
-                  t('auth.join.conflict.signOutAndUse')
-                )}
+              <Button
+                onClick={() => { window.location.href = '/dashboard'; }}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {t('auth.join.conflict.goToDashboard')}
               </Button>
             </DialogFooter>
           </DialogContent>
